@@ -1,0 +1,150 @@
+base de datos de Arelyz salon
+
+create table usuarios (
+  id uuid primary key default gen_random_uuid(),
+  nombre text unique not null,
+  contrasena text not null -- hash
+);
+
+
+create table productos (
+  id uuid primary key default gen_random_uuid(),
+  nombre text not null,
+  descripcion text,
+  precio numeric(10,2) not null
+);
+
+
+create table inventario (
+  id uuid primary key default gen_random_uuid(),
+  producto_id uuid references productos(id) on delete cascade,
+  entrada integer not null check (entrada > 0),
+  fecha timestamp default now()
+);
+
+
+create table ventas (
+  id uuid primary key default gen_random_uuid(),
+  producto_id uuid references productos(id),
+  cantidad integer not null,
+  precio_unitario numeric(10,2) not null,
+  total numeric(10,2) not null,
+  fecha timestamp default now()
+);
+
+
+create table ventas_credito (
+  id uuid primary key default gen_random_uuid(),
+
+  producto_id uuid references productos(id),
+  cantidad integer not null,
+  precio_unitario numeric(10,2) not null,
+  total numeric(10,2) not null,
+
+  nombre_cliente text not null,
+
+  fecha_inicio date not null,
+  fecha_fin date not null,
+
+  fecha timestamp default now()
+);
+
+
+create table abonos_credito (
+  id uuid primary key default gen_random_uuid(),
+
+  venta_credito_id uuid references ventas_credito(id) on delete cascade,
+
+  monto numeric(10,2) not null,
+  metodo_pago text check (
+    metodo_pago in ('efectivo','tarjeta','transferencia')
+  ) not null,
+
+  fecha timestamp default now()
+);
+
+
+create table facturados (
+  id uuid primary key default gen_random_uuid(),
+
+  tipo_venta text check (
+    tipo_venta in ('normal','credito','abono_credito')
+  ) not null,
+
+  producto_id uuid references productos(id),
+
+  cantidad integer default 0,
+  precio_unitario numeric(10,2) default 0,
+
+  total numeric(10,2) not null,
+
+  metodo_pago text check (
+    metodo_pago in ('efectivo','tarjeta','transferencia','credito')
+  ) not null,
+
+  fecha timestamp default now()
+);
+
+
+create table gastos (
+  id uuid primary key default gen_random_uuid(),
+  descripcion text not null,
+  monto numeric(10,2) not null,
+  fecha timestamp default now()
+);
+
+
+create table arqueos (
+  id uuid primary key default gen_random_uuid(),
+  fecha timestamp default now(),
+
+  total_ventas numeric(10,2),
+  total_credito numeric(10,2),
+  total_efectivo numeric(10,2),
+  total_gastos numeric(10,2),
+  efectivo_en_caja numeric(10,2)
+);
+
+
+CONSULTAS CLAVE (FRONTEND / ARQUEO)
+
+STOCK ACTUAL
+
+select
+  p.id,
+  p.nombre,
+  coalesce(sum(i.entrada),0)
+  -
+  coalesce(sum(v.cantidad),0)
+  -
+  coalesce(sum(vc.cantidad),0) as stock
+from productos p
+left join inventario i on p.id = i.producto_id
+left join ventas v on p.id = v.producto_id
+left join ventas_credito vc on p.id = vc.producto_id
+group by p.id;
+
+
+SALDO DE UNA VENTA A CRÉDITO
+
+select
+  vc.total - coalesce(sum(ac.monto),0) as saldo_pendiente
+from ventas_credito vc
+left join abonos_credito ac
+  on vc.id = ac.venta_credito_id
+where vc.id = 'ID_VENTA_CREDITO'
+group by vc.total;
+
+
+EFECTIVO REAL EN CAJA
+
+select
+  (select coalesce(sum(total),0)
+   from facturados
+   where metodo_pago = 'efectivo')
+  -
+  (select coalesce(sum(monto),0)
+   from gastos)
+as efectivo_en_caja;
+
+

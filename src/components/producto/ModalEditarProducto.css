@@ -1,0 +1,37 @@
+/* Hereda estilos de ModalAgregarProducto.css y agrega estos extras */
+
+.info-producto {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border-left: 4px solid #3b82f6;
+}
+
+.info-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.info-valor {
+  font-size: 14px;
+  font-family: monospace;
+  color: #1e293b;
+  background: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  border: 1px solid #e2e8f0;
+}
+
+.boton-principal {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+}
+
+.boton-principal:hover {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+}
