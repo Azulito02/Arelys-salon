@@ -1,0 +1,130 @@
+// components/ventas/TablaVentas.jsx
+import React from 'react'
+import './TablaVentas.css'
+
+const TablaVentas = ({ ventas, loading, onEditar, onEliminar }) => {
+  
+  const formatFechaNicaragua = (fechaISO) => {
+    if (!fechaISO) return 'Fecha no disponible';
+    
+    return new Date(fechaISO).toLocaleString('es-MX', {
+      timeZone: 'America/Managua',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: true
+    });
+  };
+
+  return (
+    <div className="tabla-ventas-container">
+      <div className="tabla-ventas-card">
+        <div className="overflow-x-auto">
+          <table className="tabla-ventas">
+            <thead>
+              <tr>
+                <th className="columna-producto">Producto</th>
+                <th className="columna-cantidad">Cantidad</th>
+                <th className="columna-fecha">Fecha de Venta</th>
+                <th className="columna-precio">Precio Unitario</th>
+                <th className="columna-total">Total</th>
+                <th className="columna-acciones">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
+                <tr>
+                  <td colSpan="6" className="cargando-mensaje">
+                    <div className="spinner"></div>
+                    Cargando ventas...
+                  </td>
+                </tr>
+              ) : ventas.length === 0 ? (
+                <tr>
+                  <td colSpan="6" className="sin-registros">
+                    No hay registros de ventas
+                  </td>
+                </tr>
+              ) : (
+                ventas.map((venta) => (
+                  <tr key={venta.id} className="fila-venta">
+                    <td className="celda-producto">
+                      <div className="nombre-producto">
+                        {venta.productos?.nombre || 'Producto no encontrado'}
+                      </div>
+                      {venta.productos?.codigo && (
+                        <div className="codigo-producto">
+                          Código: {venta.productos.codigo}
+                        </div>
+                      )}
+                    </td>
+                    <td className="celda-cantidad">
+                      <span className="badge-venta">
+                        {venta.cantidad} unidades
+                      </span>
+                    </td>
+                    <td className="celda-fecha">
+                      {formatFechaNicaragua(venta.fecha)}
+                    </td>
+                    <td className="celda-precio">
+                      ${venta.precio_unitario?.toFixed(2) || '0.00'}
+                    </td>
+                    <td className="celda-total">
+                      <strong>
+                        ${venta.total?.toFixed(2) || '0.00'}
+                      </strong>
+                    </td>
+                    <td className="celda-acciones">
+                      <div className="acciones-container">
+                        <button
+                          onClick={() => onEditar(venta)}
+                          className="accion-btn accion-editar"
+                          title="Editar venta"
+                        >
+                          <svg className="accion-icono" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                        </button>
+                        <button
+                          onClick={() => onEliminar(venta)}
+                          className="accion-btn accion-eliminar"
+                          title="Eliminar venta"
+                        >
+                          <svg className="accion-icono" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        
+        {/* Resumen */}
+        {!loading && ventas.length > 0 && (
+          <div className="resumen-ventas-tabla">
+            <div className="resumen-item">
+              <span>Total de ventas:</span>
+              <strong>{ventas.length} registros</strong>
+            </div>
+            <div className="resumen-item">
+              <span>Unidades vendidas:</span>
+              <strong>
+                {ventas.reduce((sum, venta) => sum + venta.cantidad, 0)} unidades
+              </strong>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export default TablaVentas

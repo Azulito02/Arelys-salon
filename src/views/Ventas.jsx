@@ -1,18 +1,33 @@
+// Ventas.jsx
 import { useState, useEffect } from 'react'
 import { supabase } from '../database/supabase'
+import TablaVentas from '../components/ventas/TablaVentas'
+import ModalNuevaVenta from '../components/ventas/ModalNuevaVenta'
+import ModalEditarVenta from '../components/ventas/ModalEditarVenta'
+import ModalEliminarVenta from '../components/ventas/ModalEliminarVenta'
+import '../components/ventas/TablaVentas.css'
+import '../components/ventas/Ventas.css'
 
 const Ventas = () => {
   const [ventas, setVentas] = useState([])
   const [productos, setProductos] = useState([])
   const [loading, setLoading] = useState(true)
-  const [modalAbierto, setModalAbierto] = useState(false)
+  const [errorCarga, setErrorCarga] = useState('')
   
+  // Estados para modales
+  const [modalNuevaAbierto, setModalNuevaAbierto] = useState(false)
+  const [modalEditarAbierto, setModalEditarAbierto] = useState(false)
+  const [modalEliminarAbierto, setModalEliminarAbierto] = useState(false)
+  
+  // Estados para datos de formularios
   const [nuevaVenta, setNuevaVenta] = useState({
     producto_id: '',
     cantidad: 1,
     precio_unitario: 0,
     total: 0
   })
+  
+  const [ventaSeleccionada, setVentaSeleccionada] = useState(null)
 
   useEffect(() => {
     cargarDatos()
@@ -21,262 +36,250 @@ const Ventas = () => {
   const cargarDatos = async () => {
     try {
       setLoading(true)
+      setErrorCarga('')
       
-      // Cargar productos
+      console.log('Iniciando carga de datos de ventas...')
+      
+      // Cargar productos para el select
       const { data: productosData, error: errorProductos } = await supabase
         .from('productos')
         .select('*')
         .order('nombre')
       
-      if (errorProductos) throw errorProductos
+      console.log('Productos cargados:', productosData)
+      
+      if (errorProductos) {
+        console.error('Error cargando productos:', errorProductos)
+        throw errorProductos
+      }
       setProductos(productosData || [])
       
-      // Cargar ventas
+      // Cargar ventas con información de productos
       const { data: ventasData, error: errorVentas } = await supabase
         .from('ventas')
-        .select(`
-          *,
-          productos (nombre)
-        `)
+        .select('*')
         .order('fecha', { ascending: false })
       
-      if (errorVentas) throw errorVentas
-      setVentas(ventasData || [])
+      console.log('Ventas cargadas:', ventasData)
+      
+      if (errorVentas) {
+        console.error('Error cargando ventas:', errorVentas)
+        throw errorVentas
+      }
+      
+      // Combinar con información de productos
+      const ventasConProductos = ventasData.map(venta => {
+        const producto = productosData?.find(p => p.id === venta.producto_id)
+        return {
+          ...venta,
+          productos: producto || null
+        }
+      })
+      
+      setVentas(ventasConProductos || [])
       
     } catch (error) {
       console.error('Error cargando ventas:', error)
-      alert('Error al cargar datos')
+      setErrorCarga(`Error al cargar datos: ${error.message}`)
+      alert('Error al cargar datos de ventas')
     } finally {
       setLoading(false)
     }
   }
 
-  const abrirModal = () => {
+  // Funciones para abrir modales
+  const abrirModalNueva = () => {
     setNuevaVenta({
       producto_id: '',
       cantidad: 1,
       precio_unitario: 0,
       total: 0
     })
-    setModalAbierto(true)
+    setModalNuevaAbierto(true)
   }
 
-  const cerrarModal = () => {
-    setModalAbierto(false)
+  const abrirModalEditar = (venta) => {
+    setVentaSeleccionada(venta)
+    setModalEditarAbierto(true)
   }
 
-  const calcularTotal = () => {
-    const cantidad = parseInt(nuevaVenta.cantidad) || 0
-    const precio = parseFloat(nuevaVenta.precio_unitario) || 0
-    return cantidad * precio
+  const abrirModalEliminar = (venta) => {
+    setVentaSeleccionada(venta)
+    setModalEliminarAbierto(true)
   }
 
-  const registrarVenta = async () => {
-    if (!nuevaVenta.producto_id || nuevaVenta.cantidad < 1) {
-      alert('Selecciona un producto y cantidad válida')
-      return
-    }
+  // Función para cerrar todos los modales
+  const cerrarModales = () => {
+    setModalNuevaAbierto(false)
+    setModalEditarAbierto(false)
+    setModalEliminarAbierto(false)
+    setVentaSeleccionada(null)
+  }
 
+  // Función para manejar nueva venta
+  const handleVentaRegistrada = async (ventaData) => {
+    console.log('Datos de venta a guardar:', ventaData)
+    
     try {
-      const totalCalculado = calcularTotal()
-      
-      const ventaData = {
-        producto_id: nuevaVenta.producto_id,
-        cantidad: parseInt(nuevaVenta.cantidad),
-        precio_unitario: parseFloat(nuevaVenta.precio_unitario),
-        total: totalCalculado
-      }
-
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('ventas')
         .insert([ventaData])
+        .select()
+      
+      console.log('Respuesta Supabase:', { data, error })
+      
+      if (error) {
+        console.error('Error detallado:', error)
+        throw error
+      }
+      
+      alert('✅ Venta registrada correctamente')
+      cerrarModales()
+      cargarDatos()
+    } catch (error) {
+      console.error('Error completo:', error)
+      alert(`❌ Error: ${error.message}`)
+      throw error
+    }
+  }
+
+  // Función para manejar venta editada
+  const handleVentaEditada = async (datosActualizados) => {
+    try {
+      const { error } = await supabase
+        .from('ventas')
+        .update(datosActualizados)
+        .eq('id', ventaSeleccionada.id)
       
       if (error) throw error
       
-      alert('Venta registrada correctamente')
-      cerrarModal()
+      alert('✅ Venta actualizada correctamente')
+      cerrarModales()
       cargarDatos()
     } catch (error) {
-      console.error('Error registrando venta:', error)
-      alert('Error al registrar venta')
+      console.error('Error actualizando venta:', error)
+      alert('❌ Error al actualizar venta')
+      throw error
     }
   }
 
-  const handleProductoChange = (productoId) => {
-    const producto = productos.find(p => p.id === productoId)
-    if (producto) {
-      setNuevaVenta({
-        ...nuevaVenta,
-        producto_id: productoId,
-        precio_unitario: producto.precio
-      })
+  // Función para manejar venta eliminada
+  const handleVentaEliminada = async () => {
+    try {
+      const { error } = await supabase
+        .from('ventas')
+        .delete()
+        .eq('id', ventaSeleccionada.id)
+      
+      if (error) throw error
+      
+      alert('✅ Venta eliminada correctamente')
+      cerrarModales()
+      cargarDatos()
+    } catch (error) {
+      console.error('Error eliminando venta:', error)
+      alert('❌ Error al eliminar venta')
+      throw error
     }
   }
+
+  // Calcular estadísticas
+  const totalVentas = ventas.reduce((sum, venta) => sum + venta.total, 0)
+  const totalUnidades = ventas.reduce((sum, venta) => sum + venta.cantidad, 0)
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Ventas</h1>
-          <p className="text-gray-600">Registro de ventas al contado</p>
+    <div className="ventas-container">
+      <div className="ventas-header">
+        <div className="ventas-titulo-container">
+          <h1 className="ventas-titulo">Ventas</h1>
+          <p className="ventas-subtitulo">Registro de ventas de productos</p>
         </div>
         <button
-          onClick={abrirModal}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg flex items-center"
+          onClick={abrirModalNueva}
+          className="boton-agregar-venta"
         >
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          <svg 
+            className="boton-agregar-icono" 
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+            width="20"
+            height="20"
+          >
+            <path 
+              strokeLinecap="round" 
+              strokeLinejoin="round" 
+              strokeWidth={2.5} 
+              d="M12 4v16m8-8H4" 
+            />
           </svg>
           Nueva Venta
         </button>
       </div>
 
-      {/* Tabla de ventas */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Producto
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Cantidad
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Precio Unitario
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Total
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Fecha
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {loading ? (
-                <tr>
-                  <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
-                    Cargando ventas...
-                  </td>
-                </tr>
-              ) : ventas.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
-                    No hay ventas registradas
-                  </td>
-                </tr>
-              ) : (
-                ventas.map((venta) => (
-                  <tr key={venta.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-900">
-                        {venta.productos?.nombre || 'Producto no encontrado'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {venta.cantidad}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      ${parseFloat(venta.precio_unitario).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      ${parseFloat(venta.total).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(venta.fecha).toLocaleString('es-MX')}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+      {errorCarga && (
+        <div className="error-carga">
+          <p>{errorCarga}</p>
+          <button onClick={cargarDatos} className="btn-reintentar">
+            Reintentar
+          </button>
         </div>
-      </div>
+      )}
 
-      {/* Modal para nueva venta */}
-      {modalAbierto && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">
-                Nueva Venta
-              </h3>
-            </div>
-            
-            <div className="px-6 py-4 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Producto *
-                </label>
-                <select
-                  value={nuevaVenta.producto_id}
-                  onChange={(e) => handleProductoChange(e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">Selecciona un producto</option>
-                  {productos.map((producto) => (
-                    <option key={producto.id} value={producto.id}>
-                      {producto.nombre} - ${producto.precio}
-                    </option>
-                  ))}
-                </select>
+      <TablaVentas
+        ventas={ventas}
+        loading={loading}
+        onEditar={abrirModalEditar}
+        onEliminar={abrirModalEliminar}
+      />
+
+      {/* Resumen de ventas */}
+      {!loading && ventas.length > 0 && (
+        <div className="resumen-ventas">
+          <div className="resumen-card">
+            <h3 className="resumen-titulo">Resumen de Ventas</h3>
+            <div className="resumen-stats">
+              <div className="stat-item">
+                <span className="stat-label">Total Ventas:</span>
+                <span className="stat-value">${totalVentas.toFixed(2)}</span>
               </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Cantidad *
-                </label>
-                <input
-                  type="number"
-                  min="1"
-                  value={nuevaVenta.cantidad}
-                  onChange={(e) => setNuevaVenta({...nuevaVenta, cantidad: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                />
+              <div className="stat-item">
+                <span className="stat-label">Unidades Vendidas:</span>
+                <span className="stat-value">{totalUnidades} unidades</span>
               </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Precio Unitario
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={nuevaVenta.precio_unitario}
-                  readOnly
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50"
-                />
+              <div className="stat-item">
+                <span className="stat-label">Transacciones:</span>
+                <span className="stat-value">{ventas.length} registros</span>
               </div>
-              
-              <div className="bg-gray-50 p-4 rounded-md">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-700">Total:</span>
-                  <span className="text-lg font-bold text-gray-900">
-                    ${calcularTotal().toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                  </span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
-              <button
-                onClick={cerrarModal}
-                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={registrarVenta}
-                className="px-4 py-2 bg-blue-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-blue-700"
-              >
-                Registrar Venta
-              </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Modales */}
+      <ModalNuevaVenta
+        isOpen={modalNuevaAbierto}
+        onClose={cerrarModales}
+        onSave={handleVentaRegistrada}
+        productos={productos}
+        ventaData={nuevaVenta}
+        setVentaData={setNuevaVenta}
+      />
+
+      <ModalEditarVenta
+        isOpen={modalEditarAbierto}
+        onClose={cerrarModales}
+        onSave={handleVentaEditada}
+        venta={ventaSeleccionada}
+        productos={productos}
+      />
+
+      <ModalEliminarVenta
+        isOpen={modalEliminarAbierto}
+        onClose={cerrarModales}
+        onConfirm={handleVentaEliminada}
+        venta={ventaSeleccionada}
+      />
     </div>
   )
 }

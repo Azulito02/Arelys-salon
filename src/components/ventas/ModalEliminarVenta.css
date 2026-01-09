@@ -1,0 +1,441 @@
+/* components/ventas/ModalEliminarVenta.css */
+
+/* Overlay del modal */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  animation: fadeIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Contenedor principal del modal */
+.modal-container-eliminar-venta {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  animation: modal-appear 0.3s ease-out;
+  border-top: 4px solid #dc2626;
+}
+
+@keyframes modal-appear {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Header del modal */
+.modal-header-eliminar-venta {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.modal-titulo-contenedor-eliminar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.icono-alerta {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 50%;
+  background-color: #fee2e2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icono-alerta-svg {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: #dc2626;
+}
+
+.modal-titulo-eliminar-venta {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.modal-cerrar-btn-eliminar {
+  background: none;
+  border: none;
+  font-size: 1.75rem;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0.25rem;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.modal-cerrar-btn-eliminar:hover:not(:disabled) {
+  color: #374151;
+}
+
+.modal-cerrar-btn-eliminar:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Contenido del modal */
+.modal-contenido-eliminar-venta {
+  padding: 2rem;
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  min-height: 0;
+}
+
+/* Sección de advertencia */
+.advertencia-seccion {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  background-color: #fef3c7;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+}
+
+.advertencia-icono {
+  flex-shrink: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  color: #d97706;
+  margin-top: 0.125rem;
+}
+
+.advertencia-contenido {
+  flex: 1;
+}
+
+.advertencia-titulo {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #92400e;
+  margin-bottom: 0.5rem;
+}
+
+.advertencia-texto {
+  font-size: 0.875rem;
+  color: #92400e;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Información de la venta */
+.venta-eliminar-info {
+  background-color: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 1.25rem;
+}
+
+.venta-eliminar-titulo {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #4b5563;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+}
+
+.venta-eliminar-detalles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.detalle-eliminar-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.detalle-eliminar-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.detalle-etiqueta {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.detalle-valor {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #111827;
+  text-align: right;
+}
+
+.cantidad-eliminar {
+  color: #dc2626;
+  background-color: #fee2e2;
+  padding: 0.125rem 0.5rem;
+  border-radius: 4px;
+}
+
+.valor-total-eliminar {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+/* Consecuencias */
+.consecuencias-seccion {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  padding: 1.25rem;
+}
+
+.consecuencias-titulo {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #991b1b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 1rem;
+}
+
+.consecuencias-lista {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.consecuencia-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  font-size: 0.875rem;
+  color: #991b1b;
+  line-height: 1.5;
+}
+
+.consecuencia-icono {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #dc2626;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+/* Confirmación */
+.confirmacion-seccion {
+  margin-top: 0.5rem;
+}
+
+.checkbox-contenedor {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  cursor: pointer;
+}
+
+.checkbox-input {
+  display: none;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  cursor: pointer;
+}
+
+.checkbox-custom {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid #d1d5db;
+  border-radius: 4px;
+  background-color: white;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.checkbox-input:checked + .checkbox-label .checkbox-custom {
+  background-color: #dc2626;
+  border-color: #dc2626;
+}
+
+.checkbox-input:checked + .checkbox-label .checkbox-custom::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0.5rem;
+  height: 0.5rem;
+  background-color: white;
+  border-radius: 1px;
+  transform: translate(-50%, -50%);
+}
+
+.checkbox-input:disabled + .checkbox-label {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.checkbox-texto {
+  font-size: 0.875rem;
+  color: #374151;
+  line-height: 1.5;
+  flex: 1;
+}
+
+.checkbox-input:checked + .checkbox-label .checkbox-texto {
+  color: #111827;
+  font-weight: 500;
+}
+
+/* Footer del modal */
+.modal-footer-eliminar-venta {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 1.5rem 2rem;
+  border-top: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.btn-secundario-eliminar {
+  padding: 0.75rem 1.5rem;
+  background-color: white;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 100px;
+}
+
+.btn-secundario-eliminar:hover:not(:disabled) {
+  background-color: #f9fafb;
+}
+
+.btn-secundario-eliminar:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-peligro {
+  padding: 0.75rem 1.5rem;
+  background-color: #dc2626;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+  min-width: 180px;
+}
+
+.btn-peligro:hover:not(:disabled) {
+  background-color: #b91c1c;
+}
+
+.btn-peligro:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-icon-peligro {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.spinner-pequeno-peligro {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .modal-overlay {
+    padding: 10px;
+  }
+  
+  .modal-container-eliminar-venta {
+    margin: 1rem;
+  }
+  
+  .modal-header-eliminar-venta,
+  .modal-contenido-eliminar-venta,
+  .modal-footer-eliminar-venta {
+    padding: 1.25rem;
+  }
+  
+  .modal-footer-eliminar-venta {
+    flex-direction: column-reverse;
+  }
+  
+  .modal-footer-eliminar-venta button {
+    width: 100%;
+    min-width: unset;
+  }
+  
+  .advertencia-seccion {
+    flex-direction: column;
+  }
+  
+  .detalle-eliminar-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+  
+  .detalle-valor {
+    text-align: left;
+  }
+}

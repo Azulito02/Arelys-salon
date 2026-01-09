@@ -1,7 +1,7 @@
 .encabezado {
-  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+  background: linear-gradient(135deg, #1e293b 0%, #010911 100%);
   color: white;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 20px rgba(233, 227, 227, 0.2);
   position: sticky;
   top: 0;
   z-index: 1000;
@@ -44,12 +44,12 @@
 }
 
 .usuario-rol {
-  color: #94a3b8;
+  color: #eff1f3;
   font-weight: 500;
 }
 
 .usuario-nombre {
-  color: #fbbf24;
+  color: #f8f6f0;
   font-weight: 600;
   text-transform: capitalize;
 }
