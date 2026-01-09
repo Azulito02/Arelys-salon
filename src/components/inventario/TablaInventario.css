@@ -1,0 +1,235 @@
+/* TablaInventario.css */
+.tabla-inventario-container {
+  margin-top: 2rem;
+}
+
+.tabla-inventario-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+}
+
+.tabla-inventario {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tabla-inventario thead {
+  background-color: #f8fafc;
+}
+
+.tabla-inventario th {
+  padding: 1rem 1.5rem;
+  text-align: left;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #4b5563;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.tabla-inventario td {
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.fila-inventario:hover {
+  background-color: #f9fafb;
+}
+
+.columna-producto { width: 25%; }
+.columna-cantidad { width: 10%; }
+.columna-fecha { width: 20%; }
+.columna-precio { width: 15%; }
+.columna-total { width: 15%; }
+.columna-acciones { width: 15%; }
+
+.celda-producto .nombre-producto {
+  font-weight: 500;
+  color: #111827;
+}
+
+.celda-producto .codigo-producto {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+.badge-entrada {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+.celda-cantidad,
+.celda-precio,
+.celda-total {
+  font-size: 0.875rem;
+  color: #374151;
+}
+
+.celda-fecha {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.celda-total strong {
+  color: #059669;
+}
+
+/* Acciones */
+.celda-acciones {
+  padding: 0.75rem 1.5rem;
+}
+
+.acciones-container {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-start;
+}
+
+.accion-btn {
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 6px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  background-color: transparent;
+}
+
+.accion-editar {
+  color: #3b82f6;
+  border: 1px solid #dbeafe;
+  background-color: #eff6ff;
+}
+
+.accion-editar:hover {
+  background-color: #dbeafe;
+  transform: translateY(-1px);
+}
+
+.accion-eliminar {
+  color: #dc2626;
+  border: 1px solid #fee2e2;
+  background-color: #fef2f2;
+}
+
+.accion-eliminar:hover {
+  background-color: #fee2e2;
+  transform: translateY(-1px);
+}
+
+.accion-icono {
+  width: 1.125rem;
+  height: 1.125rem;
+}
+
+.cargando-mensaje {
+  text-align: center;
+  padding: 3rem !important;
+  color: #6b7280;
+}
+
+.cargando-mensaje .spinner {
+  width: 2rem;
+  height: 2rem;
+  border: 3px solid #e5e7eb;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+.sin-registros {
+  text-align: center;
+  padding: 3rem !important;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.resumen-inventario {
+  display: flex;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem;
+  background-color: #f8fafc;
+  border-top: 1px solid #e5e7eb;
+}
+
+.resumen-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.resumen-item span {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.resumen-item strong {
+  font-size: 1.125rem;
+  color: #111827;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+  .tabla-inventario-container {
+    overflow-x: auto;
+  }
+  
+  .tabla-inventario {
+    min-width: 1000px;
+  }
+}
+
+
+
+/* Nueva columna de fecha de edición */
+.columna-fecha-edicion {
+  width: 180px;
+  text-align: left;
+  padding: 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #4b5563;
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.celda-fecha-edicion {
+  padding: 1rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+/* Ajustar colspan del mensaje de carga y sin registros */
+.cargando-mensaje,
+.sin-registros {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: #6b7280;
+}
+
+.cargando-mensaje {
+  colSpan: 7; /* Cambiado de 6 a 7 */
+}
+
+.sin-registros {
+  colSpan: 7; /* Cambiado de 6 a 7 */
+}
