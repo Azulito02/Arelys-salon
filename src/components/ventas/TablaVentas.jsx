@@ -3,18 +3,44 @@ import './TablaVentas.css'
 
 const TablaVentas = ({ ventas, loading, onEditar, onEliminar }) => {
   
+  // Nueva función de formato que RESTA 6 horas (como en TablaInventario)
   const formatFechaNicaragua = (fechaISO) => {
     if (!fechaISO) return 'Fecha no disponible';
     
-    return new Date(fechaISO).toLocaleString('es-MX', {
-      timeZone: 'America/Managua',
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    });
+    const fechaUTC = new Date(fechaISO);
+    // RESTAR 6 horas para convertir UTC a Nicaragua (Juigalpa)
+    const fechaNicaragua = new Date(fechaUTC.getTime() - (6 * 60 * 60 * 1000));
+    
+    const dia = fechaNicaragua.getDate().toString().padStart(2, '0');
+    const mes = (fechaNicaragua.getMonth() + 1).toString().padStart(2, '0');
+    const año = fechaNicaragua.getFullYear();
+    
+    let horas = fechaNicaragua.getHours();
+    const minutos = fechaNicaragua.getMinutes().toString().padStart(2, '0');
+    const ampm = horas >= 12 ? 'p.m.' : 'a.m.';
+    
+    horas = horas % 12;
+    horas = horas ? horas.toString().padStart(2, '0') : '12';
+    
+    return `${dia}/${mes}/${año}, ${horas}:${minutos} ${ampm}`;
+  };
+
+  // Función para debuggear (opcional, para verificar)
+  const debugFecha = (fechaISO, label) => {
+    if (!fechaISO) return 'N/A';
+    
+    const fecha = new Date(fechaISO);
+    console.log(`=== DEBUG VENTAS ${label} ===`);
+    console.log('Fecha ISO:', fechaISO);
+    console.log('Fecha objeto:', fecha);
+    console.log('UTC Hours:', fecha.getUTCHours(), 'UTC Minutes:', fecha.getUTCMinutes());
+    console.log('Local Hours:', fecha.getHours(), 'Local Minutes:', fecha.getMinutes());
+    
+    const fechaUTC = new Date(fechaISO);
+    const fechaNicaragua = new Date(fechaUTC.getTime() - (6 * 60 * 60 * 1000));
+    console.log('Hora Nicaragua (resta 6h):', fechaNicaragua.getHours() + ':' + fechaNicaragua.getMinutes());
+    
+    return formatFechaNicaragua(fechaISO);
   };
 
   // Función para mostrar el método de pago con iconos
@@ -80,80 +106,90 @@ const TablaVentas = ({ ventas, loading, onEditar, onEliminar }) => {
                   </td>
                 </tr>
               ) : (
-                ventas.map((venta) => (
-                  <tr key={venta.id} className="fila-venta">
-                    <td className="celda-producto">
-                      <div className="nombre-producto">
-                        {venta.productos?.nombre || 'Producto no encontrado'}
-                      </div>
-                      {venta.productos?.categoria && (
-                        <div className="categoria-producto">
-                          {venta.productos.categoria}
+                ventas.map((venta) => {
+                  // Debug opcional para verificar las fechas
+                  if (process.env.NODE_ENV === 'development') {
+                    console.log('=== VENTA ===');
+                    console.log('ID:', venta.id);
+                    console.log('Fecha ISO:', venta.fecha);
+                    console.log('Fecha formateada:', formatFechaNicaragua(venta.fecha));
+                  }
+                  
+                  return (
+                    <tr key={venta.id} className="fila-venta">
+                      <td className="celda-producto">
+                        <div className="nombre-producto">
+                          {venta.productos?.nombre || 'Producto no encontrado'}
                         </div>
-                      )}
-                    </td>
-                    <td className="celda-cantidad">
-                      <span className="badge-venta">
-                        {venta.cantidad} unidades
-                      </span>
-                    </td>
-                    <td className="celda-fecha">
-                      {formatFechaNicaragua(venta.fecha)}
-                    </td>
-                    <td className="celda-pago">
-                      <div className="metodo-pago-container">
-                        <div className="metodo-pago-icono">
-                          {getMetodoPagoIcon(venta.metodo_pago)}
-                        </div>
-                        <div className="metodo-pago-detalles">
-                          <div className="metodo-pago-tipo">
-                            {venta.metodo_pago ? venta.metodo_pago.charAt(0).toUpperCase() + venta.metodo_pago.slice(1) : 'No especificado'}
+                        {venta.productos?.categoria && (
+                          <div className="categoria-producto">
+                            {venta.productos.categoria}
                           </div>
-                          <div className="metodo-pago-info">
-                            {getDetallesPago(venta)}
+                        )}
+                      </td>
+                      <td className="celda-cantidad">
+                        <span className="badge-venta">
+                          {venta.cantidad} unidades
+                        </span>
+                      </td>
+                      <td className="celda-fecha">
+                        {formatFechaNicaragua(venta.fecha)}
+                      </td>
+                      <td className="celda-pago">
+                        <div className="metodo-pago-container">
+                          <div className="metodo-pago-icono">
+                            {getMetodoPagoIcon(venta.metodo_pago)}
                           </div>
-                          {venta.banco && venta.metodo_pago !== 'efectivo' && (
-                            <div className="metodo-pago-banco">
-                              Banco: {venta.banco}
+                          <div className="metodo-pago-detalles">
+                            <div className="metodo-pago-tipo">
+                              {venta.metodo_pago ? venta.metodo_pago.charAt(0).toUpperCase() + venta.metodo_pago.slice(1) : 'No especificado'}
                             </div>
-                          )}
+                            <div className="metodo-pago-info">
+                              {getDetallesPago(venta)}
+                            </div>
+                            {venta.banco && venta.metodo_pago !== 'efectivo' && (
+                              <div className="metodo-pago-banco">
+                                Banco: {venta.banco}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="celda-precio">
-                      ${venta.precio_unitario?.toFixed(2) || '0.00'}
-                    </td>
-                    <td className="celda-total">
-                      <strong>
-                        ${venta.total?.toFixed(2) || '0.00'}
-                      </strong>
-                    </td>
-                    <td className="celda-acciones">
-                      <div className="acciones-container">
-                        <button
-                          onClick={() => onEditar(venta)}
-                          className="accion-btn accion-editar"
-                          title="Editar venta"
-                        >
-                          <svg className="accion-icono" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                              d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                          </svg>
-                        </button>
-                        <button
-                          onClick={() => onEliminar(venta)}
-                          className="accion-btn accion-eliminar"
-                          title="Eliminar venta"
-                        >
-                          <svg className="accion-icono" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                      <td className="celda-precio">
+                        ${venta.precio_unitario?.toFixed(2) || '0.00'}
+                      </td>
+                      <td className="celda-total">
+                        <strong>
+                          ${venta.total?.toFixed(2) || '0.00'}
+                        </strong>
+                      </td>
+                      <td className="celda-acciones">
+                        <div className="acciones-container">
+                          <button
+                            onClick={() => onEditar(venta)}
+                            className="accion-btn accion-editar"
+                            title="Editar venta"
+                          >
+                            <svg className="accion-icono" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => onEliminar(venta)}
+                            className="accion-btn accion-eliminar"
+                            title="Eliminar venta"
+                          >
+                            <svg className="accion-icono" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
