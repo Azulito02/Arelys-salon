@@ -1,0 +1,293 @@
+/* src/components/ventas_credito/TablaCreditos.css */
+.tabla-creditos-container {
+  margin-top: 24px;
+}
+
+.tabla-creditos-card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+  border: 1px solid #e5e7eb;
+}
+
+.tabla-creditos {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1000px;
+}
+
+.tabla-creditos thead {
+  background-color: #f8fafc;
+}
+
+.tabla-creditos th {
+  padding: 16px 20px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.tabla-creditos td {
+  padding: 18px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 14px;
+}
+
+.tabla-creditos tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.tabla-creditos tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+/* Columnas específicas */
+.tabla-creditos .columna-cliente {
+  min-width: 180px;
+}
+
+.tabla-creditos .columna-producto {
+  min-width: 200px;
+}
+
+.tabla-creditos .columna-cantidad,
+.tabla-creditos .columna-precio,
+.tabla-creditos .columna-total {
+  min-width: 110px;
+}
+
+.tabla-creditos .columna-fecha,
+.tabla-creditos .columna-fecha-fin {
+  min-width: 160px;
+}
+
+.tabla-creditos .columna-estado {
+  min-width: 120px;
+}
+
+.tabla-creditos .columna-acciones {
+  min-width: 100px;
+  width: 100px;
+}
+
+/* Contenido de celdas */
+.tabla-creditos .nombre-cliente {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 15px;
+}
+
+.tabla-creditos .nombre-producto {
+  font-weight: 500;
+  color: #334155;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.tabla-creditos .codigo-producto {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 4px;
+  font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.tabla-creditos .badge-cantidad {
+  background-color: #e0f2fe;
+  color: #0369a1;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-block;
+  border: 1px solid #bae6fd;
+}
+
+.tabla-creditos .celda-precio,
+.tabla-creditos .celda-total {
+  font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+  color: #1e293b;
+}
+
+.tabla-creditos .celda-total strong {
+  color: #059669;
+  font-size: 15px;
+}
+
+/* Estados */
+.tabla-creditos .badge-estado {
+  padding: 8px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-block;
+  text-align: center;
+  min-width: 80px;
+  letter-spacing: 0.3px;
+}
+
+.tabla-creditos .estado-activo {
+  background-color: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.tabla-creditos .estado-por-vencer {
+  background-color: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.tabla-creditos .estado-vencido {
+  background-color: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+/* Fechas */
+.tabla-creditos .celda-fecha,
+.tabla-creditos .celda-fecha-fin {
+  font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+  font-size: 13px;
+  color: #475569;
+  white-space: nowrap;
+}
+
+/* Acciones */
+.tabla-creditos .acciones-container {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.tabla-creditos .accion-btn {
+  padding: 8px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  width: 36px;
+  height: 36px;
+}
+
+.tabla-creditos .accion-editar {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.tabla-creditos .accion-editar:hover {
+  background-color: #bfdbfe;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(29, 78, 216, 0.1);
+}
+
+.tabla-creditos .accion-eliminar {
+  background-color: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.tabla-creditos .accion-eliminar:hover {
+  background-color: #fecaca;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.1);
+}
+
+.tabla-creditos .accion-icono {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.5;
+}
+
+/* Estados de carga y sin datos */
+.tabla-creditos .cargando-mensaje,
+.tabla-creditos .sin-registros {
+  text-align: center;
+  padding: 60px 20px;
+  color: #64748b;
+}
+
+.tabla-creditos .spinner {
+  border: 3px solid #f1f5f9;
+  border-top: 3px solid #3b82f6;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.tabla-creditos .sin-registros {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .tabla-creditos-container {
+    overflow-x: auto;
+  }
+}
+
+/* Scroll personalizado */
+.tabla-creditos-card::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.tabla-creditos-card::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.tabla-creditos-card::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.tabla-creditos-card::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Resumen */
+.tabla-creditos .resumen-creditos {
+  padding: 20px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+  background-color: #f8fafc;
+}
+
+.tabla-creditos .resumen-item {
+  display: flex;
+  flex-direction: column;
+  min-width: 150px;
+}
+
+.tabla-creditos .resumen-item span {
+  font-size: 14px;
+  color: #64748b;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.tabla-creditos .resumen-item strong {
+  font-size: 18px;
+  color: #1e293b;
+  font-weight: 700;
+}
