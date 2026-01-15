@@ -1,0 +1,289 @@
+/* src/components/abonos/TablaAbonos.css */
+.tabla-abonos-container {
+  margin-top: 24px;
+}
+
+.tabla-abonos-card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+  border: 1px solid #e5e7eb;
+}
+
+.tabla-abonos {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 1000px;
+}
+
+.tabla-abonos thead {
+  background-color: #f8fafc;
+}
+
+.tabla-abonos th {
+  padding: 16px 20px;
+  text-align: left;
+  font-size: 12px;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid #e2e8f0;
+  white-space: nowrap;
+}
+
+.tabla-abonos td {
+  padding: 18px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  font-size: 14px;
+}
+
+.tabla-abonos tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.tabla-abonos tbody tr:hover {
+  background-color: #f8fafc;
+}
+
+/* Columnas específicas */
+.tabla-abonos .columna-cliente {
+  min-width: 180px;
+}
+
+.tabla-abonos .columna-producto {
+  min-width: 200px;
+}
+
+.tabla-abonos .columna-monto {
+  min-width: 120px;
+}
+
+.tabla-abonos .columna-metodo {
+  min-width: 140px;
+}
+
+.tabla-abonos .columna-fecha {
+  min-width: 160px;
+}
+
+.tabla-abonos .columna-acciones {
+  min-width: 100px;
+  width: 100px;
+}
+
+/* Contenido de celdas */
+.tabla-abonos .nombre-cliente {
+  font-weight: 600;
+  color: #1e293b;
+  font-size: 15px;
+}
+
+.tabla-abonos .nombre-producto {
+  font-weight: 500;
+  color: #334155;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.tabla-abonos .codigo-producto {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 4px;
+  font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.tabla-abonos .celda-monto {
+  font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+  color: #059669;
+  font-weight: 600;
+  font-size: 15px;
+}
+
+/* Métodos de pago */
+.tabla-abonos .metodo-pago-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.tabla-abonos .metodo-pago-icono {
+  font-size: 16px;
+  line-height: 1;
+}
+
+.tabla-abonos .metodo-pago-texto {
+  white-space: nowrap;
+}
+
+.tabla-abonos .metodo-efectivo {
+  background-color: #d1fae5;
+  color: #065f46;
+  border-color: #a7f3d0;
+}
+
+.tabla-abonos .metodo-tarjeta {
+  background-color: #dbeafe;
+  color: #1e40af;
+  border-color: #bfdbfe;
+}
+
+.tabla-abonos .metodo-transferencia {
+  background-color: #ede9fe;
+  color: #5b21b6;
+  border-color: #ddd6fe;
+}
+
+.tabla-abonos .metodo-default {
+  background-color: #f1f5f9;
+  color: #475569;
+  border-color: #e2e8f0;
+}
+
+/* Fechas */
+.tabla-abonos .celda-fecha {
+  font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+  font-size: 13px;
+  color: #475569;
+  white-space: nowrap;
+}
+
+/* Acciones */
+.tabla-abonos .acciones-container {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.tabla-abonos .accion-btn {
+  padding: 8px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  width: 36px;
+  height: 36px;
+}
+
+.tabla-abonos .accion-editar {
+  background-color: #dbeafe;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.tabla-abonos .accion-editar:hover {
+  background-color: #bfdbfe;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(29, 78, 216, 0.1);
+}
+
+.tabla-abonos .accion-eliminar {
+  background-color: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.tabla-abonos .accion-eliminar:hover {
+  background-color: #fecaca;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.1);
+}
+
+.tabla-abonos .accion-icono {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.5;
+}
+
+/* Estados de carga y sin datos */
+.tabla-abonos .cargando-mensaje,
+.tabla-abonos .sin-registros {
+  text-align: center;
+  padding: 60px 20px;
+  color: #64748b;
+}
+
+.tabla-abonos .spinner {
+  border: 3px solid #f1f5f9;
+  border-top: 3px solid #10b981;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 20px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.tabla-abonos .sin-registros {
+  font-size: 15px;
+  font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .tabla-abonos-container {
+    overflow-x: auto;
+  }
+}
+
+/* Scroll personalizado */
+.tabla-abonos-card::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.tabla-abonos-card::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.tabla-abonos-card::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.tabla-abonos-card::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Resumen */
+.tabla-abonos .resumen-abonos {
+  padding: 20px;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 32px;
+  background-color: #f8fafc;
+}
+
+.tabla-abonos .resumen-item {
+  display: flex;
+  flex-direction: column;
+  min-width: 150px;
+}
+
+.tabla-abonos .resumen-item span {
+  font-size: 14px;
+  color: #64748b;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.tabla-abonos .resumen-item strong {
+  font-size: 18px;
+  color: #1e293b;
+  font-weight: 700;
+}

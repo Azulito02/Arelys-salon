@@ -1,17 +1,21 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../database/supabase'
+import TablaAbonos from '../components/abonos/TablaAbonos'
+import ModalAgregarAbono from '../components/abonos/ModalAgregarAbono'
+import ModalEditarAbono from '../components/abonos/ModalEditarAbono'
+import ModalEliminarAbono from '../components/abonos/ModalEliminarAbono'
+import '../components/abonos/Abonos.css'
 
 const Abonos = () => {
   const [abonos, setAbonos] = useState([])
   const [creditos, setCreditos] = useState([])
   const [loading, setLoading] = useState(true)
-  const [modalAbierto, setModalAbierto] = useState(false)
   
-  const [nuevoAbono, setNuevoAbono] = useState({
-    venta_credito_id: '',
-    monto: 0,
-    metodo_pago: 'efectivo'
-  })
+  // Estados para modales
+  const [showAgregarModal, setShowAgregarModal] = useState(false)
+  const [showEditarModal, setShowEditarModal] = useState(false)
+  const [showEliminarModal, setShowEliminarModal] = useState(false)
+  const [abonoSeleccionado, setAbonoSeleccionado] = useState(null)
 
   useEffect(() => {
     cargarDatos()
@@ -24,20 +28,20 @@ const Abonos = () => {
       // Cargar créditos activos
       const { data: creditosData, error: errorCreditos } = await supabase
         .from('ventas_credito')
-        .select('*, productos(nombre)')
+        .select('*, productos(*)')
         .order('fecha', { ascending: false })
       
       if (errorCreditos) throw errorCreditos
       setCreditos(creditosData || [])
       
-      // Cargar abonos
+      // Cargar abonos con información de créditos
       const { data: abonosData, error: errorAbonos } = await supabase
         .from('abonos_credito')
         .select(`
           *,
-          ventas_credito!inner (
+          ventas_credito (
             nombre_cliente,
-            productos (nombre)
+            productos (*)
           )
         `)
         .order('fecha', { ascending: false })
@@ -53,218 +57,195 @@ const Abonos = () => {
     }
   }
 
-  const abrirModal = () => {
-    setNuevoAbono({
-      venta_credito_id: '',
-      monto: 0,
-      metodo_pago: 'efectivo'
-    })
-    setModalAbierto(true)
+  // Funciones para abrir modales
+  const handleAgregarAbono = () => {
+    setShowAgregarModal(true)
   }
 
-  const cerrarModal = () => {
-    setModalAbierto(false)
+  const handleEditarAbono = (abono) => {
+    setAbonoSeleccionado(abono)
+    setShowEditarModal(true)
   }
 
-  const registrarAbono = async () => {
-    if (!nuevoAbono.venta_credito_id || nuevoAbono.monto <= 0) {
-      alert('Selecciona un crédito y monto válido')
-      return
+  const handleEliminarAbono = (abono) => {
+    setAbonoSeleccionado(abono)
+    setShowEliminarModal(true)
+  }
+
+  // Funciones para cerrar modales
+  const handleCerrarAgregarModal = () => {
+    setShowAgregarModal(false)
+  }
+
+  const handleCerrarEditarModal = () => {
+    setAbonoSeleccionado(null)
+    setShowEditarModal(false)
+  }
+
+  const handleCerrarEliminarModal = () => {
+    setAbonoSeleccionado(null)
+    setShowEliminarModal(false)
+  }
+
+  // Callbacks para actualizar datos después de operaciones
+  const handleAbonoAgregado = () => {
+    cargarDatos()
+    setShowAgregarModal(false)
+  }
+
+  const handleAbonoEditado = () => {
+    cargarDatos()
+    setShowEditarModal(false)
+  }
+
+  const handleAbonoEliminado = () => {
+    cargarDatos()
+    setShowEliminarModal(false)
+  }
+
+  // Calcular resumen
+  const calcularResumen = () => {
+    const totalAbonos = abonos.length
+    const totalMonto = abonos.reduce((sum, abono) => sum + parseFloat(abono.monto), 0)
+    
+    // Agrupar por método de pago
+    const porMetodo = {
+      efectivo: abonos.filter(a => a.metodo_pago === 'efectivo').reduce((sum, a) => sum + parseFloat(a.monto), 0),
+      tarjeta: abonos.filter(a => a.metodo_pago === 'tarjeta').reduce((sum, a) => sum + parseFloat(a.monto), 0),
+      transferencia: abonos.filter(a => a.metodo_pago === 'transferencia').reduce((sum, a) => sum + parseFloat(a.monto), 0)
     }
 
-    try {
-      const abonoData = {
-        venta_credito_id: nuevoAbono.venta_credito_id,
-        monto: parseFloat(nuevoAbono.monto),
-        metodo_pago: nuevoAbono.metodo_pago
-      }
-
-      const { error } = await supabase
-        .from('abonos_credito')
-        .insert([abonoData])
-      
-      if (error) throw error
-      
-      alert('Abono registrado correctamente')
-      cerrarModal()
-      cargarDatos()
-    } catch (error) {
-      console.error('Error registrando abono:', error)
-      alert('Error al registrar abono')
+    return {
+      totalAbonos,
+      totalMonto,
+      porMetodo
     }
   }
 
+  const resumen = calcularResumen()
+
+  // Función para obtener color según método de pago
   const getMetodoPagoColor = (metodo) => {
     switch (metodo) {
-      case 'efectivo': return 'bg-green-100 text-green-800'
-      case 'tarjeta': return 'bg-blue-100 text-blue-800'
-      case 'transferencia': return 'bg-purple-100 text-purple-800'
-      default: return 'bg-gray-100 text-gray-800'
+      case 'efectivo': return 'metodo-efectivo'
+      case 'tarjeta': return 'metodo-tarjeta'
+      case 'transferencia': return 'metodo-transferencia'
+      default: return 'metodo-default'
+    }
+  }
+
+  // Función para obtener icono según método de pago
+  const getMetodoPagoIcon = (metodo) => {
+    switch (metodo) {
+      case 'efectivo': return '💰'
+      case 'tarjeta': return '💳'
+      case 'transferencia': return '🏦'
+      default: return '❓'
     }
   }
 
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
+    <div className="abonos-container">
+      {/* Encabezado */}
+      <div className="abonos-header">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Abonos a Créditos</h1>
-          <p className="text-gray-600">Registro de abonos a ventas a crédito</p>
+          <h1 className="abonos-titulo">Abonos a Créditos</h1>
+          <p className="abonos-subtitulo">Registro de abonos a ventas a crédito</p>
         </div>
         <button
-          onClick={abrirModal}
-          className="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg flex items-center"
+          onClick={handleAgregarAbono}
+          className="btn-agregar-abono"
         >
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
           Nuevo Abono
         </button>
       </div>
 
-      {/* Tabla de abonos */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Cliente
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Producto
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Monto
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Método de Pago
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Fecha
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {loading ? (
-                <tr>
-                  <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
-                    Cargando abonos...
-                  </td>
-                </tr>
-              ) : abonos.length === 0 ? (
-                <tr>
-                  <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
-                    No hay abonos registrados
-                  </td>
-                </tr>
-              ) : (
-                abonos.map((abono) => (
-                  <tr key={abono.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-900">
-                        {abono.ventas_credito?.nombre_cliente || 'Cliente no encontrado'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-500">
-                        {abono.ventas_credito?.productos?.nombre || 'Producto no encontrado'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                      ${parseFloat(abono.monto).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getMetodoPagoColor(abono.metodo_pago)}`}>
-                        {abono.metodo_pago.charAt(0).toUpperCase() + abono.metodo_pago.slice(1)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(abono.fecha).toLocaleString('es-MX')}
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+      {/* Tarjetas de resumen */}
+      <div className="resumen-abonos-grid">
+        <div className="resumen-card abono-card">
+          <div className="resumen-card-content">
+            <span className="resumen-card-label">Total Abonos</span>
+            <strong className="resumen-card-value">{resumen.totalAbonos}</strong>
+          </div>
+          <div className="resumen-card-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        </div>
+        
+        <div className="resumen-card monto-card">
+          <div className="resumen-card-content">
+            <span className="resumen-card-label">Monto Total</span>
+            <strong className="resumen-card-value">
+              ${resumen.totalMonto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+            </strong>
+          </div>
+          <div className="resumen-card-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        </div>
+        
+        <div className="resumen-card efectivo-card">
+          <div className="resumen-card-content">
+            <span className="resumen-card-label">En Efectivo</span>
+            <strong className="resumen-card-value">
+              ${resumen.porMetodo.efectivo.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+            </strong>
+          </div>
+          <div className="resumen-card-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2z" />
+            </svg>
+          </div>
         </div>
       </div>
 
-      {/* Modal para nuevo abono */}
-      {modalAbierto && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">
-                Nuevo Abono
-              </h3>
-            </div>
-            
-            <div className="px-6 py-4 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Crédito *
-                </label>
-                <select
-                  value={nuevoAbono.venta_credito_id}
-                  onChange={(e) => setNuevoAbono({...nuevoAbono, venta_credito_id: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">Selecciona un crédito</option>
-                  {creditos.map((credito) => (
-                    <option key={credito.id} value={credito.id}>
-                      {credito.nombre_cliente} - {credito.productos?.nombre} (${credito.total})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Monto *
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  value={nuevoAbono.monto}
-                  onChange={(e) => setNuevoAbono({...nuevoAbono, monto: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="0.00"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Método de Pago *
-                </label>
-                <select
-                  value={nuevoAbono.metodo_pago}
-                  onChange={(e) => setNuevoAbono({...nuevoAbono, metodo_pago: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="efectivo">Efectivo</option>
-                  <option value="tarjeta">Tarjeta</option>
-                  <option value="transferencia">Transferencia</option>
-                </select>
-              </div>
-            </div>
-            
-            <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
-              <button
-                onClick={cerrarModal}
-                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={registrarAbono}
-                className="px-4 py-2 bg-green-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-green-700"
-              >
-                Registrar Abono
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Tabla de abonos */}
+      <TablaAbonos
+        abonos={abonos}
+        loading={loading}
+        onEditar={handleEditarAbono}
+        onEliminar={handleEliminarAbono}
+        getMetodoPagoColor={getMetodoPagoColor}
+        getMetodoPagoIcon={getMetodoPagoIcon}
+      />
+
+      {/* Modales */}
+      {showAgregarModal && (
+        <ModalAgregarAbono
+          isOpen={showAgregarModal}
+          onClose={handleCerrarAgregarModal}
+          onAbonoAgregado={handleAbonoAgregado}
+          creditos={creditos}
+        />
+      )}
+
+      {showEditarModal && abonoSeleccionado && (
+        <ModalEditarAbono
+          isOpen={showEditarModal}
+          onClose={handleCerrarEditarModal}
+          onAbonoEditado={handleAbonoEditado}
+          abono={abonoSeleccionado}
+          creditos={creditos}
+        />
+      )}
+
+      {showEliminarModal && abonoSeleccionado && (
+        <ModalEliminarAbono
+          isOpen={showEliminarModal}
+          onClose={handleCerrarEliminarModal}
+          onAbonoEliminado={handleAbonoEliminado}
+          abono={abonoSeleccionado}
+        />
       )}
     </div>
   )

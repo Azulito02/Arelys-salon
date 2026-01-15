@@ -8,6 +8,8 @@ const ModalEditarVenta = ({
   venta,
   productos
 }) => {
+  // TODOS LOS HOOKS DEBEN ESTAR AQUÍ, ANTES DE CUALQUIER RETURN
+  
   const [formData, setFormData] = useState({
     producto_id: '',
     cantidad: 1,
@@ -40,45 +42,151 @@ const ModalEditarVenta = ({
   const [efectivo, setEfectivo] = useState(0)
   const [tarjeta, setTarjeta] = useState(0)
   const [transferencia, setTransferencia] = useState(0)
+  
+  // Estado para banco específico en método mixto
+  const [bancoTarjeta, setBancoTarjeta] = useState('')
+  const [bancoTransferencia, setBancoTransferencia] = useState('')
+
+  // Debug: Verificar datos recibidos
+  console.log('ModalEditarVenta - isOpen:', isOpen)
+  console.log('ModalEditarVenta - venta:', venta)
+  console.log('ModalEditarVenta - productos:', productos)
 
   // Cargar datos de la venta al abrir el modal
   useEffect(() => {
-    if (venta) {
+    console.log('useEffect ejecutado - venta:', venta)
+    if (venta && isOpen) {
+      console.log('Cargando datos de venta:', {
+        producto_id: venta.producto_id,
+        cantidad: venta.cantidad,
+        precio_unitario: venta.precio_unitario,
+        metodo_pago: venta.metodo_pago,
+        efectivo: venta.efectivo,
+        tarjeta: venta.tarjeta,
+        transferencia: venta.transferencia,
+        banco: venta.banco
+      })
+      
       setFormData({
         producto_id: venta.producto_id || '',
         cantidad: venta.cantidad || 1,
         precio_unitario: venta.precio_unitario || 0
       })
       setMetodoPago(venta.metodo_pago || 'efectivo')
-      setBanco(venta.banco || '')
+      
+      // Cargar montos separados
       setEfectivo(venta.efectivo || 0)
       setTarjeta(venta.tarjeta || 0)
       setTransferencia(venta.transferencia || 0)
+      
+      // Cargar banco según el método de pago
+      if (venta.banco) {
+        try {
+          // Si es mixto, el banco se guarda como JSON
+          if (venta.metodo_pago === 'mixto') {
+            const bancosMixto = JSON.parse(venta.banco)
+            setBancoTarjeta(bancosMixto.tarjeta || '')
+            setBancoTransferencia(bancosMixto.transferencia || '')
+            console.log('Bancos mixto cargados:', { bancoTarjeta, bancoTransferencia })
+          } else {
+            setBanco(venta.banco || '')
+            console.log('Banco simple cargado:', venta.banco)
+          }
+        } catch (err) {
+          console.log('Error parsing banco data:', err)
+          // Si no es JSON, es un string simple
+          setBanco(venta.banco || '')
+        }
+      }
       setError('')
     }
-  }, [venta])
+  }, [venta, isOpen])
 
-  // Calcular total cuando cambian los montos
+  // Calcular totales
+  const total = formData.cantidad * formData.precio_unitario
+  const totalPagos = efectivo + tarjeta + transferencia
+  const montoAnterior = parseFloat(venta?.total || 0)
+
+  // Manejar cambios en método de pago
   useEffect(() => {
-    const totalCalculado = formData.cantidad * formData.precio_unitario
-    
     if (metodoPago === 'efectivo') {
-      setEfectivo(totalCalculado)
+      // Si cambia a efectivo, mover todo el monto a efectivo
+      setEfectivo(totalPagos)
       setTarjeta(0)
       setTransferencia(0)
+      setBanco('')
     } else if (metodoPago === 'tarjeta') {
+      // Si cambia a tarjeta, mover todo el monto a tarjeta
       setEfectivo(0)
-      setTarjeta(totalCalculado)
+      setTarjeta(totalPagos)
       setTransferencia(0)
+      setBanco('')
     } else if (metodoPago === 'transferencia') {
+      // Si cambia a transferencia, mover todo el monto a transferencia
       setEfectivo(0)
       setTarjeta(0)
-      setTransferencia(totalCalculado)
+      setTransferencia(totalPagos)
+      setBanco('')
     }
-  }, [metodoPago, formData.cantidad, formData.precio_unitario])
+  }, [metodoPago, totalPagos])
 
-  if (!isOpen || !venta) return null
+  // AHORA SÍ LOS RETURNS CONDICIONALES
+  if (!isOpen) {
+    console.log('No está abierto, retornando null')
+    return null
+  }
+  
+  if (!venta) {
+    console.log('No hay venta, mostrando modal de error')
+    return (
+      <div className="modal-overlay">
+        <div className="modal-container-nueva-venta">
+          <div className="modal-header-nueva-venta">
+            <div className="modal-titulo-contenedor">
+              <svg className="modal-icono-nuevo" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              <h3 className="modal-titulo-nueva-venta">
+                Editar Venta
+              </h3>
+            </div>
+            <button
+              onClick={onClose}
+              className="modal-cerrar-btn"
+              disabled={loading}
+            >
+              ×
+            </button>
+          </div>
+          
+          <div className="modal-contenido-nueva-venta">
+            <div className="error-mensaje">
+              <svg className="error-icono" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+              <div>
+                <strong>Error al cargar la venta</strong>
+                <p>No se pudo cargar la información de la venta. Por favor, cierra este modal y vuelve a intentar.</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="modal-footer-nueva-venta">
+            <button
+              type="button"
+              onClick={onClose}
+              className="btn-secundario"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
+  // Resto del componente...
   const handleSubmit = async (e) => {
     e.preventDefault()
     
@@ -97,38 +205,71 @@ const ModalEditarVenta = ({
       return
     }
 
-    // Validar método de pago
-    const totalCalculado = formData.cantidad * formData.precio_unitario
-    const totalPagos = efectivo + tarjeta + transferencia
+    // Validar que haya al menos un monto positivo
+    if (totalPagos <= 0) {
+      setError('El monto de la venta debe ser mayor a 0')
+      return
+    }
 
-    if (Math.abs(totalPagos - totalCalculado) > 0.01) {
-      setError(`El total de pagos ($${totalPagos.toFixed(2)}) no coincide con el total de la venta ($${totalCalculado.toFixed(2)})`)
+    // Validar que los montos coincidan con el total
+    if (Math.abs(totalPagos - total) > 0.01) {
+      setError(`El total de pagos ($${totalPagos.toFixed(2)}) no coincide con el total de la venta ($${total.toFixed(2)})`)
       return
     }
 
     // Validar banco para tarjeta/transferencia
-    if ((metodoPago === 'tarjeta' || metodoPago === 'transferencia') && !banco) {
-      setError('Selecciona un banco para este método de pago')
+    if (metodoPago === 'tarjeta' && !banco) {
+      setError('Selecciona un banco para pago con tarjeta')
       return
+    }
+
+    if (metodoPago === 'transferencia' && !banco) {
+      setError('Selecciona un banco para pago con transferencia')
+      return
+    }
+
+    // Validar bancos para método mixto
+    if (metodoPago === 'mixto') {
+      if (tarjeta > 0 && !bancoTarjeta) {
+        setError('Selecciona un banco para el pago con tarjeta en método mixto')
+        return
+      }
+      if (transferencia > 0 && !bancoTransferencia) {
+        setError('Selecciona un banco para el pago con transferencia en método mixto')
+        return
+      }
     }
 
     setLoading(true)
     try {
-      // Calcular total
-      const total = formData.cantidad * formData.precio_unitario
-      
+      // Preparar datos para actualizar
       const datosActualizados = {
         producto_id: formData.producto_id,
         cantidad: parseInt(formData.cantidad),
         precio_unitario: parseFloat(formData.precio_unitario),
         total: total,
         metodo_pago: metodoPago,
-        banco: (metodoPago === 'tarjeta' || metodoPago === 'transferencia') ? banco : null,
         efectivo: parseFloat(efectivo),
         tarjeta: parseFloat(tarjeta),
         transferencia: parseFloat(transferencia)
       }
+
+      // Agregar banco según el método de pago
+      if (metodoPago === 'tarjeta' || metodoPago === 'transferencia') {
+        datosActualizados.banco = banco
+      } else if (metodoPago === 'mixto') {
+        // Para mixto, guardamos ambos bancos en un campo JSON
+        const bancosMixto = {
+          tarjeta: bancoTarjeta || null,
+          transferencia: bancoTransferencia || null
+        }
+        datosActualizados.banco = JSON.stringify(bancosMixto)
+      } else {
+        // Para efectivo, limpiar banco
+        datosActualizados.banco = null
+      }
       
+      console.log('Actualizando venta con datos:', datosActualizados)
       await onSave(datosActualizados)
     } catch (error) {
       setError('Error al actualizar la venta: ' + error.message)
@@ -138,13 +279,54 @@ const ModalEditarVenta = ({
     }
   }
 
+  // Manejar cambio en método de pago simple
+  const handleMetodoSimpleChange = (metodo, value) => {
+    const valor = parseFloat(value) || 0
+    
+    if (metodo === 'efectivo') {
+      setEfectivo(valor)
+      setTarjeta(0)
+      setTransferencia(0)
+    } else if (metodo === 'tarjeta') {
+      setEfectivo(0)
+      setTarjeta(valor)
+      setTransferencia(0)
+    } else if (metodo === 'transferencia') {
+      setEfectivo(0)
+      setTarjeta(0)
+      setTransferencia(valor)
+    }
+  }
+
   const productoSeleccionado = productos.find(p => p.id === formData.producto_id)
   const productoOriginal = venta.productos || {}
 
-  // Calcular total
-  const total = formData.cantidad * formData.precio_unitario
-  const totalPagos = efectivo + tarjeta + transferencia
-  const diferencia = total - totalPagos
+  // Obtener información del banco para mostrar en el resumen
+  const getBancoInfo = () => {
+    if (venta.banco && venta.metodo_pago === 'mixto') {
+      try {
+        const bancosMixto = JSON.parse(venta.banco)
+        const info = []
+        if (bancosMixto.tarjeta) info.push(`Tarjeta: ${bancosMixto.tarjeta}`)
+        if (bancosMixto.transferencia) info.push(`Transferencia: ${bancosMixto.transferencia}`)
+        return info.length > 0 ? info.join(', ') : 'No especificado'
+      } catch {
+        return venta.banco
+      }
+    }
+    return venta.banco || 'No especificado'
+  }
+
+  console.log('Renderizando modal con datos:', {
+    formData,
+    metodoPago,
+    banco,
+    efectivo,
+    tarjeta,
+    transferencia,
+    total,
+    totalPagos
+  })
 
   return (
     <div className="modal-overlay">
@@ -170,6 +352,16 @@ const ModalEditarVenta = ({
         
         <form onSubmit={handleSubmit}>
           <div className="modal-contenido-nueva-venta">
+            {/* Mostrar error */}
+            {error && (
+              <div className="error-mensaje">
+                <svg className="error-icono" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                </svg>
+                {error}
+              </div>
+            )}
+            
             {/* Información de la venta original */}
             <div className="venta-original-info">
               <h4 className="venta-original-titulo">VENTA ORIGINAL:</h4>
@@ -183,7 +375,7 @@ const ModalEditarVenta = ({
                 <div className="resumen-item">
                   <span className="resumen-label">Cantidad:</span>
                   <span className="resumen-valor">
-                    <strong>{venta.cantidad} unidades</strong>
+                    <strong>{venta.cantidad || 0} unidades</strong>
                   </span>
                 </div>
                 <div className="resumen-item">
@@ -195,7 +387,7 @@ const ModalEditarVenta = ({
                 <div className="resumen-item">
                   <span className="resumen-label">Total:</span>
                   <span className="resumen-valor-total">
-                    ${venta.total?.toFixed(2) || '0.00'}
+                    ${montoAnterior.toFixed(2)}
                   </span>
                 </div>
                 <div className="resumen-item">
@@ -207,7 +399,25 @@ const ModalEditarVenta = ({
                 {venta.banco && (
                   <div className="resumen-item">
                     <span className="resumen-label">Banco:</span>
-                    <span className="resumen-valor">{venta.banco}</span>
+                    <span className="resumen-valor">{getBancoInfo()}</span>
+                  </div>
+                )}
+                {venta.efectivo > 0 && (
+                  <div className="resumen-item">
+                    <span className="resumen-label">Efectivo:</span>
+                    <span className="resumen-valor">${parseFloat(venta.efectivo || 0).toFixed(2)}</span>
+                  </div>
+                )}
+                {venta.tarjeta > 0 && (
+                  <div className="resumen-item">
+                    <span className="resumen-label">Tarjeta:</span>
+                    <span className="resumen-valor">${parseFloat(venta.tarjeta || 0).toFixed(2)}</span>
+                  </div>
+                )}
+                {venta.transferencia > 0 && (
+                  <div className="resumen-item">
+                    <span className="resumen-label">Transferencia:</span>
+                    <span className="resumen-valor">${parseFloat(venta.transferencia || 0).toFixed(2)}</span>
                   </div>
                 )}
                 <div className="resumen-item">
@@ -351,7 +561,31 @@ const ModalEditarVenta = ({
               </div>
             </div>
 
-            {/* Banco (solo para tarjeta/transferencia) */}
+            {/* Para métodos simples (efectivo, tarjeta, transferencia) */}
+            {metodoPago !== 'mixto' && (
+              <div className="form-grupo">
+                <label className="form-label">
+                  Monto a Pagar *
+                </label>
+                <div className="input-group-precio">
+                  <span className="precio-simbolo">$</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    value={metodoPago === 'efectivo' ? efectivo : 
+                           metodoPago === 'tarjeta' ? tarjeta : 
+                           transferencia}
+                    onChange={(e) => handleMetodoSimpleChange(metodoPago, e.target.value)}
+                    className="form-input-precio"
+                    placeholder="0.00"
+                    disabled={loading}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Banco para tarjeta o transferencia simple */}
             {(metodoPago === 'tarjeta' || metodoPago === 'transferencia') && (
               <div className="form-grupo">
                 <label className="form-label">
@@ -365,7 +599,7 @@ const ModalEditarVenta = ({
                   }}
                   className="form-select"
                   disabled={loading}
-                  required
+                  required={metodoPago === 'tarjeta' || metodoPago === 'transferencia'}
                 >
                   <option value="">Selecciona un banco</option>
                   {bancosDisponibles.map((bancoItem) => (
@@ -377,13 +611,17 @@ const ModalEditarVenta = ({
               </div>
             )}
 
-            {/* Montos para método mixto */}
+            {/* Montos y bancos para método mixto */}
             {metodoPago === 'mixto' && (
               <div className="montos-mixtos-container">
                 <h4 className="montos-mixtos-titulo">Distribución del Pago:</h4>
                 <div className="montos-mixtos-grid">
+                  {/* Efectivo */}
                   <div className="form-grupo">
-                    <label className="form-label">Efectivo:</label>
+                    <label className="form-label">
+                      <span className="monto-mixto-label-icono">💰</span>
+                      Efectivo:
+                    </label>
                     <div className="input-group-precio">
                       <span className="precio-simbolo">$</span>
                       <input
@@ -401,8 +639,13 @@ const ModalEditarVenta = ({
                       />
                     </div>
                   </div>
+                  
+                  {/* Tarjeta con banco */}
                   <div className="form-grupo">
-                    <label className="form-label">Tarjeta:</label>
+                    <label className="form-label">
+                      <span className="monto-mixto-label-icono">💳</span>
+                      Tarjeta:
+                    </label>
                     <div className="input-group-precio">
                       <span className="precio-simbolo">$</span>
                       <input
@@ -419,9 +662,33 @@ const ModalEditarVenta = ({
                         disabled={loading}
                       />
                     </div>
+                    {tarjeta > 0 && (
+                      <select
+                        value={bancoTarjeta}
+                        onChange={(e) => {
+                          setBancoTarjeta(e.target.value)
+                          setError('')
+                        }}
+                        className="form-select-banco"
+                        disabled={loading}
+                        style={{ marginTop: '0.5rem' }}
+                      >
+                        <option value="">Banco para tarjeta</option>
+                        {bancosDisponibles.map((bancoItem) => (
+                          <option key={`tarjeta-${bancoItem}`} value={bancoItem}>
+                            {bancoItem}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   </div>
+                  
+                  {/* Transferencia con banco */}
                   <div className="form-grupo">
-                    <label className="form-label">Transferencia:</label>
+                    <label className="form-label">
+                      <span className="monto-mixto-label-icono">🏦</span>
+                      Transferencia:
+                    </label>
                     <div className="input-group-precio">
                       <span className="precio-simbolo">$</span>
                       <input
@@ -438,20 +705,40 @@ const ModalEditarVenta = ({
                         disabled={loading}
                       />
                     </div>
+                    {transferencia > 0 && (
+                      <select
+                        value={bancoTransferencia}
+                        onChange={(e) => {
+                          setBancoTransferencia(e.target.value)
+                          setError('')
+                        }}
+                        className="form-select-banco"
+                        disabled={loading}
+                        style={{ marginTop: '0.5rem' }}
+                      >
+                        <option value="">Banco para transferencia</option>
+                        {bancosDisponibles.map((bancoItem) => (
+                          <option key={`transferencia-${bancoItem}`} value={bancoItem}>
+                            {bancoItem}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   </div>
                 </div>
+                
                 <div className="resumen-mixto">
-                  <div className="resumen-item">
-                    <span>Total pagos:</span>
-                    <span>${totalPagos.toFixed(2)}</span>
+                  <div className="resumen-mixto-item">
+                    <span className="resumen-mixto-label">Total venta:</span>
+                    <span className="resumen-mixto-valor">${total.toFixed(2)}</span>
                   </div>
-                  <div className="resumen-item">
-                    <span>Total venta:</span>
-                    <span>${total.toFixed(2)}</span>
+                  <div className="resumen-mixto-item">
+                    <span className="resumen-mixto-label">Total pagos:</span>
+                    <span className="resumen-mixto-valor">${totalPagos.toFixed(2)}</span>
                   </div>
-                  <div className={`resumen-item ${diferencia === 0 ? 'resumen-correcto' : 'resumen-error'}`}>
-                    <span>Diferencia:</span>
-                    <span>${diferencia.toFixed(2)}</span>
+                  <div className={`resumen-mixto-item ${Math.abs(total - totalPagos) < 0.01 ? 'resumen-correcto' : 'resumen-error'}`}>
+                    <span className="resumen-mixto-label">Diferencia:</span>
+                    <span className="resumen-mixto-valor">${(total - totalPagos).toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -485,16 +772,61 @@ const ModalEditarVenta = ({
                       {metodosPago.find(m => m.value === metodoPago)?.label}
                     </span>
                   </div>
-                  {banco && (
+                  
+                  {/* Mostrar banco según método */}
+                  {metodoPago === 'tarjeta' && banco && (
                     <div className="resumen-item">
-                      <span className="resumen-label">Banco:</span>
+                      <span className="resumen-label">Banco (tarjeta):</span>
                       <span className="resumen-valor">{banco}</span>
                     </div>
                   )}
+                  
+                  {metodoPago === 'transferencia' && banco && (
+                    <div className="resumen-item">
+                      <span className="resumen-label">Banco (transferencia):</span>
+                      <span className="resumen-valor">{banco}</span>
+                    </div>
+                  )}
+                  
+                  {/* Mostrar distribución para mixto */}
+                  {metodoPago === 'mixto' ? (
+                    <>
+                      <div className="resumen-item">
+                        <span className="resumen-label">Efectivo:</span>
+                        <span className="resumen-valor">${efectivo.toFixed(2)}</span>
+                      </div>
+                      {tarjeta > 0 && (
+                        <div className="resumen-item">
+                          <span className="resumen-label">Tarjeta:</span>
+                          <span className="resumen-valor">
+                            ${tarjeta.toFixed(2)} {bancoTarjeta && `(${bancoTarjeta})`}
+                          </span>
+                        </div>
+                      )}
+                      {transferencia > 0 && (
+                        <div className="resumen-item">
+                          <span className="resumen-label">Transferencia:</span>
+                          <span className="resumen-valor">
+                            ${transferencia.toFixed(2)} {bancoTransferencia && `(${bancoTransferencia})`}
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="resumen-item">
+                      <span className="resumen-label">Monto:</span>
+                      <span className="resumen-valor">
+                        ${totalPagos.toFixed(2)}
+                        {metodoPago === 'tarjeta' && banco && ` (${banco})`}
+                        {metodoPago === 'transferencia' && banco && ` (${banco})`}
+                      </span>
+                    </div>
+                  )}
+                  
                   <div className="resumen-item diferencia-item">
                     <span className="resumen-label">Diferencia con original:</span>
-                    <span className={`diferencia-valor ${total > venta.total ? 'diferencia-positiva' : 'diferencia-negativa'}`}>
-                      ${(total - venta.total).toFixed(2)}
+                    <span className={`diferencia-valor ${total > montoAnterior ? 'diferencia-positiva' : 'diferencia-negativa'}`}>
+                      ${(total - montoAnterior).toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -504,16 +836,6 @@ const ModalEditarVenta = ({
                 </div>
               )}
             </div>
-
-            {/* Mostrar error */}
-            {error && (
-              <div className="error-mensaje">
-                <svg className="error-icono" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                </svg>
-                {error}
-              </div>
-            )}
           </div>
           
           <div className="modal-footer-nueva-venta">
@@ -528,7 +850,7 @@ const ModalEditarVenta = ({
             <button
               type="submit"
               className="btn-primario-venta"
-              disabled={loading || !formData.producto_id}
+              disabled={loading || !formData.producto_id || totalPagos <= 0 || Math.abs(total - totalPagos) > 0.01}
             >
               {loading ? (
                 <>

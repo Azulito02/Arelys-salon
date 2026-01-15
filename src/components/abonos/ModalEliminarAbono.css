@@ -1,0 +1,399 @@
+/* src/components/abonos/ModalEliminarAbono.css */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal-container-eliminar-abono {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  width: 100%;
+  max-width: 500px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  animation: modal-appear 0.3s ease-out;
+  overflow: hidden;
+  border-top: 4px solid #ef4444;
+}
+
+@keyframes modal-appear {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.modal-header-eliminar-abono {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.modal-titulo-contenedor {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.modal-icono-eliminar {
+  width: 1.5rem;
+  height: 1.5rem;
+  color: #ef4444;
+}
+
+.modal-titulo-eliminar-abono {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+}
+
+.modal-cerrar-btn {
+  background: none;
+  border: none;
+  font-size: 1.75rem;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0.25rem;
+  line-height: 1;
+  transition: color 0.2s;
+}
+
+.modal-cerrar-btn:hover:not(:disabled) {
+  color: #374151;
+}
+
+.modal-cerrar-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.modal-contenido-eliminar-abono {
+  padding: 2rem;
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  max-height: calc(85vh - 140px);
+}
+
+/* Advertencia */
+.advertencia-eliminar {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.5rem;
+  background-color: #fef3c7;
+  border: 1px solid #fbbf24;
+  border-radius: 10px;
+  margin-bottom: 0.5rem;
+}
+
+.icon-advertencia {
+  width: 2.5rem;
+  height: 2.5rem;
+  color: #d97706;
+  flex-shrink: 0;
+  margin-top: 0.25rem;
+}
+
+.advertencia-contenido {
+  flex: 1;
+}
+
+.advertencia-titulo {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #92400e;
+  margin: 0 0 0.5rem 0;
+}
+
+.advertencia-descripcion {
+  font-size: 0.875rem;
+  color: #92400e;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* Información del abono */
+.info-abono-eliminar {
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 1.5rem;
+}
+
+.info-item-eliminar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.info-item-eliminar:last-child {
+  border-bottom: none;
+}
+
+.info-label-eliminar {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+  min-width: 120px;
+}
+
+.info-valor-eliminar {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #111827;
+  text-align: right;
+  max-width: 60%;
+  word-break: break-word;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.metodo-pago-icono-eliminar {
+  font-size: 16px;
+}
+
+/* Consecuencias */
+.consecuencias-eliminar {
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  padding: 1.5rem;
+}
+
+.consecuencia-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.5rem 0;
+  font-size: 0.875rem;
+  color: #991b1b;
+}
+
+.consecuencia-item:not(:last-child) {
+  border-bottom: 1px solid #fecaca;
+}
+
+.consecuencia-icono {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #dc2626;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+/* Mensaje de error */
+.error-mensaje {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+  animation: slideIn 0.3s ease-out;
+  flex-shrink: 0;
+}
+
+.error-icono {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+}
+
+/* Footer */
+.modal-footer-eliminar-abono {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 1.5rem 2rem;
+  border-top: 1px solid #e5e7eb;
+  background: white;
+  flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+}
+
+.btn-secundario {
+  padding: 0.75rem 1.5rem;
+  background-color: white;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 100px;
+}
+
+.btn-secundario:hover:not(:disabled) {
+  background-color: #f9fafb;
+}
+
+.btn-secundario:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-peligro-abono {
+  padding: 0.75rem 1.5rem;
+  background-color: #ef4444;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+  min-width: 180px;
+}
+
+.btn-peligro-abono:hover:not(:disabled) {
+  background-color: #dc2626;
+}
+
+.btn-peligro-abono:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #fca5a5;
+}
+
+.btn-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.spinner-pequeno {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 0.5rem;
+}
+
+/* Animaciones */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Scrollbar personalizado */
+.modal-contenido-eliminar-abono::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-contenido-eliminar-abono::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.modal-contenido-eliminar-abono::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.modal-contenido-eliminar-abono::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .modal-container-eliminar-abono {
+    margin: 0.5rem;
+    max-height: 90vh;
+  }
+  
+  .modal-header-eliminar-abono,
+  .modal-contenido-eliminar-abono,
+  .modal-footer-eliminar-abono {
+    padding: 1.25rem;
+  }
+  
+  .modal-contenido-eliminar-abono {
+    max-height: calc(90vh - 130px);
+  }
+  
+  .modal-footer-eliminar-abono {
+    flex-direction: column-reverse;
+    gap: 0.75rem;
+  }
+  
+  .modal-footer-eliminar-abono button {
+    width: 100%;
+    min-width: unset;
+  }
+  
+  .advertencia-eliminar {
+    padding: 1.25rem;
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .icon-advertencia {
+    margin: 0 auto;
+  }
+  
+  .info-abono-eliminar {
+    padding: 1rem;
+  }
+  
+  .info-label-eliminar {
+    min-width: 100px;
+  }
+  
+  .info-valor-eliminar {
+    max-width: 50%;
+  }
+}
+
+@media (max-height: 700px) {
+  .modal-container-eliminar-abono {
+    max-height: 95vh;
+  }
+  
+  .modal-contenido-eliminar-abono {
+    max-height: calc(95vh - 140px);
+  }
+}
