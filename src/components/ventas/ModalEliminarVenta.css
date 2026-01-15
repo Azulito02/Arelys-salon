@@ -1,56 +1,45 @@
-/* components/ventas/ModalEliminarVenta.css */
+/* components/ventas/ModalEliminarVenta.css - CORRECCIONES FINALES */
 
-/* Overlay del modal */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 20px;
-  animation: fadeIn 0.3s ease-out;
+  padding: 1rem;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-/* Contenedor principal del modal */
 .modal-container-eliminar-venta {
   background: white;
   border-radius: 16px;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
   width: 100%;
   max-width: 500px;
-  max-height: 90vh;
+  max-height: 90vh; /* Aumentado de 85vh a 90vh */
   display: flex;
   flex-direction: column;
   animation: modal-appear 0.3s ease-out;
+  overflow: hidden;
   border-top: 4px solid #dc2626;
 }
 
 @keyframes modal-appear {
   from {
     opacity: 0;
-    transform: translateY(-20px) scale(0.95);
+    transform: scale(0.95) translateY(-10px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: scale(1) translateY(0);
   }
 }
 
-/* Header del modal */
 .modal-header-eliminar-venta {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   padding: 1.5rem 2rem;
   border-bottom: 1px solid #e5e7eb;
   flex-shrink: 0;
@@ -63,10 +52,9 @@
 }
 
 .icono-alerta {
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 50%;
-  background-color: #fee2e2;
+  width: 1.5rem;
+  height: 1.5rem;
+  color: #dc2626;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -105,7 +93,14 @@
   cursor: not-allowed;
 }
 
-/* Contenido del modal */
+/* FORMULARIO CON SCROLL */
+.modal-form-eliminar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
 .modal-contenido-eliminar-venta {
   padding: 2rem;
   flex: 1;
@@ -113,7 +108,7 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  min-height: 0;
+  max-height: calc(90vh - 140px); /* Ajustado por el nuevo max-height */
 }
 
 /* Sección de advertencia */
@@ -124,6 +119,7 @@
   background-color: #fef3c7;
   border: 1px solid #fde68a;
   border-radius: 8px;
+  flex-shrink: 0;
 }
 
 .advertencia-icono {
@@ -156,16 +152,17 @@
 .venta-eliminar-info {
   background-color: #f8fafc;
   border: 1px solid #e5e7eb;
-  border-radius: 10px;
+  border-radius: 8px;
   padding: 1.25rem;
+  flex-shrink: 0;
+  max-height: 220px; /* Reducido para mejor ajuste */
+  overflow-y: auto;
 }
 
 .venta-eliminar-titulo {
-  font-size: 0.875rem;
+  font-size: 1rem;
   font-weight: 600;
   color: #4b5563;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
   margin-bottom: 1rem;
 }
 
@@ -180,7 +177,7 @@
   justify-content: space-between;
   align-items: center;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px dashed #e5e7eb;
 }
 
 .detalle-eliminar-item:last-child {
@@ -191,6 +188,7 @@
 .detalle-etiqueta {
   font-size: 0.875rem;
   color: #6b7280;
+  min-width: 120px;
 }
 
 .detalle-valor {
@@ -198,6 +196,8 @@
   font-weight: 500;
   color: #111827;
   text-align: right;
+  word-break: break-word;
+  max-width: 60%;
 }
 
 .cantidad-eliminar {
@@ -210,6 +210,7 @@
 .valor-total-eliminar {
   color: #dc2626;
   font-weight: 600;
+  font-size: 1.125rem;
 }
 
 /* Consecuencias */
@@ -217,16 +218,17 @@
   background-color: #fef2f2;
   border: 1px solid #fecaca;
   border-radius: 10px;
-  padding: 1.25rem;
+  padding: 1rem; /* Reducido padding */
+  flex-shrink: 0;
 }
 
 .consecuencias-titulo {
-  font-size: 0.875rem;
+  font-size: 0.875rem; /* Reducido tamaño */
   font-weight: 600;
   color: #991b1b;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem; /* Reducido margin */
 }
 
 .consecuencias-lista {
@@ -235,21 +237,21 @@
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.5rem; /* Reducido gap */
 }
 
 .consecuencia-item {
   display: flex;
   align-items: flex-start;
-  gap: 0.75rem;
-  font-size: 0.875rem;
+  gap: 0.5rem; /* Reducido gap */
+  font-size: 0.75rem; /* Reducido tamaño */
   color: #991b1b;
-  line-height: 1.5;
+  line-height: 1.4;
 }
 
 .consecuencia-icono {
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 1rem; /* Reducido tamaño */
+  height: 1rem;
   color: #dc2626;
   flex-shrink: 0;
   margin-top: 0.125rem;
@@ -258,6 +260,7 @@
 /* Confirmación */
 .confirmacion-seccion {
   margin-top: 0.5rem;
+  flex-shrink: 0;
 }
 
 .checkbox-contenedor {
@@ -324,14 +327,18 @@
   font-weight: 500;
 }
 
-/* Footer del modal */
+/* Footer FIJO en la parte inferior */
 .modal-footer-eliminar-venta {
   display: flex;
   justify-content: flex-end;
   gap: 1rem;
-  padding: 1.5rem 2rem;
+  padding: 1.25rem 2rem; /* Reducido padding vertical */
   border-top: 1px solid #e5e7eb;
+  background: white;
   flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
 }
 
 .btn-secundario-eliminar {
@@ -380,6 +387,7 @@
 .btn-peligro:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  background-color: #fca5a5;
 }
 
 .btn-icon-peligro {
@@ -394,20 +402,33 @@
   border-top-color: white;
   border-radius: 50%;
   animation: spin 1s linear infinite;
+  margin-right: 0.5rem;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+/* Scrollbar personalizado */
+.modal-contenido-eliminar-venta::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-contenido-eliminar-venta::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.modal-contenido-eliminar-venta::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.modal-contenido-eliminar-venta::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
 }
 
 /* Responsive */
 @media (max-width: 640px) {
-  .modal-overlay {
-    padding: 10px;
-  }
-  
   .modal-container-eliminar-venta {
-    margin: 1rem;
+    margin: 0.5rem;
+    max-height: 95vh; /* Más alto en móvil */
   }
   
   .modal-header-eliminar-venta,
@@ -416,8 +437,15 @@
     padding: 1.25rem;
   }
   
+  .modal-contenido-eliminar-venta {
+    max-height: calc(95vh - 130px); /* Ajustado */
+    gap: 1rem; /* Menos gap en móvil */
+  }
+  
   .modal-footer-eliminar-venta {
     flex-direction: column-reverse;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem; /* Menos padding */
   }
   
   .modal-footer-eliminar-venta button {
@@ -427,15 +455,59 @@
   
   .advertencia-seccion {
     flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem;
   }
   
   .detalle-eliminar-item {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.25rem;
+    padding-bottom: 0.5rem;
   }
   
   .detalle-valor {
     text-align: left;
+    max-width: 100%;
+  }
+  
+  .detalle-etiqueta {
+    min-width: 100px;
+  }
+  
+  .venta-eliminar-info {
+    max-height: 200px;
+    padding: 1rem;
+  }
+  
+  .consecuencias-seccion {
+    padding: 0.75rem;
+  }
+  
+  .consecuencia-item {
+    font-size: 0.7rem;
+  }
+}
+
+@media (max-height: 700px) {
+  .modal-container-eliminar-venta {
+    max-height: 95vh;
+  }
+  
+  .modal-contenido-eliminar-venta {
+    max-height: calc(95vh - 120px); /* Más ajustado */
+    gap: 1rem;
+  }
+  
+  .venta-eliminar-info {
+    max-height: 150px;
+  }
+  
+  .consecuencias-seccion {
+    padding: 0.75rem;
+  }
+  
+  .modal-footer-eliminar-venta {
+    padding: 1rem 2rem;
   }
 }

@@ -1,4 +1,3 @@
-// components/ventas/TablaVentas.jsx
 import React from 'react'
 import './TablaVentas.css'
 
@@ -18,6 +17,38 @@ const TablaVentas = ({ ventas, loading, onEditar, onEliminar }) => {
     });
   };
 
+  // Función para mostrar el método de pago con iconos
+  const getMetodoPagoIcon = (metodo) => {
+    switch(metodo) {
+      case 'efectivo': return '💰';
+      case 'tarjeta': return '💳';
+      case 'transferencia': return '🏦';
+      case 'mixto': return '🔄';
+      default: return '❓';
+    }
+  };
+
+  // Función para mostrar detalles del método de pago
+  const getDetallesPago = (venta) => {
+    if (venta.metodo_pago === 'efectivo') {
+      return `Efectivo: $${venta.efectivo?.toFixed(2) || '0.00'}`;
+    }
+    if (venta.metodo_pago === 'tarjeta') {
+      return `Tarjeta: $${venta.tarjeta?.toFixed(2) || '0.00'} (${venta.banco || 'Sin banco'})`;
+    }
+    if (venta.metodo_pago === 'transferencia') {
+      return `Transferencia: $${venta.transferencia?.toFixed(2) || '0.00'} (${venta.banco || 'Sin banco'})`;
+    }
+    if (venta.metodo_pago === 'mixto') {
+      const partes = [];
+      if (venta.efectivo > 0) partes.push(`Efectivo: $${venta.efectivo?.toFixed(2)}`);
+      if (venta.tarjeta > 0) partes.push(`Tarjeta: $${venta.tarjeta?.toFixed(2)}`);
+      if (venta.transferencia > 0) partes.push(`Transferencia: $${venta.transferencia?.toFixed(2)}`);
+      return partes.join(' | ');
+    }
+    return 'Sin método de pago';
+  };
+
   return (
     <div className="tabla-ventas-container">
       <div className="tabla-ventas-card">
@@ -27,8 +58,9 @@ const TablaVentas = ({ ventas, loading, onEditar, onEliminar }) => {
               <tr>
                 <th className="columna-producto">Producto</th>
                 <th className="columna-cantidad">Cantidad</th>
-                <th className="columna-fecha">Fecha de Venta</th>
-                <th className="columna-precio">Precio Unitario</th>
+                <th className="columna-fecha">Fecha</th>
+                <th className="columna-pago">Método de Pago</th>
+                <th className="columna-precio">Precio</th>
                 <th className="columna-total">Total</th>
                 <th className="columna-acciones">Acciones</th>
               </tr>
@@ -36,14 +68,14 @@ const TablaVentas = ({ ventas, loading, onEditar, onEliminar }) => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="6" className="cargando-mensaje">
+                  <td colSpan="7" className="cargando-mensaje">
                     <div className="spinner"></div>
                     Cargando ventas...
                   </td>
                 </tr>
               ) : ventas.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="sin-registros">
+                  <td colSpan="7" className="sin-registros">
                     No hay registros de ventas
                   </td>
                 </tr>
@@ -54,9 +86,9 @@ const TablaVentas = ({ ventas, loading, onEditar, onEliminar }) => {
                       <div className="nombre-producto">
                         {venta.productos?.nombre || 'Producto no encontrado'}
                       </div>
-                      {venta.productos?.codigo && (
-                        <div className="codigo-producto">
-                          Código: {venta.productos.codigo}
+                      {venta.productos?.categoria && (
+                        <div className="categoria-producto">
+                          {venta.productos.categoria}
                         </div>
                       )}
                     </td>
@@ -67,6 +99,26 @@ const TablaVentas = ({ ventas, loading, onEditar, onEliminar }) => {
                     </td>
                     <td className="celda-fecha">
                       {formatFechaNicaragua(venta.fecha)}
+                    </td>
+                    <td className="celda-pago">
+                      <div className="metodo-pago-container">
+                        <div className="metodo-pago-icono">
+                          {getMetodoPagoIcon(venta.metodo_pago)}
+                        </div>
+                        <div className="metodo-pago-detalles">
+                          <div className="metodo-pago-tipo">
+                            {venta.metodo_pago ? venta.metodo_pago.charAt(0).toUpperCase() + venta.metodo_pago.slice(1) : 'No especificado'}
+                          </div>
+                          <div className="metodo-pago-info">
+                            {getDetallesPago(venta)}
+                          </div>
+                          {venta.banco && venta.metodo_pago !== 'efectivo' && (
+                            <div className="metodo-pago-banco">
+                              Banco: {venta.banco}
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </td>
                     <td className="celda-precio">
                       ${venta.precio_unitario?.toFixed(2) || '0.00'}
@@ -118,6 +170,24 @@ const TablaVentas = ({ ventas, loading, onEditar, onEliminar }) => {
               <span>Unidades vendidas:</span>
               <strong>
                 {ventas.reduce((sum, venta) => sum + venta.cantidad, 0)} unidades
+              </strong>
+            </div>
+            <div className="resumen-item">
+              <span>Ventas en efectivo:</span>
+              <strong>
+                ${ventas
+                  .filter(v => v.metodo_pago === 'efectivo' || v.metodo_pago === 'mixto')
+                  .reduce((sum, venta) => sum + (venta.efectivo || 0), 0)
+                  .toFixed(2)}
+              </strong>
+            </div>
+            <div className="resumen-item">
+              <span>Ventas con tarjeta:</span>
+              <strong>
+                ${ventas
+                  .filter(v => v.metodo_pago === 'tarjeta' || v.metodo_pago === 'mixto')
+                  .reduce((sum, venta) => sum + (venta.tarjeta || 0), 0)
+                  .toFixed(2)}
               </strong>
             </div>
           </div>

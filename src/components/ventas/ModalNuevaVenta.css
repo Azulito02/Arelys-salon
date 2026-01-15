@@ -1,27 +1,16 @@
 /* components/ventas/ModalNuevaVenta.css */
 
-/* Overlay del modal */
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 20px;
-  animation: fadeIn 0.3s ease-out;
+  padding: 1rem;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-/* Contenedor principal del modal */
 .modal-container-nueva-venta {
   background: white;
   border-radius: 16px;
@@ -39,19 +28,18 @@
 @keyframes modal-appear {
   from {
     opacity: 0;
-    transform: translateY(-20px) scale(0.95);
+    transform: scale(0.95) translateY(-10px);
   }
   to {
     opacity: 1;
-    transform: translateY(0) scale(1);
+    transform: scale(1) translateY(0);
   }
 }
 
-/* Header del modal */
 .modal-header-nueva-venta {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   padding: 1.5rem 2rem;
   border-bottom: 1px solid #e5e7eb;
   flex-shrink: 0;
@@ -85,7 +73,6 @@
   padding: 0.25rem;
   line-height: 1;
   transition: color 0.2s;
-  margin-top: -0.5rem;
 }
 
 .modal-cerrar-btn:hover:not(:disabled) {
@@ -97,7 +84,14 @@
   cursor: not-allowed;
 }
 
-/* Contenido del modal */
+/* FORMULARIO CON SCROLL - MISMA ESTRUCTURA QUE INVENTARIO */
+.modal-form-venta {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
 .modal-contenido-nueva-venta {
   padding: 2rem;
   flex: 1;
@@ -105,7 +99,7 @@
   display: flex;
   flex-direction: column;
   gap: 1.5rem;
-  min-height: 0;
+  max-height: calc(85vh - 140px);
 }
 
 /* Estilos del formulario */
@@ -129,6 +123,12 @@
   color: #111827;
   background-color: white;
   transition: all 0.2s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right 0.5rem center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
   width: 100%;
 }
 
@@ -163,11 +163,11 @@
   color: #374151;
   cursor: pointer;
   transition: all 0.2s;
+  flex-shrink: 0;
 }
 
 .cantidad-btn:hover:not(:disabled) {
   background-color: #e5e7eb;
-  border-color: #9ca3af;
 }
 
 .cantidad-btn:disabled {
@@ -236,17 +236,20 @@
 
 /* Información del producto seleccionado */
 .producto-info-actualizado {
-  background-color: #ecfdf5;
-  border: 1px solid #a7f3d0;
-  border-radius: 10px;
+  background-color: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
   padding: 1.25rem;
   margin-top: 0.5rem;
+  flex-shrink: 0;
+  max-height: 200px;
+  overflow-y: auto;
 }
 
 .producto-info-titulo {
   font-size: 1rem;
   font-weight: 600;
-  color: #065f46;
+  color: #374151;
   margin-bottom: 1rem;
 }
 
@@ -261,7 +264,7 @@
   justify-content: space-between;
   align-items: center;
   padding-bottom: 0.5rem;
-  border-bottom: 1px dashed #a7f3d0;
+  border-bottom: 1px dashed #e5e7eb;
 }
 
 .detalle-item-actualizado:last-child {
@@ -277,12 +280,16 @@
 
 .detalle-item-actualizado span {
   font-size: 0.875rem;
-  color: #4b5563;
+  color: #6b7280;
+  min-width: 100px;
 }
 
 .detalle-item-actualizado strong {
   font-size: 0.875rem;
   color: #111827;
+  text-align: right;
+  word-break: break-word;
+  max-width: 60%;
 }
 
 .detalle-item-actualizado.total-actualizado strong {
@@ -290,135 +297,226 @@
 }
 
 .valor-total-actualizado {
-  color: #065f46 !important;
+  color: #059669 !important;
 }
 
-/* Mensaje de error */
-.error-mensaje {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem;
-  background-color: #fee2e2;
-  border: 1px solid #fecaca;
-  border-radius: 8px;
-  color: #dc2626;
-  font-size: 0.875rem;
+/* ========== MÉTODOS DE PAGO ========== */
+
+/* Grid de métodos de pago */
+.metodos-pago-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
   margin-top: 0.5rem;
 }
 
-.error-icono {
-  width: 1.25rem;
-  height: 1.25rem;
-  flex-shrink: 0;
+@media (max-width: 480px) {
+  .metodos-pago-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
-/* Footer del modal */
-.modal-footer-nueva-venta {
+/* Botones de método de pago */
+.metodo-pago-btn {
   display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-  padding: 1.5rem 2rem;
-  border-top: 1px solid #e5e7eb;
-  flex-shrink: 0;
-}
-
-.btn-secundario {
-  padding: 0.75rem 1.5rem;
-  background-color: white;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: #374151;
-  cursor: pointer;
-  transition: all 0.2s;
-  min-width: 100px;
-}
-
-.btn-secundario:hover:not(:disabled) {
-  background-color: #f9fafb;
-}
-
-.btn-secundario:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-primario-venta {
-  padding: 0.75rem 1.5rem;
-  background-color: #10b981;
-  border: none;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: white;
-  cursor: pointer;
-  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  transition: all 0.2s;
-  min-width: 180px;
+  padding: 1rem 0.5rem;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  background-color: white;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: 80px;
+  width: 100%;
 }
 
-.btn-primario-venta:hover:not(:disabled) {
-  background-color: #059669;
+.metodo-pago-btn:hover:not(:disabled) {
+  border-color: #9ca3af;
+  background-color: #f9fafb;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
-.btn-primario-venta:disabled {
+.metodo-pago-btn.metodo-pago-seleccionado {
+  border-color: #10b981;
+  background-color: #d1fae5;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.metodo-pago-btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.btn-icon {
-  width: 1.25rem;
-  height: 1.25rem;
+/* Icono de método de pago */
+.metodo-pago-icono {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+  line-height: 1;
 }
 
-.spinner-pequeno {
-  width: 1.25rem;
-  height: 1.25rem;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: white;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
+/* Label de método de pago */
+.metodo-pago-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #111827;
+  text-align: center;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+/* Banco selector */
+.form-select-banco {
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 1rem;
+  color: #111827;
+  background-color: white;
+  transition: all 0.2s;
+  width: 100%;
+  margin-top: 0.5rem;
 }
 
-/* Responsive */
+.form-select-banco:focus {
+  outline: none;
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.form-select-banco:disabled {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+}
+
+/* Montos mixtos */
+.montos-mixtos-container {
+  background-color: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 1.25rem;
+  margin-top: 1rem;
+  flex-shrink: 0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.montos-mixtos-titulo {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.montos-mixtos-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
 @media (max-width: 640px) {
-  .modal-overlay {
-    padding: 10px;
-  }
-  
-  .modal-container-nueva-venta {
-    margin: 0;
-    max-height: 90vh;
-  }
-  
-  .modal-header-nueva-venta,
-  .modal-contenido-nueva-venta,
-  .modal-footer-nueva-venta {
-    padding: 1.25rem;
-  }
-  
-  .modal-footer-nueva-venta {
-    flex-direction: column-reverse;
+  .montos-mixtos-grid {
+    grid-template-columns: 1fr;
     gap: 0.75rem;
   }
-  
-  .modal-footer-nueva-venta button {
-    width: 100%;
-    min-width: unset;
-  }
-  
-  .input-group-cantidad {
-    width: 100%;
-  }
+}
+
+/* Inputs de montos mixtos */
+.monto-mixto-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.monto-mixto-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.monto-mixto-label-icono {
+  font-size: 1.25rem;
+}
+
+/* Input group para montos */
+.input-group-monto {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.monto-simbolo {
+  position: absolute;
+  left: 0.75rem;
+  font-size: 1rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+.form-input-monto {
+  width: 100%;
+  padding: 0.75rem 0.75rem 0.75rem 2rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 1rem;
+  color: #111827;
+  transition: all 0.2s;
+}
+
+.form-input-monto:focus {
+  outline: none;
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.form-input-monto:disabled {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+}
+
+/* Resumen mixto */
+.resumen-mixto {
+  background-color: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 1rem;
+  flex-shrink: 0;
+}
+
+.resumen-mixto-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  font-size: 0.875rem;
+}
+
+.resumen-mixto-item:not(:last-child) {
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.resumen-mixto-label {
+  color: #6b7280;
+}
+
+.resumen-mixto-valor {
+  font-weight: 500;
+  color: #111827;
+}
+
+.resumen-correcto {
+  color: #059669;
+  font-weight: 600;
+}
+
+.resumen-error {
+  color: #dc2626;
+  font-weight: 600;
 }
 
 /* Separador */
@@ -435,6 +533,7 @@
   border-radius: 0.5rem;
   padding: 1.25rem;
   margin-top: 1rem;
+  flex-shrink: 0;
 }
 
 .resumen-venta-titulo {
@@ -495,28 +594,200 @@
   font-style: italic;
 }
 
-/* Botón deshabilitado cuando no hay producto */
-.btn-primario-venta:disabled {
+/* Mensaje de error */
+.error-mensaje {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  background-color: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+  animation: slideIn 0.3s ease-out;
+  flex-shrink: 0;
+}
+
+.error-icono {
+  width: 1.25rem;
+  height: 1.25rem;
+  flex-shrink: 0;
+}
+
+/* Footer FIJO en la parte inferior */
+.modal-footer-nueva-venta {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  padding: 1.5rem 2rem;
+  border-top: 1px solid #e5e7eb;
+  background: white;
+  flex-shrink: 0;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+}
+
+.btn-secundario {
+  padding: 0.75rem 1.5rem;
+  background-color: white;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-width: 100px;
+}
+
+.btn-secundario:hover:not(:disabled) {
+  background-color: #f9fafb;
+}
+
+.btn-secundario:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-/* Mejoras visuales para coincidir con la imagen */
-.form-label {
-  font-weight: 600;
-  margin-bottom: 0.375rem;
-  display: block;
+.btn-primario-venta {
+  padding: 0.75rem 1.5rem;
+  background-color: #10b981;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+  min-width: 180px;
 }
 
-.form-label::after {
-  content: " **";
-  color: #ef4444;
+.btn-primario-venta:hover:not(:disabled) {
+  background-color: #059669;
 }
 
-/* Ajustes para el modal */
-.modal-container-nueva-venta {
-  max-width: 500px;
-  width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
+.btn-primario-venta:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #6ee7b7;
+}
+
+.btn-icon {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.spinner-pequeno {
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-right: 0.5rem;
+}
+
+/* Iconos específicos para métodos de pago */
+.metodo-efectivo .metodo-pago-icono { color: #059669; }
+.metodo-tarjeta .metodo-pago-icono { color: #3b82f6; }
+.metodo-transferencia .metodo-pago-icono { color: #8b5cf6; }
+.metodo-mixto .metodo-pago-icono { color: #f59e0b; }
+
+/* Separador para sección de pago */
+.separador-pago {
+  margin: 1.5rem 0;
+  border: none;
+  border-top: 2px dashed #e5e7eb;
+}
+
+/* Animaciones */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Scrollbar personalizado */
+.modal-contenido-nueva-venta::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-contenido-nueva-venta::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.modal-contenido-nueva-venta::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.modal-contenido-nueva-venta::-webkit-scrollbar-thumb:hover {
+  background: #a1a1a1;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .modal-container-nueva-venta {
+    margin: 0.5rem;
+    max-height: 90vh;
+  }
+  
+  .modal-header-nueva-venta,
+  .modal-contenido-nueva-venta,
+  .modal-footer-nueva-venta {
+    padding: 1.25rem;
+  }
+  
+  .modal-contenido-nueva-venta {
+    max-height: calc(90vh - 130px);
+  }
+  
+  .modal-footer-nueva-venta {
+    flex-direction: column-reverse;
+    gap: 0.75rem;
+  }
+  
+  .modal-footer-nueva-venta button {
+    width: 100%;
+    min-width: unset;
+  }
+  
+  .producto-info-actualizado {
+    max-height: 180px;
+  }
+  
+  .detalle-item-actualizado span {
+    min-width: 80px;
+  }
+}
+
+@media (max-height: 700px) {
+  .modal-container-nueva-venta {
+    max-height: 95vh;
+  }
+  
+  .modal-contenido-nueva-venta {
+    max-height: calc(95vh - 140px);
+  }
+  
+  .producto-info-actualizado {
+    max-height: 150px;
+  }
 }

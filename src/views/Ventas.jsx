@@ -158,7 +158,7 @@ const Ventas = () => {
       cargarDatos()
     } catch (error) {
       console.error('Error actualizando venta:', error)
-      alert('❌ Error al actualizar venta')
+      alert(`❌ Error: ${error.message}`)
       throw error
     }
   }
@@ -178,7 +178,7 @@ const Ventas = () => {
       cargarDatos()
     } catch (error) {
       console.error('Error eliminando venta:', error)
-      alert('❌ Error al eliminar venta')
+      alert(`❌ Error: ${error.message}`)
       throw error
     }
   }
@@ -186,6 +186,12 @@ const Ventas = () => {
   // Calcular estadísticas
   const totalVentas = ventas.reduce((sum, venta) => sum + venta.total, 0)
   const totalUnidades = ventas.reduce((sum, venta) => sum + venta.cantidad, 0)
+  const ventasEfectivo = ventas.filter(v => v.metodo_pago === 'efectivo' || v.metodo_pago === 'mixto')
+    .reduce((sum, venta) => sum + (venta.efectivo || 0), 0)
+  const ventasTarjeta = ventas.filter(v => v.metodo_pago === 'tarjeta' || v.metodo_pago === 'mixto')
+    .reduce((sum, venta) => sum + (venta.tarjeta || 0), 0)
+  const ventasTransferencia = ventas.filter(v => v.metodo_pago === 'transferencia' || v.metodo_pago === 'mixto')
+    .reduce((sum, venta) => sum + (venta.transferencia || 0), 0)
 
   return (
     <div className="ventas-container">
@@ -250,6 +256,24 @@ const Ventas = () => {
               <div className="stat-item">
                 <span className="stat-label">Transacciones:</span>
                 <span className="stat-value">{ventas.length} registros</span>
+              </div>
+            </div>
+            
+            <div className="separador"></div>
+            
+            <h4 className="resumen-subtitulo">Distribución por Método de Pago:</h4>
+            <div className="resumen-stats-metodos">
+              <div className="stat-metodo-item">
+                <span className="stat-metodo-label">💰 Efectivo:</span>
+                <span className="stat-metodo-valor">${ventasEfectivo.toFixed(2)}</span>
+              </div>
+              <div className="stat-metodo-item">
+                <span className="stat-metodo-label">💳 Tarjeta:</span>
+                <span className="stat-metodo-valor">${ventasTarjeta.toFixed(2)}</span>
+              </div>
+              <div className="stat-metodo-item">
+                <span className="stat-metodo-label">🏦 Transferencia:</span>
+                <span className="stat-metodo-valor">${ventasTransferencia.toFixed(2)}</span>
               </div>
             </div>
           </div>

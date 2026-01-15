@@ -16,6 +16,31 @@ const ModalEditarVenta = ({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  // Métodos de pago y bancos
+  const metodosPago = [
+    { value: 'efectivo', label: 'Efectivo', icon: '💰' },
+    { value: 'tarjeta', label: 'Tarjeta', icon: '💳' },
+    { value: 'transferencia', label: 'Transferencia', icon: '🏦' },
+    { value: 'mixto', label: 'Mixto', icon: '🔄' }
+  ]
+
+   const bancosDisponibles = [
+    'Lafise',
+    'BAC',
+    'BAMPRO',
+    'Avanz',
+    'BDF',
+    'Fichosa',
+    'Otro'
+  ]
+
+  // Estado para métodos de pago
+  const [metodoPago, setMetodoPago] = useState('efectivo')
+  const [banco, setBanco] = useState('')
+  const [efectivo, setEfectivo] = useState(0)
+  const [tarjeta, setTarjeta] = useState(0)
+  const [transferencia, setTransferencia] = useState(0)
+
   // Cargar datos de la venta al abrir el modal
   useEffect(() => {
     if (venta) {
@@ -24,9 +49,33 @@ const ModalEditarVenta = ({
         cantidad: venta.cantidad || 1,
         precio_unitario: venta.precio_unitario || 0
       })
+      setMetodoPago(venta.metodo_pago || 'efectivo')
+      setBanco(venta.banco || '')
+      setEfectivo(venta.efectivo || 0)
+      setTarjeta(venta.tarjeta || 0)
+      setTransferencia(venta.transferencia || 0)
       setError('')
     }
   }, [venta])
+
+  // Calcular total cuando cambian los montos
+  useEffect(() => {
+    const totalCalculado = formData.cantidad * formData.precio_unitario
+    
+    if (metodoPago === 'efectivo') {
+      setEfectivo(totalCalculado)
+      setTarjeta(0)
+      setTransferencia(0)
+    } else if (metodoPago === 'tarjeta') {
+      setEfectivo(0)
+      setTarjeta(totalCalculado)
+      setTransferencia(0)
+    } else if (metodoPago === 'transferencia') {
+      setEfectivo(0)
+      setTarjeta(0)
+      setTransferencia(totalCalculado)
+    }
+  }, [metodoPago, formData.cantidad, formData.precio_unitario])
 
   if (!isOpen || !venta) return null
 
@@ -48,6 +97,21 @@ const ModalEditarVenta = ({
       return
     }
 
+    // Validar método de pago
+    const totalCalculado = formData.cantidad * formData.precio_unitario
+    const totalPagos = efectivo + tarjeta + transferencia
+
+    if (Math.abs(totalPagos - totalCalculado) > 0.01) {
+      setError(`El total de pagos ($${totalPagos.toFixed(2)}) no coincide con el total de la venta ($${totalCalculado.toFixed(2)})`)
+      return
+    }
+
+    // Validar banco para tarjeta/transferencia
+    if ((metodoPago === 'tarjeta' || metodoPago === 'transferencia') && !banco) {
+      setError('Selecciona un banco para este método de pago')
+      return
+    }
+
     setLoading(true)
     try {
       // Calcular total
@@ -57,7 +121,12 @@ const ModalEditarVenta = ({
         producto_id: formData.producto_id,
         cantidad: parseInt(formData.cantidad),
         precio_unitario: parseFloat(formData.precio_unitario),
-        total: total
+        total: total,
+        metodo_pago: metodoPago,
+        banco: (metodoPago === 'tarjeta' || metodoPago === 'transferencia') ? banco : null,
+        efectivo: parseFloat(efectivo),
+        tarjeta: parseFloat(tarjeta),
+        transferencia: parseFloat(transferencia)
       }
       
       await onSave(datosActualizados)
@@ -74,6 +143,8 @@ const ModalEditarVenta = ({
 
   // Calcular total
   const total = formData.cantidad * formData.precio_unitario
+  const totalPagos = efectivo + tarjeta + transferencia
+  const diferencia = total - totalPagos
 
   return (
     <div className="modal-overlay">
@@ -101,7 +172,7 @@ const ModalEditarVenta = ({
           <div className="modal-contenido-nueva-venta">
             {/* Información de la venta original */}
             <div className="venta-original-info">
-              <h4 className="resumen-venta-titulo">VENTA ORIGINAL:</h4>
+              <h4 className="venta-original-titulo">VENTA ORIGINAL:</h4>
               <div className="venta-original-detalles">
                 <div className="resumen-item">
                   <span className="resumen-label">Producto:</span>
@@ -121,12 +192,24 @@ const ModalEditarVenta = ({
                     <strong>${venta.precio_unitario?.toFixed(2) || '0.00'}</strong>
                   </span>
                 </div>
-                <div className="resumen-item resumen-total">
+                <div className="resumen-item">
                   <span className="resumen-label">Total:</span>
                   <span className="resumen-valor-total">
                     ${venta.total?.toFixed(2) || '0.00'}
                   </span>
                 </div>
+                <div className="resumen-item">
+                  <span className="resumen-label">Método de pago:</span>
+                  <span className="resumen-valor">
+                    {venta.metodo_pago ? venta.metodo_pago.charAt(0).toUpperCase() + venta.metodo_pago.slice(1) : 'No especificado'}
+                  </span>
+                </div>
+                {venta.banco && (
+                  <div className="resumen-item">
+                    <span className="resumen-label">Banco:</span>
+                    <span className="resumen-valor">{venta.banco}</span>
+                  </div>
+                )}
                 <div className="resumen-item">
                   <span className="resumen-label">Fecha venta:</span>
                   <span className="resumen-valor">
@@ -172,6 +255,7 @@ const ModalEditarVenta = ({
                 {productos.map((producto) => (
                   <option key={producto.id} value={producto.id}>
                     {producto.nombre} - ${producto.precio?.toFixed(2)}
+                    {producto.categoria && ` (${producto.categoria})`}
                   </option>
                 ))}
               </select>
@@ -220,6 +304,159 @@ const ModalEditarVenta = ({
               </div>
             </div>
             
+            <div className="form-grupo">
+              <label className="form-label">
+                Nuevo Precio Unitario *
+              </label>
+              <div className="input-group-precio">
+                <span className="precio-simbolo">$</span>
+                <input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={formData.precio_unitario}
+                  onChange={(e) => {
+                    const value = parseFloat(e.target.value) || 0
+                    setFormData({...formData, precio_unitario: Math.max(0.01, value)})
+                    setError('')
+                  }}
+                  className="form-input-precio"
+                  disabled={loading}
+                  required
+                />
+              </div>
+            </div>
+
+            {/* Método de Pago */}
+            <div className="form-grupo">
+              <label className="form-label">
+                Método de Pago *
+              </label>
+              <div className="metodos-pago-grid">
+                {metodosPago.map((metodo) => (
+                  <button
+                    key={metodo.value}
+                    type="button"
+                    className={`metodo-pago-btn ${metodoPago === metodo.value ? 'metodo-pago-seleccionado' : ''}`}
+                    onClick={() => {
+                      setMetodoPago(metodo.value)
+                      setError('')
+                    }}
+                    disabled={loading}
+                  >
+                    <span className="metodo-pago-icono">{metodo.icon}</span>
+                    <span className="metodo-pago-label">{metodo.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Banco (solo para tarjeta/transferencia) */}
+            {(metodoPago === 'tarjeta' || metodoPago === 'transferencia') && (
+              <div className="form-grupo">
+                <label className="form-label">
+                  Banco *
+                </label>
+                <select
+                  value={banco}
+                  onChange={(e) => {
+                    setBanco(e.target.value)
+                    setError('')
+                  }}
+                  className="form-select"
+                  disabled={loading}
+                  required
+                >
+                  <option value="">Selecciona un banco</option>
+                  {bancosDisponibles.map((bancoItem) => (
+                    <option key={bancoItem} value={bancoItem}>
+                      {bancoItem}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Montos para método mixto */}
+            {metodoPago === 'mixto' && (
+              <div className="montos-mixtos-container">
+                <h4 className="montos-mixtos-titulo">Distribución del Pago:</h4>
+                <div className="montos-mixtos-grid">
+                  <div className="form-grupo">
+                    <label className="form-label">Efectivo:</label>
+                    <div className="input-group-precio">
+                      <span className="precio-simbolo">$</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={efectivo}
+                        onChange={(e) => {
+                          const value = parseFloat(e.target.value) || 0
+                          setEfectivo(Math.max(0, value))
+                          setError('')
+                        }}
+                        className="form-input-precio"
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
+                  <div className="form-grupo">
+                    <label className="form-label">Tarjeta:</label>
+                    <div className="input-group-precio">
+                      <span className="precio-simbolo">$</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={tarjeta}
+                        onChange={(e) => {
+                          const value = parseFloat(e.target.value) || 0
+                          setTarjeta(Math.max(0, value))
+                          setError('')
+                        }}
+                        className="form-input-precio"
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
+                  <div className="form-grupo">
+                    <label className="form-label">Transferencia:</label>
+                    <div className="input-group-precio">
+                      <span className="precio-simbolo">$</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={transferencia}
+                        onChange={(e) => {
+                          const value = parseFloat(e.target.value) || 0
+                          setTransferencia(Math.max(0, value))
+                          setError('')
+                        }}
+                        className="form-input-precio"
+                        disabled={loading}
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div className="resumen-mixto">
+                  <div className="resumen-item">
+                    <span>Total pagos:</span>
+                    <span>${totalPagos.toFixed(2)}</span>
+                  </div>
+                  <div className="resumen-item">
+                    <span>Total venta:</span>
+                    <span>${total.toFixed(2)}</span>
+                  </div>
+                  <div className={`resumen-item ${diferencia === 0 ? 'resumen-correcto' : 'resumen-error'}`}>
+                    <span>Diferencia:</span>
+                    <span>${diferencia.toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Resumen de la venta actualizada */}
             <div className="resumen-venta-container">
               <h4 className="resumen-venta-titulo">Venta Actualizada:</h4>
@@ -242,8 +479,20 @@ const ModalEditarVenta = ({
                     <span className="resumen-label">Nuevo total:</span>
                     <span className="resumen-valor-total">${total.toFixed(2)}</span>
                   </div>
+                  <div className="resumen-item">
+                    <span className="resumen-label">Método de pago:</span>
+                    <span className="resumen-valor">
+                      {metodosPago.find(m => m.value === metodoPago)?.label}
+                    </span>
+                  </div>
+                  {banco && (
+                    <div className="resumen-item">
+                      <span className="resumen-label">Banco:</span>
+                      <span className="resumen-valor">{banco}</span>
+                    </div>
+                  )}
                   <div className="resumen-item diferencia-item">
-                    <span className="resumen-label">Diferencia:</span>
+                    <span className="resumen-label">Diferencia con original:</span>
                     <span className={`diferencia-valor ${total > venta.total ? 'diferencia-positiva' : 'diferencia-negativa'}`}>
                       ${(total - venta.total).toFixed(2)}
                     </span>

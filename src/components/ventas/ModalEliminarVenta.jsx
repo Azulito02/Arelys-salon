@@ -34,6 +34,27 @@ const ModalEliminarVenta = ({
 
   const producto = venta.productos || {}
 
+  // Función para mostrar detalles del método de pago
+  const getDetallesPago = () => {
+    if (venta.metodo_pago === 'efectivo') {
+      return `Efectivo: $${venta.efectivo?.toFixed(2) || '0.00'}`;
+    }
+    if (venta.metodo_pago === 'tarjeta') {
+      return `Tarjeta: $${venta.tarjeta?.toFixed(2) || '0.00'} (${venta.banco || 'Sin banco'})`;
+    }
+    if (venta.metodo_pago === 'transferencia') {
+      return `Transferencia: $${venta.transferencia?.toFixed(2) || '0.00'} (${venta.banco || 'Sin banco'})`;
+    }
+    if (venta.metodo_pago === 'mixto') {
+      const partes = [];
+      if (venta.efectivo > 0) partes.push(`Efectivo: $${venta.efectivo?.toFixed(2)}`);
+      if (venta.tarjeta > 0) partes.push(`Tarjeta: $${venta.tarjeta?.toFixed(2)}`);
+      if (venta.transferencia > 0) partes.push(`Transferencia: $${venta.transferencia?.toFixed(2)}`);
+      return partes.join(' | ');
+    }
+    return 'Sin método de pago';
+  };
+
   return (
     <div className="modal-overlay">
       <div className="modal-container-eliminar-venta">
@@ -102,6 +123,24 @@ const ModalEliminarVenta = ({
                     ${venta.total?.toFixed(2) || '0.00'}
                   </span>
                 </div>
+                <div className="detalle-eliminar-item">
+                  <span className="detalle-etiqueta">Método de pago:</span>
+                  <span className="detalle-valor">
+                    {venta.metodo_pago ? venta.metodo_pago.charAt(0).toUpperCase() + venta.metodo_pago.slice(1) : 'No especificado'}
+                  </span>
+                </div>
+                <div className="detalle-eliminar-item">
+                  <span className="detalle-etiqueta">Detalles pago:</span>
+                  <span className="detalle-valor">
+                    {getDetallesPago()}
+                  </span>
+                </div>
+                {venta.banco && (
+                  <div className="detalle-eliminar-item">
+                    <span className="detalle-etiqueta">Banco:</span>
+                    <span className="detalle-valor">{venta.banco}</span>
+                  </div>
+                )}
                 <div className="detalle-eliminar-item">
                   <span className="detalle-etiqueta">Fecha:</span>
                   <span className="detalle-valor">

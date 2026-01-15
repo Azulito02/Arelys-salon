@@ -2,10 +2,28 @@ import { useState, useEffect } from 'react'
 import './ModalEditarProducto.css'
 
 const ModalEditarProducto = ({ isOpen, onClose, onSave, producto }) => {
+  // Categorías predefinidas para el salón de belleza
+  const categoriasDisponibles = [
+    'Shampoo',
+    'Acondicionador',
+    'Tratamiento',
+    'Tinte',
+    'Fijador',
+    'Mascarilla',
+    'Crema',
+    'Gel',
+    'Espuma',
+    'Aceite',
+    'Kit',
+    'Otro',
+    'General'
+  ]
+
   const [productoEditado, setProductoEditado] = useState({
     nombre: '',
     descripcion: '',
-    precio: ''
+    precio: '',
+    categoria: 'General'
   })
   const [error, setError] = useState('')
 
@@ -14,7 +32,8 @@ const ModalEditarProducto = ({ isOpen, onClose, onSave, producto }) => {
       setProductoEditado({
         nombre: producto.nombre || '',
         descripcion: producto.descripcion || '',
-        precio: producto.precio || ''
+        precio: producto.precio || '',
+        categoria: producto.categoria || 'General'
       })
       setError('')
     }
@@ -38,7 +57,8 @@ const ModalEditarProducto = ({ isOpen, onClose, onSave, producto }) => {
     const productoData = {
       nombre: productoEditado.nombre.trim(),
       descripcion: productoEditado.descripcion.trim() || null,
-      precio: parseFloat(productoEditado.precio)
+      precio: parseFloat(productoEditado.precio),
+      categoria: productoEditado.categoria
     }
     
     onSave(productoData)
@@ -78,6 +98,23 @@ const ModalEditarProducto = ({ isOpen, onClose, onSave, producto }) => {
               placeholder="Nombre del producto"
               autoFocus
             />
+          </div>
+          
+          <div className="form-grupo">
+            <label className="form-label">
+              Categoría
+            </label>
+            <select
+              value={productoEditado.categoria}
+              onChange={(e) => setProductoEditado({...productoEditado, categoria: e.target.value})}
+              className="form-select"
+            >
+              {categoriasDisponibles.map((categoria) => (
+                <option key={categoria} value={categoria}>
+                  {categoria}
+                </option>
+              ))}
+            </select>
           </div>
           
           <div className="form-grupo">

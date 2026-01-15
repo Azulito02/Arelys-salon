@@ -68,12 +68,12 @@ const Productos = () => {
       
       if (error) throw error
       
-      alert('Producto agregado correctamente')
+      alert('✅ Producto agregado correctamente')
       cerrarModales()
       cargarProductos()
     } catch (error) {
       console.error('Error agregando producto:', error)
-      alert('Error al agregar producto')
+      alert(`❌ Error al agregar producto: ${error.message}`)
     }
   }
 
@@ -87,12 +87,12 @@ const Productos = () => {
       
       if (error) throw error
       
-      alert('Producto actualizado correctamente')
+      alert('✅ Producto actualizado correctamente')
       cerrarModales()
       cargarProductos()
     } catch (error) {
       console.error('Error actualizando producto:', error)
-      alert('Error al actualizar producto')
+      alert(`❌ Error al actualizar producto: ${error.message}`)
     }
   }
 
@@ -106,14 +106,18 @@ const Productos = () => {
       
       if (error) throw error
       
-      alert('Producto eliminado correctamente')
+      alert('✅ Producto eliminado correctamente')
       cerrarModales()
       cargarProductos()
     } catch (error) {
       console.error('Error eliminando producto:', error)
-      alert('Error al eliminar producto')
+      alert(`❌ Error al eliminar producto: ${error.message}`)
     }
   }
+
+  // Estadísticas
+  const categoriasUnicas = [...new Set(productos.map(p => p.categoria || 'Sin categoría'))]
+  const totalProductos = productos.length
 
   return (
     <div className="productos-container">
@@ -130,6 +134,20 @@ const Productos = () => {
           Nuevo Producto
         </button>
       </div>
+
+      {/* Estadísticas rápidas */}
+      {!loading && productos.length > 0 && (
+        <div className="estadisticas-rapidas">
+          <div className="estadistica-item">
+            <span className="estadistica-label">Total Productos:</span>
+            <span className="estadistica-valor">{totalProductos}</span>
+          </div>
+          <div className="estadistica-item">
+            <span className="estadistica-label">Categorías:</span>
+            <span className="estadistica-valor">{categoriasUnicas.length}</span>
+          </div>
+        </div>
+      )}
 
       <TablaProductos
         productos={productos}

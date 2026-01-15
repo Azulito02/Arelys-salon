@@ -29,6 +29,13 @@ const ModalEliminarProducto = ({ isOpen, onClose, onConfirm, producto }) => {
             </div>
             
             <div className="info-item">
+              <span className="info-label">Categoría:</span>
+              <span className="info-valor">
+                {producto.categoria || 'General'}
+              </span>
+            </div>
+            
+            <div className="info-item">
               <span className="info-label">Descripción:</span>
               <span className="info-valor">
                 {producto.descripcion || 'Sin descripción'}

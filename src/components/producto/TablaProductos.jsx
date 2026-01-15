@@ -8,6 +8,7 @@ const TablaProductos = ({ productos, loading, onEditar, onEliminar }) => {
           <thead>
             <tr>
               <th className="columna-nombre">Nombre</th>
+              <th className="columna-categoria">Categoría</th>
               <th className="columna-descripcion">Descripción</th>
               <th className="columna-precio">Precio</th>
               <th className="columna-acciones">Acciones</th>
@@ -16,14 +17,14 @@ const TablaProductos = ({ productos, loading, onEditar, onEliminar }) => {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="4" className="tabla-cargando">
+                <td colSpan="5" className="tabla-cargando">
                   <div className="spinner"></div>
                   <span>Cargando productos...</span>
                 </td>
               </tr>
             ) : productos.length === 0 ? (
               <tr>
-                <td colSpan="4" className="tabla-vacia">
+                <td colSpan="5" className="tabla-vacia">
                   No hay productos registrados
                 </td>
               </tr>
@@ -32,6 +33,13 @@ const TablaProductos = ({ productos, loading, onEditar, onEliminar }) => {
                 <tr key={producto.id} className="fila-producto">
                   <td className="celda-nombre">
                     <div className="producto-nombre">{producto.nombre}</div>
+                  </td>
+                  <td className="celda-categoria">
+                    <div className="producto-categoria">
+                      <span className={`categoria-badge ${producto.categoria ? 'categoria-activa' : 'sin-categoria'}`}>
+                        {producto.categoria || 'Sin categoría'}
+                      </span>
+                    </div>
                   </td>
                   <td className="celda-descripcion">
                     <div className="producto-descripcion">

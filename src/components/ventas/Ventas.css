@@ -144,3 +144,61 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ========== RESUMEN MÉTODOS DE PAGO ========== */
+
+.resumen-stats-metodos {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+  .resumen-stats-metodos {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .resumen-stats-metodos {
+    grid-template-columns: 1fr;
+  }
+}
+
+.stat-metodo-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  background-color: #f9fafb;
+  padding: 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.stat-metodo-label {
+  font-size: 0.75rem;
+  color: #6b7280;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.stat-metodo-valor {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.separador {
+  height: 1px;
+  background-color: #e5e7eb;
+  margin: 1rem 0;
+}
+
+.resumen-subtitulo {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #4b5563;
+  margin-bottom: 0.5rem;
+}

@@ -1,11 +1,29 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import './ModalAgregarProducto.css'
 
 const ModalAgregarProducto = ({ isOpen, onClose, onSave }) => {
+  // Categorías predefinidas para el salón de belleza
+  const categoriasDisponibles = [
+    'Shampoo',
+    'Acondicionador',
+    'Tratamiento',
+    'Tinte',
+    'Fijador',
+    'Mascarilla',
+    'Crema',
+    'Gel',
+    'Espuma',
+    'Aceite',
+    'Kit',
+    'Otro',
+    'General'
+  ]
+
   const [nuevoProducto, setNuevoProducto] = useState({
     nombre: '',
     descripcion: '',
-    precio: ''
+    precio: '',
+    categoria: 'General'
   })
   const [error, setError] = useState('')
 
@@ -13,7 +31,8 @@ const ModalAgregarProducto = ({ isOpen, onClose, onSave }) => {
     setNuevoProducto({
       nombre: '',
       descripcion: '',
-      precio: ''
+      precio: '',
+      categoria: 'General'
     })
     setError('')
   }
@@ -39,7 +58,8 @@ const ModalAgregarProducto = ({ isOpen, onClose, onSave }) => {
     const productoData = {
       nombre: nuevoProducto.nombre.trim(),
       descripcion: nuevoProducto.descripcion.trim() || null,
-      precio: parseFloat(nuevoProducto.precio)
+      precio: parseFloat(nuevoProducto.precio),
+      categoria: nuevoProducto.categoria
     }
     
     onSave(productoData)
@@ -77,6 +97,23 @@ const ModalAgregarProducto = ({ isOpen, onClose, onSave }) => {
               placeholder="Ej: Shampoo Kerastase"
               autoFocus
             />
+          </div>
+          
+          <div className="form-grupo">
+            <label className="form-label">
+              Categoría
+            </label>
+            <select
+              value={nuevoProducto.categoria}
+              onChange={(e) => setNuevoProducto({...nuevoProducto, categoria: e.target.value})}
+              className="form-select"
+            >
+              {categoriasDisponibles.map((categoria) => (
+                <option key={categoria} value={categoria}>
+                  {categoria}
+                </option>
+              ))}
+            </select>
           </div>
           
           <div className="form-grupo">

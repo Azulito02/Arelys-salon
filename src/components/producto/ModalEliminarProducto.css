@@ -85,3 +85,9 @@
   transform: translateY(-2px);
   box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
 }
+
+/* Ajustes para mostrar categoría en modal de eliminar */
+.info-item span:first-child {
+  min-width: 100px;
+  color: #6b7280;
+}
