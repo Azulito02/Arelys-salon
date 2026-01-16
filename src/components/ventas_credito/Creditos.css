@@ -210,3 +210,136 @@
 .tabla-creditos-container {
   animation-delay: 0.2s;
 }
+
+/* Estilos adicionales para el componente Creditos */
+
+/* Estilos para las tarjetas de resumen */
+.resumen-card.saldo-card {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #fbbf24;
+}
+
+.saldo-pendiente-total {
+  color: #92400e;
+}
+
+.estado-sin-fecha {
+  background-color: #e5e7eb;
+  color: #374151;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+
+/* Estilos para filtros */
+.filtros-creditos {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 15px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.filtros-botones {
+  display: flex;
+  gap: 10px;
+}
+
+.filtro-btn {
+  padding: 8px 16px;
+  border: 1px solid #d1d5db;
+  background: white;
+  color: #374151;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.filtro-btn:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.filtro-btn.active {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+.btn-archivar-completados {
+  padding: 8px 16px;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.2s;
+}
+
+.btn-archivar-completados:hover {
+  background: #059669;
+}
+
+/* Estilos para sub-labels en resumen */
+.resumen-card-sub {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.resumen-sub-pendientes {
+  color: #dc2626;
+}
+
+.resumen-sub-completados {
+  color: #059669;
+}
+
+/* Nuevo estilo para estado completado */
+.estado-completado {
+  background-color: #d1fae5;
+  color: #065f46;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  display: inline-block;
+}
+
+/* Resumen card styles */
+.resumen-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.resumen-card-content {
+  z-index: 2;
+  position: relative;
+}
+
+.resumen-card-icon {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  opacity: 0.2;
+  z-index: 1;
+}
+
+.resumen-card-icon svg {
+  width: 60px;
+  height: 60px;
+}

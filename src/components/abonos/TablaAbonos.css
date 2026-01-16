@@ -287,3 +287,184 @@
   color: #1e293b;
   font-weight: 700;
 }
+
+
+/* Estilos para filtros */
+.filtros-abonos {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 15px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.filtros-botones {
+  display: flex;
+  gap: 10px;
+}
+
+.filtro-btn {
+  padding: 8px 16px;
+  border: 1px solid #d1d5db;
+  background: white;
+  color: #374151;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.filtro-btn:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.filtro-btn.active {
+  background: #3b82f6;
+  color: white;
+  border-color: #3b82f6;
+}
+
+.btn-archivar-completados {
+  padding: 8px 16px;
+  background: #10b981;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: background 0.2s;
+}
+
+.btn-archivar-completados:hover {
+  background: #059669;
+}
+
+/* Estilos para sub-labels en resumen */
+.resumen-card-sub {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 4px;
+  font-size: 12px;
+}
+
+.resumen-sub-activos {
+  color: #3b82f6;
+}
+
+.resumen-sub-completados {
+  color: #059669;
+}
+
+/* Botón deshabilitado */
+.btn-agregar-abono:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Estilos para estados de crédito en tabla */
+.estado-credito-completado {
+  background-color: #d1fae5;
+  color: #065f46;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  display: inline-block;
+}
+
+.estado-credito-activo {
+  background-color: #dbeafe;
+  color: #1e40af;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  display: inline-block;
+}
+
+.estado-credito-por-vencer {
+  background-color: #fef3c7;
+  color: #92400e;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  display: inline-block;
+}
+
+.estado-credito-vencido {
+  background-color: #fee2e2;
+  color: #dc2626;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  display: inline-block;
+}
+
+.estado-credito-sin-fecha {
+  background-color: #e5e7eb;
+  color: #374151;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  display: inline-block;
+}
+
+.estado-credito-no-encontrado {
+  background-color: #f3f4f6;
+  color: #6b7280;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.875rem;
+  display: inline-block;
+}
+
+/* Fila de crédito completado */
+.fila-abono.credito-completado {
+  background-color: #f0fdf4;
+  opacity: 0.8;
+}
+
+.credito-completado-badge {
+  font-size: 11px;
+  color: #059669;
+  background: #d1fae5;
+  padding: 2px 6px;
+  border-radius: 12px;
+  margin-top: 4px;
+  display: inline-block;
+}
+
+/* Acciones deshabilitadas */
+.accion-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.accion-btn:disabled:hover {
+  background-color: inherit;
+  transform: none;
+}
+
+/* Añadir columna estado */
+.columna-estado {
+  width: 150px;
+  text-align: center;
+}
+
+.celda-estado {
+  text-align: center;
+}

@@ -1,9 +1,31 @@
 // src/components/ventas_credito/TablaCreditos.jsx
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import './TablaCreditos.css'
 
 const TablaCreditos = ({ creditos, loading, onEditar, onEliminar, getEstadoCredito }) => {
-  
+  // Calcular saldo pendiente para créditos que no lo tengan
+  const [creditosConSaldo, setCreditosConSaldo] = useState([])
+
+  useEffect(() => {
+    if (creditos && creditos.length > 0) {
+      const creditosCalculados = creditos.map(credito => {
+        // Si ya viene saldo_pendiente de la base de datos (por el trigger), usarlo
+        // Si no, calcularlo localmente
+        const totalAbonado = credito.abonos_credito?.reduce((sum, abono) => sum + parseFloat(abono.monto), 0) || 0
+        
+        return {
+          ...credito,
+          saldo_pendiente: credito.saldo_pendiente !== undefined 
+            ? parseFloat(credito.saldo_pendiente)
+            : parseFloat(credito.total) - totalAbonado
+        }
+      })
+      setCreditosConSaldo(creditosCalculados)
+    } else {
+      setCreditosConSaldo([])
+    }
+  }, [creditos])
+
   // Función para formatear fecha con la misma lógica de hora Nicaragua
   const formatFechaNicaragua = (fechaISO) => {
     if (!fechaISO) return 'Fecha no disponible';
@@ -50,6 +72,7 @@ const TablaCreditos = ({ creditos, loading, onEditar, onEliminar, getEstadoCredi
                 <th className="columna-cantidad">Cantidad</th>
                 <th className="columna-precio">Precio Unit.</th>
                 <th className="columna-total">Total</th>
+                <th className="columna-saldo">Saldo Pendiente</th>
                 <th className="columna-fecha">Fecha Registro</th>
                 <th className="columna-fecha-fin">Fecha Fin</th>
                 <th className="columna-estado">Estado</th>
@@ -59,20 +82,20 @@ const TablaCreditos = ({ creditos, loading, onEditar, onEliminar, getEstadoCredi
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="9" className="cargando-mensaje">
+                  <td colSpan="10" className="cargando-mensaje">
                     <div className="spinner"></div>
                     Cargando créditos...
                   </td>
                 </tr>
-              ) : creditos.length === 0 ? (
+              ) : creditosConSaldo.length === 0 ? (
                 <tr>
-                  <td colSpan="9" className="sin-registros">
+                  <td colSpan="10" className="sin-registros">
                     No hay créditos registrados
                   </td>
                 </tr>
               ) : (
-                creditos.map((credito) => {
-                  const estado = getEstadoCredito(credito.fecha_fin);
+                creditosConSaldo.map((credito) => {
+                  const estado = getEstadoCredito(credito);
                   
                   return (
                     <tr key={credito.id} className="fila-credito">
@@ -103,6 +126,11 @@ const TablaCreditos = ({ creditos, loading, onEditar, onEliminar, getEstadoCredi
                         <strong>
                           ${parseFloat(credito.total).toFixed(2)}
                         </strong>
+                      </td>
+                      <td className="celda-saldo">
+                        <span className={`badge-saldo ${credito.saldo_pendiente > 0 ? 'pendiente' : 'pagado'}`}>
+                          ${credito.saldo_pendiente.toFixed(2)}
+                        </span>
                       </td>
                       <td className="celda-fecha">
                         {formatFechaNicaragua(credito.fecha)}
@@ -148,22 +176,28 @@ const TablaCreditos = ({ creditos, loading, onEditar, onEliminar, getEstadoCredi
         </div>
         
         {/* Resumen */}
-        {!loading && creditos.length > 0 && (
+        {!loading && creditosConSaldo.length > 0 && (
           <div className="resumen-creditos">
             <div className="resumen-item">
               <span>Total créditos:</span>
-              <strong>{creditos.length} registros</strong>
+              <strong>{creditosConSaldo.length} registros</strong>
             </div>
             <div className="resumen-item">
               <span>Total monto:</span>
               <strong>
-                ${creditos.reduce((sum, credito) => sum + parseFloat(credito.total), 0).toFixed(2)}
+                ${creditosConSaldo.reduce((sum, credito) => sum + parseFloat(credito.total), 0).toFixed(2)}
+              </strong>
+            </div>
+            <div className="resumen-item">
+              <span>Saldo pendiente total:</span>
+              <strong className="saldo-total-pendiente">
+                ${creditosConSaldo.reduce((sum, credito) => sum + (credito.saldo_pendiente || 0), 0).toFixed(2)}
               </strong>
             </div>
             <div className="resumen-item">
               <span>Clientes únicos:</span>
               <strong>
-                {[...new Set(creditos.map(c => c.nombre_cliente))].length} clientes
+                {[...new Set(creditosConSaldo.map(c => c.nombre_cliente))].length} clientes
               </strong>
             </div>
           </div>

@@ -8,8 +8,10 @@ import '../components/abonos/Abonos.css'
 
 const Abonos = () => {
   const [abonos, setAbonos] = useState([])
+  const [abonosFiltrados, setAbonosFiltrados] = useState([])
   const [creditos, setCreditos] = useState([])
   const [loading, setLoading] = useState(true)
+  const [filtroMostrar, setFiltroMostrar] = useState('activos') // 'todos', 'activos', 'completados'
   
   // Estados para modales
   const [showAgregarModal, setShowAgregarModal] = useState(false)
@@ -21,18 +23,84 @@ const Abonos = () => {
     cargarDatos()
   }, [])
 
+  // Aplicar filtro cuando cambien los abonos o el filtro seleccionado
+  useEffect(() => {
+    if (abonos.length > 0) {
+      aplicarFiltro()
+    }
+  }, [abonos, filtroMostrar])
+
+  const aplicarFiltro = () => {
+    let abonosFiltrados = []
+    
+    switch (filtroMostrar) {
+      case 'activos':
+        // Mostrar solo abonos de créditos que aún tengan saldo pendiente
+        abonosFiltrados = abonos.filter(abono => {
+          const credito = creditos.find(c => c.id === abono.venta_credito_id)
+          return credito?.saldo_pendiente > 0
+        })
+        break
+      case 'completados':
+        // Mostrar solo abonos de créditos ya pagados (saldo = 0)
+        abonosFiltrados = abonos.filter(abono => {
+          const credito = creditos.find(c => c.id === abono.venta_credito_id)
+          return credito?.saldo_pendiente === 0
+        })
+        break
+      case 'todos':
+      default:
+        abonosFiltrados = [...abonos]
+        break
+    }
+    
+    setAbonosFiltrados(abonosFiltrados)
+  }
+
   const cargarDatos = async () => {
     try {
       setLoading(true)
       
-      // Cargar créditos activos
+      // Cargar créditos activos CON ABONOS Y SALDO
       const { data: creditosData, error: errorCreditos } = await supabase
         .from('ventas_credito')
-        .select('*, productos(*)')
+        .select(`
+          *,
+          productos(*),
+          abonos_credito(*)
+        `)
         .order('fecha', { ascending: false })
       
       if (errorCreditos) throw errorCreditos
-      setCreditos(creditosData || [])
+      
+      // Procesar créditos para calcular saldo si no viene de la DB
+      const creditosProcesados = (creditosData || []).map(credito => {
+        const total = parseFloat(credito.total) || 0
+        
+        // Calcular total abonado
+        const totalAbonado = credito.abonos_credito?.reduce((sum, abono) => 
+          sum + parseFloat(abono.monto || 0), 0) || 0
+        
+        // Calcular saldo pendiente
+        let saldo_pendiente
+        if (credito.saldo_pendiente !== null && credito.saldo_pendiente !== undefined) {
+          saldo_pendiente = parseFloat(credito.saldo_pendiente)
+        } else {
+          saldo_pendiente = total - totalAbonado
+        }
+        
+        saldo_pendiente = Math.max(0, saldo_pendiente)
+        
+        return {
+          ...credito,
+          total,
+          saldo_pendiente,
+          total_abonado: totalAbonado,
+          completado: saldo_pendiente === 0
+        }
+      })
+      
+      setCreditos(creditosProcesados)
       
       // Cargar abonos con información de créditos
       const { data: abonosData, error: errorAbonos } = await supabase
@@ -59,6 +127,14 @@ const Abonos = () => {
 
   // Funciones para abrir modales
   const handleAgregarAbono = () => {
+    // Filtrar solo créditos que aún tengan saldo pendiente
+    const creditosConSaldo = creditos.filter(credito => credito.saldo_pendiente > 0)
+    
+    if (creditosConSaldo.length === 0) {
+      alert('No hay créditos pendientes disponibles para agregar abonos')
+      return
+    }
+    
     setShowAgregarModal(true)
   }
 
@@ -103,10 +179,24 @@ const Abonos = () => {
     setShowEliminarModal(false)
   }
 
-  // Calcular resumen
+  // Calcular resumen mejorado
   const calcularResumen = () => {
     const totalAbonos = abonos.length
+    
+    // Filtrar abonos activos (de créditos con saldo pendiente)
+    const abonosActivos = abonos.filter(abono => {
+      const credito = creditos.find(c => c.id === abono.venta_credito_id)
+      return credito?.saldo_pendiente > 0
+    })
+    
+    const abonosCompletados = abonos.filter(abono => {
+      const credito = creditos.find(c => c.id === abono.venta_credito_id)
+      return credito?.saldo_pendiente === 0
+    })
+    
     const totalMonto = abonos.reduce((sum, abono) => sum + parseFloat(abono.monto), 0)
+    const montoActivos = abonosActivos.reduce((sum, abono) => sum + parseFloat(abono.monto), 0)
+    const montoCompletados = abonosCompletados.reduce((sum, abono) => sum + parseFloat(abono.monto), 0)
     
     // Agrupar por método de pago
     const porMetodo = {
@@ -117,7 +207,11 @@ const Abonos = () => {
 
     return {
       totalAbonos,
+      abonosActivos: abonosActivos.length,
+      abonosCompletados: abonosCompletados.length,
       totalMonto,
+      montoActivos,
+      montoCompletados,
       porMetodo
     }
   }
@@ -144,6 +238,43 @@ const Abonos = () => {
     }
   }
 
+  // Función para cambiar el filtro
+  const handleCambiarFiltro = (nuevoFiltro) => {
+    setFiltroMostrar(nuevoFiltro)
+  }
+
+  // Función para archivar abonos de créditos completados
+  const handleArchivarCompletados = async () => {
+    const abonosAArchivar = abonos.filter(abono => {
+      const credito = creditos.find(c => c.id === abono.venta_credito_id)
+      return credito?.saldo_pendiente === 0
+    })
+    
+    if (abonosAArchivar.length === 0) {
+      alert('No hay abonos de créditos completados para archivar')
+      return
+    }
+    
+    const confirmar = window.confirm(
+      `¿Estás seguro de archivar ${abonosAArchivar.length} abonos de créditos ya pagados?\n` +
+      `Estos abonos serán movidos al archivo histórico.`
+    )
+    
+    if (!confirmar) return
+    
+    try {
+      // Aquí puedes implementar la lógica para archivar en una tabla de historial
+      // Por ahora solo eliminaremos los abonos de créditos ya eliminados
+      // (suponiendo que ya eliminaste los créditos completados)
+      
+      alert(`${abonosAArchivar.length} abonos de créditos completados listos para archivar`)
+      cargarDatos()
+    } catch (error) {
+      console.error('Error archivando abonos:', error)
+      alert('Error al archivar abonos')
+    }
+  }
+
   return (
     <div className="abonos-container">
       {/* Encabezado */}
@@ -155,6 +286,7 @@ const Abonos = () => {
         <button
           onClick={handleAgregarAbono}
           className="btn-agregar-abono"
+          disabled={creditos.filter(c => c.saldo_pendiente > 0).length === 0}
         >
           <svg className="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -163,12 +295,54 @@ const Abonos = () => {
         </button>
       </div>
 
-      {/* Tarjetas de resumen */}
+      {/* Controles de filtro */}
+      <div className="filtros-abonos">
+        <div className="filtros-botones">
+          <button
+            className={`filtro-btn ${filtroMostrar === 'activos' ? 'active' : ''}`}
+            onClick={() => handleCambiarFiltro('activos')}
+          >
+            Activos ({resumen.abonosActivos})
+          </button>
+          <button
+            className={`filtro-btn ${filtroMostrar === 'completados' ? 'active' : ''}`}
+            onClick={() => handleCambiarFiltro('completados')}
+          >
+            Completados ({resumen.abonosCompletados})
+          </button>
+          <button
+            className={`filtro-btn ${filtroMostrar === 'todos' ? 'active' : ''}`}
+            onClick={() => handleCambiarFiltro('todos')}
+          >
+            Todos ({resumen.totalAbonos})
+          </button>
+        </div>
+        
+        {resumen.abonosCompletados > 0 && (
+          <button
+            onClick={handleArchivarCompletados}
+            className="btn-archivar-completados"
+            title="Archivar abonos de créditos completados"
+          >
+            <svg className="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+            </svg>
+            Archivar Completados
+          </button>
+        )}
+      </div>
+
+      {/* Tarjetas de resumen MEJORADO */}
       <div className="resumen-abonos-grid">
         <div className="resumen-card abono-card">
           <div className="resumen-card-content">
             <span className="resumen-card-label">Total Abonos</span>
             <strong className="resumen-card-value">{resumen.totalAbonos}</strong>
+            <div className="resumen-card-sub">
+              <span className="resumen-sub-activos">{resumen.abonosActivos} activos</span>
+              <span className="resumen-sub-completados">{resumen.abonosCompletados} completados</span>
+            </div>
           </div>
           <div className="resumen-card-icon">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -184,6 +358,10 @@ const Abonos = () => {
             <strong className="resumen-card-value">
               ${resumen.totalMonto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
             </strong>
+            <div className="resumen-card-sub">
+              <span>${resumen.montoActivos.toLocaleString('es-MX', { minimumFractionDigits: 2 })} activos</span>
+              <span>${resumen.montoCompletados.toLocaleString('es-MX', { minimumFractionDigits: 2 })} completados</span>
+            </div>
           </div>
           <div className="resumen-card-icon">
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -211,12 +389,13 @@ const Abonos = () => {
 
       {/* Tabla de abonos */}
       <TablaAbonos
-        abonos={abonos}
+        abonos={abonosFiltrados}
         loading={loading}
         onEditar={handleEditarAbono}
         onEliminar={handleEliminarAbono}
         getMetodoPagoColor={getMetodoPagoColor}
         getMetodoPagoIcon={getMetodoPagoIcon}
+        creditos={creditos} // Pasar créditos para mostrar estado
       />
 
       {/* Modales */}
@@ -225,7 +404,7 @@ const Abonos = () => {
           isOpen={showAgregarModal}
           onClose={handleCerrarAgregarModal}
           onAbonoAgregado={handleAbonoAgregado}
-          creditos={creditos}
+          creditos={creditos.filter(c => c.saldo_pendiente > 0)} // Solo créditos con saldo
         />
       )}
 

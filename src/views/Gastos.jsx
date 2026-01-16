@@ -1,21 +1,26 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../database/supabase'
+import TablaGastos from '../components/gastos/TablaGastos'
+import ModalAgregarGasto from '../components/gastos/ModalAgregarGasto'
+import ModalEditarGasto from '../components/gastos/ModalEditarGasto'
+import ModalEliminarGasto from '../components/gastos/ModalEliminarGasto'
+import '../components/gastos/Gastos.css'
 
 const Gastos = () => {
   const [gastos, setGastos] = useState([])
   const [loading, setLoading] = useState(true)
-  const [modalAbierto, setModalAbierto] = useState(false)
   
-  const [nuevoGasto, setNuevoGasto] = useState({
-    descripcion: '',
-    monto: ''
-  })
+  // Estados para modales
+  const [showAgregarModal, setShowAgregarModal] = useState(false)
+  const [showEditarModal, setShowEditarModal] = useState(false)
+  const [showEliminarModal, setShowEliminarModal] = useState(false)
+  const [gastoSeleccionado, setGastoSeleccionado] = useState(null)
 
   useEffect(() => {
-    cargarGastos()
+    cargarDatos()
   }, [])
 
-  const cargarGastos = async () => {
+  const cargarDatos = async () => {
     try {
       setLoading(true)
       const { data, error } = await supabase
@@ -33,199 +38,239 @@ const Gastos = () => {
     }
   }
 
-  const abrirModal = () => {
-    setNuevoGasto({ descripcion: '', monto: '' })
-    setModalAbierto(true)
+  // Funciones para abrir modales
+  const handleAgregarGasto = () => {
+    setShowAgregarModal(true)
   }
 
-  const cerrarModal = () => {
-    setModalAbierto(false)
+  const handleEditarGasto = (gasto) => {
+    setGastoSeleccionado(gasto)
+    setShowEditarModal(true)
   }
 
-  const registrarGasto = async () => {
-    if (!nuevoGasto.descripcion || !nuevoGasto.monto || parseFloat(nuevoGasto.monto) <= 0) {
-      alert('Completa todos los campos con valores válidos')
-      return
-    }
+  const handleEliminarGasto = (gasto) => {
+    setGastoSeleccionado(gasto)
+    setShowEliminarModal(true)
+  }
 
+  // Funciones para cerrar modales
+  const handleCerrarAgregarModal = () => {
+    setShowAgregarModal(false)
+  }
+
+  const handleCerrarEditarModal = () => {
+    setGastoSeleccionado(null)
+    setShowEditarModal(false)
+  }
+
+  const handleCerrarEliminarModal = () => {
+    setGastoSeleccionado(null)
+    setShowEliminarModal(false)
+  }
+
+  // Funciones para manejar operaciones
+  const handleGastoAgregado = async (gastoData) => {
     try {
-      const gastoData = {
-        descripcion: nuevoGasto.descripcion,
-        monto: parseFloat(nuevoGasto.monto)
-      }
-
       const { error } = await supabase
         .from('gastos')
-        .insert([gastoData])
+        .insert([{
+          descripcion: gastoData.descripcion,
+          monto: parseFloat(gastoData.monto)
+        }])
       
       if (error) throw error
       
       alert('Gasto registrado correctamente')
-      cerrarModal()
-      cargarGastos()
+      cargarDatos()
+      setShowAgregarModal(false)
     } catch (error) {
       console.error('Error registrando gasto:', error)
       alert('Error al registrar gasto')
     }
   }
 
-  const eliminarGasto = async (id) => {
-    if (!window.confirm('¿Estás seguro de eliminar este gasto?')) return
-    
+  const handleGastoEditado = async (gastoId, gastoData) => {
+    try {
+      const { error } = await supabase
+        .from('gastos')
+        .update({
+          descripcion: gastoData.descripcion,
+          monto: parseFloat(gastoData.monto)
+        })
+        .eq('id', gastoId)
+      
+      if (error) throw error
+      
+      alert('Gasto actualizado correctamente')
+      cargarDatos()
+      setShowEditarModal(false)
+    } catch (error) {
+      console.error('Error actualizando gasto:', error)
+      alert('Error al actualizar gasto')
+    }
+  }
+
+  const handleGastoEliminado = async (gastoId) => {
     try {
       const { error } = await supabase
         .from('gastos')
         .delete()
-        .eq('id', id)
+        .eq('id', gastoId)
       
       if (error) throw error
+      
       alert('Gasto eliminado correctamente')
-      cargarGastos()
+      cargarDatos()
+      setShowEliminarModal(false)
     } catch (error) {
       console.error('Error eliminando gasto:', error)
       alert('Error al eliminar gasto')
     }
   }
 
+  // Calcular resumen
+  const calcularResumen = () => {
+    const totalGastos = gastos.length
+    const totalMonto = gastos.reduce((sum, gasto) => sum + parseFloat(gasto.monto), 0)
+    
+    // Gastos del mes actual
+    const hoy = new Date()
+    const inicioMes = new Date(hoy.getFullYear(), hoy.getMonth(), 1)
+    const gastosEsteMes = gastos.filter(gasto => 
+      new Date(gasto.fecha) >= inicioMes
+    )
+    const totalMes = gastosEsteMes.reduce((sum, gasto) => sum + parseFloat(gasto.monto), 0)
+    
+    // Gasto promedio
+    const promedio = totalGastos > 0 ? totalMonto / totalGastos : 0
+
+    return {
+      totalGastos,
+      totalMonto,
+      totalMes,
+      promedio,
+      gastosEsteMes: gastosEsteMes.length
+    }
+  }
+
+  const resumen = calcularResumen()
+
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
+    <div className="gastos-container">
+      {/* Encabezado */}
+      <div className="gastos-header">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Gastos</h1>
-          <p className="text-gray-600">Registro de gastos del salón</p>
+          <h1 className="gastos-titulo">Gastos</h1>
+          <p className="gastos-subtitulo">Registro y seguimiento de gastos del salón</p>
         </div>
         <button
-          onClick={abrirModal}
-          className="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-4 rounded-lg flex items-center"
+          onClick={handleAgregarGasto}
+          className="btn-agregar-gasto"
         >
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
           Nuevo Gasto
         </button>
       </div>
 
-      {/* Tabla de gastos */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Descripción
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Monto
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Fecha
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {loading ? (
-                <tr>
-                  <td colSpan="4" className="px-6 py-8 text-center text-gray-500">
-                    Cargando gastos...
-                  </td>
-                </tr>
-              ) : gastos.length === 0 ? (
-                <tr>
-                  <td colSpan="4" className="px-6 py-8 text-center text-gray-500">
-                    No hay gastos registrados
-                  </td>
-                </tr>
-              ) : (
-                gastos.map((gasto) => (
-                  <tr key={gasto.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-900">
-                        {gasto.descripcion}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-red-600 font-medium">
-                        -${parseFloat(gasto.monto).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(gasto.fecha).toLocaleString('es-MX')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button
-                        onClick={() => eliminarGasto(gasto.id)}
-                        className="text-red-600 hover:text-red-900"
-                      >
-                        Eliminar
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+      {/* Tarjetas de resumen */}
+      <div className="resumen-gastos-grid">
+        <div className="resumen-card gasto-card">
+          <div className="resumen-card-content">
+            <span className="resumen-card-label">Total Gastos</span>
+            <strong className="resumen-card-value">{resumen.totalGastos}</strong>
+            <div className="resumen-card-sub">
+              <span>{resumen.gastosEsteMes} este mes</span>
+            </div>
+          </div>
+          <div className="resumen-card-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+            </svg>
+          </div>
+        </div>
+        
+        <div className="resumen-card monto-card">
+          <div className="resumen-card-content">
+            <span className="resumen-card-label">Monto Total</span>
+            <strong className="resumen-card-value total-monto-gastos">
+              -C${resumen.totalMonto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+            </strong>
+          </div>
+          <div className="resumen-card-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+        </div>
+        
+        <div className="resumen-card promedio-card">
+          <div className="resumen-card-content">
+            <span className="resumen-card-label">Gasto Promedio</span>
+            <strong className="resumen-card-value">
+              C${resumen.promedio.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+            </strong>
+          </div>
+          <div className="resumen-card-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+        </div>
+        
+        <div className="resumen-card mes-card">
+          <div className="resumen-card-content">
+            <span className="resumen-card-label">Gastos Este Mes</span>
+            <strong className="resumen-card-value">
+              -C${resumen.totalMes.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+            </strong>
+          </div>
+          <div className="resumen-card-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
         </div>
       </div>
 
-      {/* Modal para nuevo gasto */}
-      {modalAbierto && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">
-                Nuevo Gasto
-              </h3>
-            </div>
-            
-            <div className="px-6 py-4 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Descripción *
-                </label>
-                <input
-                  type="text"
-                  value={nuevoGasto.descripcion}
-                  onChange={(e) => setNuevoGasto({...nuevoGasto, descripcion: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Ej: Compra de insumos, pago de servicios..."
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Monto *
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  value={nuevoGasto.monto}
-                  onChange={(e) => setNuevoGasto({...nuevoGasto, monto: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="0.00"
-                />
-              </div>
-            </div>
-            
-            <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
-              <button
-                onClick={cerrarModal}
-                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={registrarGasto}
-                className="px-4 py-2 bg-red-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-red-700"
-              >
-                Registrar Gasto
-              </button>
-            </div>
-          </div>
-        </div>
+      {/* Tabla de gastos */}
+      <TablaGastos
+        gastos={gastos}
+        loading={loading}
+        onEditar={handleEditarGasto}
+        onEliminar={handleEliminarGasto}
+      />
+
+      {/* Modales */}
+      {showAgregarModal && (
+        <ModalAgregarGasto
+          isOpen={showAgregarModal}
+          onClose={handleCerrarAgregarModal}
+          onGastoAgregado={handleGastoAgregado}
+        />
+      )}
+
+      {showEditarModal && gastoSeleccionado && (
+        <ModalEditarGasto
+          isOpen={showEditarModal}
+          onClose={handleCerrarEditarModal}
+          onGastoEditado={handleGastoEditado}
+          gasto={gastoSeleccionado}
+        />
+      )}
+
+      {showEliminarModal && gastoSeleccionado && (
+        <ModalEliminarGasto
+          isOpen={showEliminarModal}
+          onClose={handleCerrarEliminarModal}
+          onGastoEliminado={handleGastoEliminado}
+          gasto={gastoSeleccionado}
+        />
       )}
     </div>
   )

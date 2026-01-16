@@ -1,7 +1,15 @@
 import React from 'react'
 import './TablaAbonos.css'
 
-const TablaAbonos = ({ abonos, loading, onEditar, onEliminar, getMetodoPagoColor, getMetodoPagoIcon }) => {
+const TablaAbonos = ({ 
+  abonos, 
+  loading, 
+  onEditar, 
+  onEliminar, 
+  getMetodoPagoColor, 
+  getMetodoPagoIcon,
+  creditos = [] // Recibir créditos para verificar estado
+}) => {
   
   // Función para formatear fecha con hora Nicaragua
   const formatFechaNicaragua = (fechaISO) => {
@@ -25,6 +33,54 @@ const TablaAbonos = ({ abonos, loading, onEditar, onEliminar, getMetodoPagoColor
     return `${dia}/${mes}/${año}, ${horas}:${minutos} ${ampm}`;
   };
 
+  // Función para verificar si el crédito del abono está completado
+  const isCreditoCompletado = (abono) => {
+    const credito = creditos.find(c => c.id === abono.venta_credito_id);
+    return credito?.saldo_pendiente === 0;
+  };
+
+  // Función para obtener el estado del crédito
+  const getEstadoCredito = (abono) => {
+    const credito = creditos.find(c => c.id === abono.venta_credito_id);
+    if (!credito) return 'Crédito no encontrado';
+    
+    if (credito.saldo_pendiente === 0) return 'Completado';
+    if (!credito.fecha_fin) return 'Sin fecha de vencimiento';
+    
+    const hoy = new Date();
+    const fin = new Date(credito.fecha_fin);
+    const hoySinHora = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+    const finSinHora = new Date(fin.getFullYear(), fin.getMonth(), fin.getDate());
+    
+    const diferenciaMs = finSinHora.getTime() - hoySinHora.getTime();
+    const diferenciaDias = Math.ceil(diferenciaMs / (1000 * 60 * 60 * 24));
+    
+    if (diferenciaDias < 0) return 'Crédito vencido';
+    if (diferenciaDias <= 3) return 'Crédito por vencer';
+    return 'Crédito activo';
+  };
+
+  // Función para obtener la clase CSS según estado del crédito
+  const getEstadoCreditoClase = (abono) => {
+    const credito = creditos.find(c => c.id === abono.venta_credito_id);
+    if (!credito) return 'estado-credito-no-encontrado';
+    
+    if (credito.saldo_pendiente === 0) return 'estado-credito-completado';
+    if (!credito.fecha_fin) return 'estado-credito-sin-fecha';
+    
+    const hoy = new Date();
+    const fin = new Date(credito.fecha_fin);
+    const hoySinHora = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
+    const finSinHora = new Date(fin.getFullYear(), fin.getMonth(), fin.getDate());
+    
+    const diferenciaMs = finSinHora.getTime() - hoySinHora.getTime();
+    const diferenciaDias = Math.ceil(diferenciaMs / (1000 * 60 * 60 * 24));
+    
+    if (diferenciaDias < 0) return 'estado-credito-vencido';
+    if (diferenciaDias <= 3) return 'estado-credito-por-vencer';
+    return 'estado-credito-activo';
+  };
+
   return (
     <div className="tabla-abonos-container">
       <div className="tabla-abonos-card">
@@ -37,37 +93,44 @@ const TablaAbonos = ({ abonos, loading, onEditar, onEliminar, getMetodoPagoColor
                 <th className="columna-monto">Monto</th>
                 <th className="columna-metodo">Método de Pago</th>
                 <th className="columna-fecha">Fecha</th>
+                <th className="columna-estado">Estado Crédito</th>
                 <th className="columna-acciones">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="6" className="cargando-mensaje">
+                  <td colSpan="7" className="cargando-mensaje">
                     <div className="spinner"></div>
                     Cargando abonos...
                   </td>
                 </tr>
               ) : abonos.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="sin-registros">
+                  <td colSpan="7" className="sin-registros">
                     No hay abonos registrados
                   </td>
                 </tr>
               ) : (
                 abonos.map((abono) => {
-                  const credito = abono.ventas_credito;
+                  const credito = creditos.find(c => c.id === abono.venta_credito_id);
+                  const creditoCompletado = isCreditoCompletado(abono);
                   
                   return (
-                    <tr key={abono.id} className="fila-abono">
+                    <tr key={abono.id} className={`fila-abono ${creditoCompletado ? 'credito-completado' : ''}`}>
                       <td className="celda-cliente">
                         <div className="nombre-cliente">
-                          {credito?.nombre_cliente || 'Cliente no encontrado'}
+                          {credito?.nombre_cliente || abono.ventas_credito?.nombre_cliente || 'Cliente no encontrado'}
                         </div>
+                        {creditoCompletado && (
+                          <div className="credito-completado-badge">
+                            ✓ Crédito Pagado
+                          </div>
+                        )}
                       </td>
                       <td className="celda-producto">
                         <div className="nombre-producto">
-                          {credito?.productos?.nombre || 'Producto no encontrado'}
+                          {credito?.productos?.nombre || abono.ventas_credito?.productos?.nombre || 'Producto no encontrado'}
                         </div>
                         {credito?.productos?.codigo && (
                           <div className="codigo-producto">
@@ -93,12 +156,18 @@ const TablaAbonos = ({ abonos, loading, onEditar, onEliminar, getMetodoPagoColor
                       <td className="celda-fecha">
                         {formatFechaNicaragua(abono.fecha)}
                       </td>
+                      <td className="celda-estado">
+                        <span className={`badge-estado ${getEstadoCreditoClase(abono)}`}>
+                          {getEstadoCredito(abono)}
+                        </span>
+                      </td>
                       <td className="celda-acciones">
                         <div className="acciones-container">
                           <button
                             onClick={() => onEditar(abono)}
                             className="accion-btn accion-editar"
                             title="Editar abono"
+                            disabled={creditoCompletado}
                           >
                             <svg className="accion-icono" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
@@ -133,6 +202,12 @@ const TablaAbonos = ({ abonos, loading, onEditar, onEliminar, getMetodoPagoColor
               <strong>{abonos.length} registros</strong>
             </div>
             <div className="resumen-item">
+              <span>Abonos activos:</span>
+              <strong>
+                {abonos.filter(a => !isCreditoCompletado(a)).length} activos
+              </strong>
+            </div>
+            <div className="resumen-item">
               <span>Total monto:</span>
               <strong>
                 ${abonos.reduce((sum, abono) => sum + parseFloat(abono.monto), 0).toFixed(2)}
@@ -141,7 +216,9 @@ const TablaAbonos = ({ abonos, loading, onEditar, onEliminar, getMetodoPagoColor
             <div className="resumen-item">
               <span>Clientes únicos:</span>
               <strong>
-                {[...new Set(abonos.map(a => a.ventas_credito?.nombre_cliente).filter(Boolean))].length} clientes
+                {[...new Set(abonos.map(a => 
+                  creditos.find(c => c.id === a.venta_credito_id)?.nombre_cliente
+                ).filter(Boolean))].length} clientes
               </strong>
             </div>
           </div>

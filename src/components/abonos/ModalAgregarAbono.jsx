@@ -10,7 +10,7 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  // Bancos disponibles (mismos que en ventas)
+  // Bancos disponibles
   const bancosDisponibles = [
     'Lafise',
     'BAC',
@@ -74,8 +74,13 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
   if (!isOpen) return null
 
   const creditoSeleccionado = creditos.find(c => c.id === formData.venta_credito_id)
+  
+  // Calcular saldo disponible (saldo_pendiente si existe, sino total)
+  const saldoDisponible = creditoSeleccionado?.saldo_pendiente !== undefined 
+    ? creditoSeleccionado.saldo_pendiente 
+    : creditoSeleccionado?.total || 0
 
-  // Métodos de pago (actualizado con mixto)
+  // Métodos de pago
   const metodosPago = [
     { value: 'efectivo', label: 'Efectivo', icon: '💰' },
     { value: 'tarjeta', label: 'Tarjeta', icon: '💳' },
@@ -120,9 +125,9 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
       }
     }
 
-    // Validar que no exceda el total del crédito
-    if (creditoSeleccionado && montoTotal > creditoSeleccionado.total) {
-      setError('El monto del abono no puede ser mayor al total del crédito')
+    // Validar que no exceda el saldo disponible
+    if (montoTotal > saldoDisponible) {
+      setError(`El monto del abono ($${montoTotal.toFixed(2)}) no puede ser mayor al saldo disponible ($${saldoDisponible.toFixed(2)})`)
       return
     }
 
@@ -144,8 +149,7 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
       if (formData.metodo_pago === 'tarjeta' || formData.metodo_pago === 'transferencia') {
         abonoData.banco = banco
       } else if (formData.metodo_pago === 'mixto') {
-        // Para mixto, podemos guardar ambos bancos en un campo o crear un formato
-        // Aquí guardamos como JSON string con ambos bancos
+        // Para mixto, guardamos ambos bancos en un campo JSON
         const bancosMixto = {
           tarjeta: bancoTarjeta || null,
           transferencia: bancoTransferencia || null
@@ -158,6 +162,16 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
         .insert([abonoData])
       
       if (supabaseError) throw supabaseError
+      
+      // Actualizar también el saldo en ventas_credito (por si acaso el trigger no funciona)
+      const { error: updateError } = await supabase
+        .from('ventas_credito')
+        .update({ 
+          saldo_pendiente: saldoDisponible - montoTotal 
+        })
+        .eq('id', formData.venta_credito_id)
+      
+      if (updateError) console.log('Error actualizando saldo:', updateError)
       
       // Reset form
       setFormData({
@@ -244,7 +258,11 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
                 <option value="">Selecciona un crédito</option>
                 {creditos.map((credito) => (
                   <option key={credito.id} value={credito.id}>
-                    {credito.nombre_cliente} - {credito.productos?.nombre} (Total: ${credito.total})
+                    {credito.nombre_cliente} - {credito.productos?.nombre} 
+                    {credito.saldo_pendiente !== undefined 
+                      ? ` (Saldo: $${credito.saldo_pendiente.toFixed(2)} de $${credito.total.toFixed(2)})`
+                      : ` (Total: $${credito.total})`
+                    }
                   </option>
                 ))}
               </select>
@@ -265,6 +283,13 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
                   <div className="detalle-item-actualizado">
                     <span>Total crédito:</span>
                     <strong>${parseFloat(creditoSeleccionado.total).toFixed(2)}</strong>
+                  </div>
+                  <div className="detalle-item-actualizado">
+                    <span>Saldo disponible:</span>
+                    <strong className={saldoDisponible > 0 ? 'text-green-600' : 'text-gray-600'}>
+                      ${saldoDisponible.toFixed(2)}
+                      {saldoDisponible <= 0 && ' (Pagado)'}
+                    </strong>
                   </div>
                   <div className="detalle-item-actualizado">
                     <span>Fecha fin:</span>
@@ -312,15 +337,26 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
                     type="number"
                     step="0.01"
                     min="0.01"
+                    max={saldoDisponible}
                     value={formData.metodo_pago === 'efectivo' ? efectivo : 
                            formData.metodo_pago === 'tarjeta' ? tarjeta : 
                            transferencia}
                     onChange={(e) => handleMetodoSimpleChange(formData.metodo_pago, e.target.value)}
                     className="form-input-monto"
                     placeholder="0.00"
-                    disabled={loading}
+                    disabled={loading || saldoDisponible <= 0}
                   />
                 </div>
+                {saldoDisponible > 0 && (
+                  <p className="text-sm text-gray-500 mt-1">
+                    Máximo: ${saldoDisponible.toFixed(2)}
+                  </p>
+                )}
+                {saldoDisponible <= 0 && (
+                  <p className="text-sm text-red-500 mt-1">
+                    Este crédito ya está pagado completamente
+                  </p>
+                )}
               </div>
             )}
 
@@ -366,15 +402,16 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
                       <input
                         type="number"
                         min="0"
+                        max={saldoDisponible}
                         step="0.01"
                         value={efectivo}
                         onChange={(e) => {
                           const value = parseFloat(e.target.value) || 0
-                          setEfectivo(Math.max(0, value))
+                          setEfectivo(Math.max(0, Math.min(value, saldoDisponible - tarjeta - transferencia)))
                           setError('')
                         }}
                         className="form-input-monto"
-                        disabled={loading}
+                        disabled={loading || saldoDisponible <= 0}
                       />
                     </div>
                   </div>
@@ -390,15 +427,16 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
                       <input
                         type="number"
                         min="0"
+                        max={saldoDisponible}
                         step="0.01"
                         value={tarjeta}
                         onChange={(e) => {
                           const value = parseFloat(e.target.value) || 0
-                          setTarjeta(Math.max(0, value))
+                          setTarjeta(Math.max(0, Math.min(value, saldoDisponible - efectivo - transferencia)))
                           setError('')
                         }}
                         className="form-input-monto"
-                        disabled={loading}
+                        disabled={loading || saldoDisponible <= 0}
                       />
                     </div>
                     {tarjeta > 0 && (
@@ -433,15 +471,16 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
                       <input
                         type="number"
                         min="0"
+                        max={saldoDisponible}
                         step="0.01"
                         value={transferencia}
                         onChange={(e) => {
                           const value = parseFloat(e.target.value) || 0
-                          setTransferencia(Math.max(0, value))
+                          setTransferencia(Math.max(0, Math.min(value, saldoDisponible - efectivo - tarjeta)))
                           setError('')
                         }}
                         className="form-input-monto"
-                        disabled={loading}
+                        disabled={loading || saldoDisponible <= 0}
                       />
                     </div>
                     {transferencia > 0 && (
@@ -468,8 +507,18 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
                 
                 <div className="resumen-mixto">
                   <div className="resumen-mixto-item">
+                    <span className="resumen-mixto-label">Saldo disponible:</span>
+                    <span className="resumen-mixto-valor">${saldoDisponible.toFixed(2)}</span>
+                  </div>
+                  <div className="resumen-mixto-item">
                     <span className="resumen-mixto-label">Total del abono:</span>
                     <span className="resumen-mixto-valor">${montoTotal.toFixed(2)}</span>
+                  </div>
+                  <div className="resumen-mixto-item">
+                    <span className="resumen-mixto-label">Nuevo saldo:</span>
+                    <span className={`resumen-mixto-valor ${saldoDisponible - montoTotal > 0 ? 'text-orange-500' : 'text-green-600'}`}>
+                      ${(saldoDisponible - montoTotal).toFixed(2)}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -491,6 +540,10 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
                   <div className="resumen-item">
                     <span className="resumen-label">Producto:</span>
                     <span className="resumen-valor">{creditoSeleccionado.productos?.nombre || 'No especificado'}</span>
+                  </div>
+                  <div className="resumen-item">
+                    <span className="resumen-label">Saldo actual:</span>
+                    <span className="resumen-valor">${saldoDisponible.toFixed(2)}</span>
                   </div>
                   <div className="resumen-item">
                     <span className="resumen-label">Método de pago:</span>
@@ -556,9 +609,10 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
                     </span>
                   </div>
                   <div className="resumen-item">
-                    <span className="resumen-label">Saldo restante:</span>
-                    <span className="resumen-valor">
-                      ${(parseFloat(creditoSeleccionado.total) - montoTotal).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    <span className="resumen-label">Nuevo saldo:</span>
+                    <span className={`resumen-valor ${saldoDisponible - montoTotal > 0 ? 'text-orange-500 font-semibold' : 'text-green-600 font-semibold'}`}>
+                      ${(saldoDisponible - montoTotal).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                      {saldoDisponible - montoTotal <= 0 && ' (¡Pagado!)'}
                     </span>
                   </div>
                 </div>
@@ -582,7 +636,7 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
             <button
               type="submit"
               className="btn-primario-abono"
-              disabled={loading || montoTotal <= 0}
+              disabled={loading || montoTotal <= 0 || montoTotal > saldoDisponible}
             >
               {loading ? (
                 <>

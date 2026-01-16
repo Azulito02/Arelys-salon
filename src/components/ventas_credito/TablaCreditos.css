@@ -291,3 +291,31 @@
   color: #1e293b;
   font-weight: 700;
 }
+
+/* Estilos para la columna de saldo */
+.celda-saldo {
+  padding: 8px 12px;
+  text-align: center;
+}
+
+.badge-saldo {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.badge-saldo.pendiente {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.badge-saldo.pagado {
+  background-color: #d1fae5;
+  color: #065f46;
+}
+
+/* Resumen con saldo total pendiente */
+.saldo-total-pendiente {
+  color: #dc2626;
+}
