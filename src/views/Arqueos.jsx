@@ -1,19 +1,16 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../database/supabase'
+import './Arqueos.css'
 
 const Arqueos = () => {
   const [arqueos, setArqueos] = useState([])
   const [loading, setLoading] = useState(true)
+  const [calculando, setCalculando] = useState(false) // <-- AGREGADO ESTE ESTADO
   const [modalAbierto, setModalAbierto] = useState(false)
+  const [resumenTurno, setResumenTurno] = useState(null)
+  const [efectivoContado, setEfectivoContado] = useState('')
+  const [ultimoArqueo, setUltimoArqueo] = useState(null)
   
-  const [nuevoArqueo, setNuevoArqueo] = useState({
-    total_ventas: 0,
-    total_credito: 0,
-    total_efectivo: 0,
-    total_gastos: 0,
-    efectivo_en_caja: 0
-  })
-
   useEffect(() => {
     cargarArqueos()
   }, [])
@@ -25,9 +22,16 @@ const Arqueos = () => {
         .from('arqueos')
         .select('*')
         .order('fecha', { ascending: false })
+        .limit(20)
       
       if (error) throw error
       setArqueos(data || [])
+      
+      // Establecer último arqueo
+      if (data && data.length > 0) {
+        setUltimoArqueo(data[0])
+      }
+      
     } catch (error) {
       console.error('Error cargando arqueos:', error)
       alert('Error al cargar arqueos')
@@ -36,261 +40,522 @@ const Arqueos = () => {
     }
   }
 
-  const abrirModal = async () => {
+  const calcularResumenTurno = async () => {
     try {
-      // Calcular valores automáticos
-      const hoy = new Date().toISOString().split('T')[0]
+      setCalculando(true)
       
-      // Ventas de hoy
-      const { data: ventasHoy } = await supabase
-        .from('ventas')
-        .select('total')
-        .gte('fecha', `${hoy}T00:00:00`)
-        .lte('fecha', `${hoy}T23:59:59`)
+      // Determinar fecha de inicio (último arqueo o inicio del día)
+      let fechaDesde = new Date()
+      fechaDesde.setHours(0, 0, 0, 0) // Inicio del día
       
-      const totalVentas = ventasHoy?.reduce((sum, venta) => sum + venta.total, 0) || 0
+      if (ultimoArqueo) {
+        // Si hay arqueo anterior, calcular desde esa fecha
+        fechaDesde = new Date(ultimoArqueo.fecha)
+      }
       
-      // Créditos de hoy
-      const { data: creditosHoy } = await supabase
-        .from('ventas_credito')
-        .select('total')
-        .gte('fecha', `${hoy}T00:00:00`)
-        .lte('fecha', `${hoy}T23:59:59`)
+      const fechaHasta = new Date()
       
-      const totalCredito = creditosHoy?.reduce((sum, credito) => sum + credito.total, 0) || 0
+      // Cálculo básico en frontend para preview
+      const [ventasResp, creditosResp, abonosResp, gastosResp] = await Promise.all([
+        supabase.from('ventas').select('*').gte('fecha', fechaDesde.toISOString()),
+        supabase.from('ventas_credito').select('*').gte('fecha', fechaDesde.toISOString()),
+        supabase.from('abonos_credito').select('*').gte('fecha', fechaDesde.toISOString()),
+        supabase.from('gastos').select('*').gte('fecha', fechaDesde.toISOString())
+      ])
       
-      // Efectivo en facturados de hoy
-      const { data: efectivoHoy } = await supabase
-        .from('facturados')
-        .select('total')
-        .eq('metodo_pago', 'efectivo')
-        .gte('fecha', `${hoy}T00:00:00`)
-        .lte('fecha', `${hoy}T23:59:59`)
+      const ventas = ventasResp.data || []
+      const creditos = creditosResp.data || []
+      const abonos = abonosResp.data || []
+      const gastos = gastosResp.data || []
       
-      const totalEfectivo = efectivoHoy?.reduce((sum, facturado) => sum + facturado.total, 0) || 0
+      const totalVentas = ventas.reduce((s, v) => s + (parseFloat(v.total) || 0), 0)
+      const totalCreditos = creditos.reduce((s, c) => s + (parseFloat(c.total) || 0), 0)
       
-      // Gastos de hoy
-      const { data: gastosHoy } = await supabase
-        .from('gastos')
-        .select('monto')
-        .gte('fecha', `${hoy}T00:00:00`)
-        .lte('fecha', `${hoy}T23:59:59`)
+      const abonosEfectivo = abonos
+        .filter(a => a.metodo_pago === 'efectivo')
+        .reduce((s, a) => s + (parseFloat(a.monto) || 0), 0)
       
-      const totalGastos = gastosHoy?.reduce((sum, gasto) => sum + gasto.monto, 0) || 0
+      const abonosOtros = abonos
+        .filter(a => a.metodo_pago !== 'efectivo')
+        .reduce((s, a) => s + (parseFloat(a.monto) || 0), 0)
       
-      // Efectivo en caja
-      const efectivoCaja = totalEfectivo - totalGastos
+      const totalGastos = gastos.reduce((s, g) => s + (parseFloat(g.monto) || 0), 0)
       
-      setNuevoArqueo({
-        total_ventas: totalVentas,
-        total_credito: totalCredito,
-        total_efectivo: totalEfectivo,
-        total_gastos: totalGastos,
-        efectivo_en_caja: efectivoCaja > 0 ? efectivoCaja : 0
-      })
+      const resumen = {
+        totalVentas,
+        totalCreditos,
+        abonosEfectivo,
+        abonosOtros,
+        totalGastos,
+        efectivoNeto: totalVentas + abonosEfectivo - totalGastos,
+        cantidadVentas: ventas.length,
+        cantidadCreditos: creditos.length,
+        cantidadAbonosEfectivo: abonos.filter(a => a.metodo_pago === 'efectivo').length,
+        cantidadAbonosOtros: abonos.filter(a => a.metodo_pago !== 'efectivo').length,
+        cantidadGastos: gastos.length,
+        fechaDesde: fechaDesde.toLocaleString('es-MX'),
+        fechaHasta: fechaHasta.toLocaleString('es-MX'),
+        // Agregar campos para mostrar en el modal
+        totalVentasEfectivo: totalVentas,
+        totalAbonosEfectivo: abonosEfectivo,
+        totalAbonosOtros: abonosOtros,
+        totalEfectivo: totalVentas + abonosEfectivo,
+        totalVentasGeneral: totalVentas + totalCreditos
+      }
       
+      setResumenTurno(resumen)
+      setEfectivoContado((totalVentas + abonosEfectivo - totalGastos).toFixed(2))
       setModalAbierto(true)
+      
     } catch (error) {
-      console.error('Error calculando arqueo:', error)
-      alert('Error al calcular valores automáticos')
+      console.error('Error calculando resumen:', error)
+      alert('Error al calcular resumen del turno')
+    } finally {
+      setCalculando(false)
     }
+  }
+
+  const abrirModal = async () => {
+    await calcularResumenTurno()
   }
 
   const cerrarModal = () => {
     setModalAbierto(false)
+    setResumenTurno(null)
+    setEfectivoContado('')
   }
 
-  const registrarArqueo = async () => {
+  const realizarArqueo = async () => {
+    if (!efectivoContado || parseFloat(efectivoContado) < 0) {
+      alert('Ingresa un monto válido para el efectivo contado')
+      return
+    }
+    
+    const usuario = JSON.parse(localStorage.getItem('usuarioArelyz'))?.nombre || 'Sistema'
+    const efectivo = parseFloat(efectivoContado)
+    
+    const confirmar = window.confirm(
+      `¿CONFIRMAR ARQUEO DE TURNO?\n\n` +
+      `Efectivo contado: C$${efectivo.toFixed(2)}\n\n` +
+      `Esta acción es IRREVERSIBLE. ¿Continuar?`
+    )
+    
+    if (!confirmar) return
+    
     try {
-      const arqueoData = {
-        total_ventas: parseFloat(nuevoArqueo.total_ventas) || 0,
-        total_credito: parseFloat(nuevoArqueo.total_credito) || 0,
-        total_efectivo: parseFloat(nuevoArqueo.total_efectivo) || 0,
-        total_gastos: parseFloat(nuevoArqueo.total_gastos) || 0,
-        efectivo_en_caja: parseFloat(nuevoArqueo.efectivo_en_caja) || 0
-      }
-
-      const { error } = await supabase
-        .from('arqueos')
-        .insert([arqueoData])
+      setLoading(true)
+      
+      // Llamar a la función SQL en el backend
+      const { data, error } = await supabase.rpc('realizar_arqueo_caja', {
+        p_efectivo_contado: efectivo,
+        p_usuario_nombre: usuario
+      })
       
       if (error) throw error
       
-      alert('Arqueo registrado correctamente')
-      cerrarModal()
+      if (!data.success) {
+        throw new Error(data.error || 'Error en el arqueo')
+      }
+      
+      // Mostrar resultado
+      const diferencia = data.diferencia || 0
+      const resumen = data.resumen || {}
+      
+      alert(
+        `✅ ARQUEO COMPLETADO\n\n` +
+        `📊 Resumen:\n` +
+        `• Ventas en efectivo: C$${(resumen.total_ventas_efectivo || 0).toFixed(2)}\n` +
+        `• Abonos en efectivo: C$${(resumen.total_abonos_efectivo || 0).toFixed(2)}\n` +
+        `• Gastos: C$${(resumen.total_gastos || 0).toFixed(2)}\n` +
+        `• Efectivo neto esperado: C$${(resumen.efectivo_neto || 0).toFixed(2)}\n` +
+        `• Efectivo contado: C$${efectivo.toFixed(2)}\n` +
+        (diferencia !== 0 ? `• Diferencia: C$${Math.abs(diferencia).toFixed(2)} ${diferencia > 0 ? '(Sobrante)' : '(Faltante)'}\n` : '') +
+        `\n🗑️ Registros procesados:\n` +
+        `• ${resumen.cantidad_ventas || 0} ventas\n` +
+        `• ${resumen.cantidad_abonos_efectivo || 0} abonos en efectivo\n` +
+        `• ${resumen.cantidad_gastos || 0} gastos`
+      )
+      
+      setModalAbierto(false)
+      setResumenTurno(null)
+      setEfectivoContado('')
       cargarArqueos()
+      
     } catch (error) {
-      console.error('Error registrando arqueo:', error)
-      alert('Error al registrar arqueo')
+      console.error('Error en arqueo:', error)
+      
+      // Errores comunes
+      if (error.message && error.message.includes('function realizar_arqueo_caja')) {
+        alert(
+          'Error: La función SQL no está creada.\n\n' +
+          'Por favor, ejecuta este SQL en el editor SQL de Supabase:\n\n' +
+          'CREATE OR REPLACE FUNCTION realizar_arqueo_caja(\n' +
+          '  p_efectivo_contado numeric,\n' +
+          '  p_usuario_nombre text DEFAULT \'Sistema\'\n' +
+          ') RETURNS json AS $$\n' +
+          '-- (código SQL que te proporcioné anteriormente)\n' +
+          '$$ LANGUAGE plpgsql SECURITY DEFINER;'
+        )
+      } else if (error.message && error.message.includes('column')) {
+        alert(
+          'Error: Faltan columnas en la tabla.\n\n' +
+          'Ejecuta este SQL en Supabase:\n\n' +
+          'ALTER TABLE arqueos \n' +
+          'ADD COLUMN IF NOT EXISTS ventas_eliminadas integer DEFAULT 0,\n' +
+          'ADD COLUMN IF NOT EXISTS abonos_efectivo_eliminados integer DEFAULT 0,\n' +
+          'ADD COLUMN IF NOT EXISTS gastos_eliminados integer DEFAULT 0,\n' +
+          'ADD COLUMN IF NOT EXISTS periodo_desde text,\n' +
+          'ADD COLUMN IF NOT EXISTS periodo_hasta text,\n' +
+          'ADD COLUMN IF NOT EXISTS diferencia_efectivo numeric(10,2) DEFAULT 0,\n' +
+          'ADD COLUMN IF NOT EXISTS usuario text DEFAULT \'Sistema\';'
+        )
+      } else {
+        alert(`Error: ${error.message || 'No se pudo completar el arqueo'}`)
+      }
+    } finally {
+      setLoading(false)
     }
   }
 
+  // Formatear fecha Nicaragua
+  const formatFechaNicaragua = (fechaISO) => {
+    if (!fechaISO) return 'Fecha no disponible'
+    
+    const fechaUTC = new Date(fechaISO)
+    const fechaNicaragua = new Date(fechaUTC.getTime() - (6 * 60 * 60 * 1000))
+    
+    const dia = fechaNicaragua.getDate().toString().padStart(2, '0')
+    const mes = (fechaNicaragua.getMonth() + 1).toString().padStart(2, '0')
+    const año = fechaNicaragua.getFullYear()
+    
+    let horas = fechaNicaragua.getHours()
+    const minutos = fechaNicaragua.getMinutes().toString().padStart(2, '0')
+    const ampm = horas >= 12 ? 'p.m.' : 'a.m.'
+    
+    horas = horas % 12
+    horas = horas ? horas.toString().padStart(2, '0') : '12'
+    
+    return `${dia}/${mes}/${año}, ${horas}:${minutos} ${ampm}`
+  }
+
   return (
-    <div>
-      <div className="flex justify-between items-center mb-6">
+    <div className="arqueos-container">
+      <div className="arqueos-header">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Arqueos de Caja</h1>
-          <p className="text-gray-600">Cierre diario y control de efectivo</p>
+          <h1 className="arqueos-titulo">Arqueos de Caja</h1>
+          <p className="arqueos-subtitulo">Cierre de turno y control de efectivo</p>
+          {ultimoArqueo && (
+            <div className="ultimo-arqueo-info">
+              <span className="info-label">Último arqueo:</span>
+              <span className="info-valor">{formatFechaNicaragua(ultimoArqueo.fecha)}</span>
+            </div>
+          )}
         </div>
         <button
           onClick={abrirModal}
-          className="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-lg flex items-center"
+          className="btn-arquear-turno"
+          disabled={loading || calculando}
         >
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
-          Nuevo Arqueo
+          {calculando ? (
+            <>
+              <div className="spinner-small"></div>
+              Calculando...
+            </>
+          ) : (
+            <>
+              <svg className="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Arqueo de Turno
+            </>
+          )}
         </button>
       </div>
 
+      {/* Estadísticas rápidas */}
+      {ultimoArqueo && (
+        <div className="estadisticas-arqueo">
+          <div className="estadistica-card">
+            <div className="estadistica-icono">💰</div>
+            <div className="estadistica-contenido">
+              <p className="estadistica-valor">
+                C${parseFloat(ultimoArqueo.efectivo_en_caja).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+              </p>
+              <p className="estadistica-label">Último efectivo</p>
+            </div>
+          </div>
+          
+          <div className="estadistica-card">
+            <div className="estadistica-icono">📊</div>
+            <div className="estadistica-contenido">
+              <p className="estadistica-valor">{arqueos.length}</p>
+              <p className="estadistica-label">Arqueos totales</p>
+            </div>
+          </div>
+          
+          <div className="estadistica-card">
+            <div className="estadistica-icono">📅</div>
+            <div className="estadistica-contenido">
+              <p className="estadistica-valor">
+                {new Date().toLocaleDateString('es-MX', { day: '2-digit', month: '2-digit' })}
+              </p>
+              <p className="estadistica-label">Fecha actual</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Tabla de arqueos */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Fecha
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Total Ventas
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Total Crédito
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Total Efectivo
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Total Gastos
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Efectivo en Caja
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {loading ? (
+      <div className="tabla-arqueos-container">
+        <div className="tabla-arqueos-card">
+          <div className="overflow-x-auto">
+            <table className="tabla-arqueos">
+              <thead>
                 <tr>
-                  <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
-                    Cargando arqueos...
-                  </td>
+                  <th className="columna-fecha">Fecha</th>
+                  <th className="columna-ventas">Ventas Totales</th>
+                  <th className="columna-credito">Ventas Crédito</th>
+                  <th className="columna-efectivo">Efectivo Bruto</th>
+                  <th className="columna-gastos">Gastos</th>
+                  <th className="columna-caja">Efectivo en Caja</th>
+                  <th className="columna-detalle">Detalle</th>
                 </tr>
-              ) : arqueos.length === 0 ? (
-                <tr>
-                  <td colSpan="6" className="px-6 py-8 text-center text-gray-500">
-                    No hay arqueos registrados
-                  </td>
-                </tr>
-              ) : (
-                arqueos.map((arqueo) => (
-                  <tr key={arqueo.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(arqueo.fecha).toLocaleDateString('es-MX')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-green-600">
-                      ${parseFloat(arqueo.total_ventas).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-yellow-600">
-                      ${parseFloat(arqueo.total_credito).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-blue-600">
-                      ${parseFloat(arqueo.total_efectivo).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-red-600">
-                      -${parseFloat(arqueo.total_gastos).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${arqueo.efectivo_en_caja > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                        ${parseFloat(arqueo.efectivo_en_caja).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                      </span>
+              </thead>
+              <tbody>
+                {loading ? (
+                  <tr>
+                    <td colSpan="7" className="cargando-mensaje">
+                      <div className="spinner"></div>
+                      Cargando arqueos...
                     </td>
                   </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+                ) : arqueos.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" className="sin-registros">
+                      No hay arqueos registrados
+                    </td>
+                  </tr>
+                ) : (
+                  arqueos.map((arqueo) => (
+                    <tr key={arqueo.id} className="fila-arqueo">
+                      <td className="celda-fecha">
+                        {formatFechaNicaragua(arqueo.fecha)}
+                      </td>
+                      <td className="celda-ventas">
+                        <span className="valor-positivo">
+                          C${parseFloat(arqueo.total_ventas).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                        </span>
+                      </td>
+                      <td className="celda-credito">
+                        <span className="valor-credito">
+                          C${parseFloat(arqueo.total_credito).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                        </span>
+                      </td>
+                      <td className="celda-efectivo">
+                        <span className="valor-efectivo">
+                          C${parseFloat(arqueo.total_efectivo).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                        </span>
+                      </td>
+                      <td className="celda-gastos">
+                        <span className="valor-negativo">
+                          C${parseFloat(arqueo.total_gastos).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                        </span>
+                      </td>
+                      <td className="celda-caja">
+                        <span className={`badge-caja ${arqueo.efectivo_en_caja > 0 ? 'positivo' : 'negativo'}`}>
+                          C${parseFloat(arqueo.efectivo_en_caja).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                        </span>
+                      </td>
+                      <td className="celda-detalle">
+                        <button 
+                          className="btn-detalle"
+                          onClick={() => {
+                            alert(
+                              `📋 DETALLE DEL ARQUEO\n\n` +
+                              `📅 Fecha: ${formatFechaNicaragua(arqueo.fecha)}\n` +
+                              `💰 Ventas totales: C$${arqueo.total_ventas}\n` +
+                              `💳 Ventas a crédito: C$${arqueo.total_credito}\n` +
+                              `💵 Efectivo bruto: C$${arqueo.total_efectivo}\n` +
+                              `📉 Gastos: C$${arqueo.total_gastos}\n` +
+                              `🏦 Efectivo en caja: C$${arqueo.efectivo_en_caja}\n` +
+                              (arqueo.ventas_eliminadas ? `📊 Ventas eliminadas: ${arqueo.ventas_eliminadas}\n` : '') +
+                              (arqueo.abonos_efectivo_eliminados ? `💸 Abonos eliminados: ${arqueo.abonos_efectivo_eliminados}\n` : '') +
+                              (arqueo.gastos_eliminados ? `📋 Gastos eliminados: ${arqueo.gastos_eliminados}\n` : '')
+                            )
+                          }}
+                        >
+                          Ver detalle
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
 
-      {/* Modal para nuevo arqueo */}
-      {modalAbierto && (
-        <div className="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4">
-            <div className="px-6 py-4 border-b border-gray-200">
-              <h3 className="text-lg font-medium text-gray-900">
-                Nuevo Arqueo de Caja
-              </h3>
-              <p className="text-sm text-gray-500 mt-1">
-                {new Date().toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
-              </p>
+      {/* Modal para arqueo de turno */}
+      {modalAbierto && resumenTurno && (
+        <div className="modal-overlay">
+          <div className="modal-container arqueo-modal">
+            <div className="modal-header">
+              <h3 className="modal-titulo">Arqueo de Turno</h3>
+              <button onClick={cerrarModal} className="modal-cerrar">
+                ×
+              </button>
             </div>
             
-            <div className="px-6 py-4 space-y-3">
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Total Ventas:</span>
-                <span className="font-medium text-green-600">
-                  ${parseFloat(nuevoArqueo.total_ventas).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                </span>
+            <div className="modal-body">
+              <div className="periodo-info">
+                <p className="periodo-texto">
+                  <strong>Período:</strong> Desde {resumenTurno.fechaDesde} hasta {resumenTurno.fechaHasta}
+                </p>
               </div>
               
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Total Crédito:</span>
-                <span className="font-medium text-yellow-600">
-                  ${parseFloat(nuevoArqueo.total_credito).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Total Efectivo:</span>
-                <span className="font-medium text-blue-600">
-                  ${parseFloat(nuevoArqueo.total_efectivo).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-              
-              <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Total Gastos:</span>
-                <span className="font-medium text-red-600">
-                  -${parseFloat(nuevoArqueo.total_gastos).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                </span>
-              </div>
-              
-              <div className="border-t border-gray-200 pt-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-700">Efectivo en Caja:</span>
-                  <span className="text-lg font-bold text-gray-900">
-                    ${parseFloat(nuevoArqueo.efectivo_en_caja).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                  </span>
+              <div className="resumen-grid">
+                {/* Columna izquierda - Ingresos */}
+                <div className="resumen-columna ingresos-col">
+                  <h4 className="resumen-subtitulo">📈 INGRESOS</h4>
+                  
+                  <div className="resumen-item">
+                    <span className="resumen-label">Ventas en efectivo:</span>
+                    <span className="resumen-valor positivo">
+                      C${resumenTurno.totalVentasEfectivo.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    </span>
+                    <span className="resumen-cantidad">({resumenTurno.cantidadVentas} ventas)</span>
+                  </div>
+                  
+                  <div className="resumen-item">
+                    <span className="resumen-label">Abonos en efectivo:</span>
+                    <span className="resumen-valor positivo">
+                      C${resumenTurno.totalAbonosEfectivo.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    </span>
+                    <span className="resumen-cantidad">({resumenTurno.cantidadAbonosEfectivo} abonos)</span>
+                  </div>
+                  
+                  <div className="resumen-item">
+                    <span className="resumen-label">Ventas a crédito:</span>
+                    <span className="resumen-valor credito">
+                      C${resumenTurno.totalCreditos.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    </span>
+                    <span className="resumen-cantidad">({resumenTurno.cantidadCreditos} créditos) 🔒</span>
+                  </div>
+                  
+                  <div className="resumen-item">
+                    <span className="resumen-label">Abonos otros métodos:</span>
+                    <span className="resumen-valor">
+                      C${resumenTurno.totalAbonosOtros.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    </span>
+                    <span className="resumen-cantidad">({resumenTurno.cantidadAbonosOtros} abonos) 🔒</span>
+                  </div>
+                  
+                  <div className="resumen-total">
+                    <span className="total-label">TOTAL INGRESOS:</span>
+                    <span className="total-valor">
+                      C${(resumenTurno.totalVentasGeneral + resumenTurno.totalAbonosEfectivo + resumenTurno.totalAbonosOtros).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Columna derecha - Egresos y resultado */}
+                <div className="resumen-columna egresos-col">
+                  <h4 className="resumen-subtitulo">📉 EGRESOS</h4>
+                  
+                  <div className="resumen-item">
+                    <span className="resumen-label">Gastos:</span>
+                    <span className="resumen-valor negativo">
+                      C${resumenTurno.totalGastos.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    </span>
+                    <span className="resumen-cantidad">({resumenTurno.cantidadGastos} gastos)</span>
+                  </div>
+                  
+                  <div className="resumen-separador"></div>
+                  
+                  <div className="resumen-calculo">
+                    <div className="calculo-item">
+                      <span>Efectivo bruto:</span>
+                      <span>C${resumenTurno.totalEfectivo.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="calculo-item">
+                      <span>- Gastos:</span>
+                      <span>C${resumenTurno.totalGastos.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+                    </div>
+                    <div className="calculo-total">
+                      <span>EFECTIVO NETO ESPERADO:</span>
+                      <span className="neto-esperado">
+                        C${resumenTurno.efectivoNeto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="efectivo-contado">
+                    <label className="contado-label">
+                      💵 EFECTIVO REAL CONTADO:
+                    </label>
+                    <div className="contado-input-container">
+                      <span className="contado-prefijo">C$</span>
+                      <input
+                        type="number"
+                        value={efectivoContado}
+                        onChange={(e) => setEfectivoContado(e.target.value)}
+                        className="contado-input"
+                        placeholder="0.00"
+                        step="0.01"
+                        min="0"
+                        autoFocus
+                      />
+                    </div>
+                    
+                    {efectivoContado && resumenTurno.efectivoNeto && (
+                      <div className="diferencia">
+                        <span>Diferencia:</span>
+                        <span className={`diferencia-valor ${(parseFloat(efectivoContado) - resumenTurno.efectivoNeto) >= 0 ? 'positivo' : 'negativo'}`}>
+                          C${(parseFloat(efectivoContado) - resumenTurno.efectivoNeto).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               
-              <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Efectivo real contado:
-                </label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={nuevoArqueo.efectivo_en_caja}
-                  onChange={(e) => setNuevoArqueo({...nuevoArqueo, efectivo_en_caja: e.target.value})}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="0.00"
-                />
+              <div className="advertencia-arqueo">
+                <p className="advertencia-texto">
+                  ⚠️ <strong>ATENCIÓN:</strong> Al confirmar este arqueo se eliminarán automáticamente:
+                </p>
+                <ul className="advertencia-lista">
+                  <li><span className="eliminar-item">🗑️ {resumenTurno.cantidadVentas} ventas en efectivo</span></li>
+                  <li><span className="eliminar-item">🗑️ {resumenTurno.cantidadAbonosEfectivo} abonos en efectivo</span></li>
+                  <li><span className="eliminar-item">🗑️ {resumenTurno.cantidadGastos} gastos</span></li>
+                  <li><span className="mantener-item">✅ {resumenTurno.cantidadCreditos} créditos activos (se mantienen)</span></li>
+                  <li><span className="mantener-item">✅ {resumenTurno.cantidadAbonosOtros} abonos otros métodos (se mantienen)</span></li>
+                </ul>
               </div>
             </div>
             
-            <div className="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+            <div className="modal-footer">
               <button
                 onClick={cerrarModal}
-                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="btn btn-secondary"
+                disabled={loading}
               >
                 Cancelar
               </button>
               <button
-                onClick={registrarArqueo}
-                className="px-4 py-2 bg-purple-600 border border-transparent rounded-md text-sm font-medium text-white hover:bg-purple-700"
+                onClick={realizarArqueo}
+                className="btn btn-success"
+                disabled={!efectivoContado || loading}
               >
-                Registrar Arqueo
+                {loading ? (
+                  <>
+                    <div className="spinner-small"></div>
+                    Procesando...
+                  </>
+                ) : (
+                  '✅ Confirmar Arqueo de Turno'
+                )}
               </button>
             </div>
           </div>

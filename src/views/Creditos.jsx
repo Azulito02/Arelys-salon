@@ -11,7 +11,8 @@ const Creditos = () => {
   const [creditosFiltrados, setCreditosFiltrados] = useState([])
   const [productos, setProductos] = useState([])
   const [loading, setLoading] = useState(true)
-  const [filtroMostrar, setFiltroMostrar] = useState('pendientes') // 'todos', 'pendientes', 'completados'
+  const [archivando, setArchivando] = useState(false)
+  const [filtroMostrar, setFiltroMostrar] = useState('pendientes')
   
   // Estados para modales
   const [showAgregarModal, setShowAgregarModal] = useState(false)
@@ -104,7 +105,6 @@ const Creditos = () => {
           precio_unitario,
           saldo_pendiente,
           total_abonado: totalAbonado,
-          // Agregar campo para saber si está completado
           completado: saldo_pendiente === 0
         }
       })
@@ -239,31 +239,63 @@ const Creditos = () => {
     setFiltroMostrar(nuevoFiltro)
   }
 
-  // Función para archivar/eliminar créditos completados
+  // Función para eliminar créditos completados
   const handleArchivarCompletados = async () => {
+    const creditosCompletados = creditos.filter(c => c.saldo_pendiente === 0)
+    
+    if (creditosCompletados.length === 0) {
+      alert('No hay créditos completados para eliminar')
+      return
+    }
+    
+    const listaClientes = creditosCompletados
+      .map(c => `• ${c.nombre_cliente} - C$${c.total.toFixed(2)}`)
+      .join('\n')
+    
     const confirmar = window.confirm(
-      `¿Estás seguro de archivar todos los créditos completados?\n` +
-      `Esto moverá ${resumen.creditosCompletados} créditos al archivo.`
+      `¿ELIMINAR ${creditosCompletados.length} CRÉDITOS COMPLETADOS?\n\n` +
+      `Clientes:\n${listaClientes}\n\n` +
+      `⚠️ Esta acción es IRREVERSIBLE. ¿Continuar?`
     )
     
     if (!confirmar) return
     
     try {
-      const { error } = await supabase
-        .from('creditos_archivados')
-        .insert(
-          creditos.filter(c => c.saldo_pendiente === 0)
-            .map(({ abonos_credito, productos, ...credito }) => credito)
-        )
+      setArchivando(true)
       
-      if (error) throw error
+      // Intentar usar la tabla de archivo si existe
+      try {
+        // Primero intentar insertar en tabla de archivo
+        const creditosParaArchivar = creditosCompletados.map(({ 
+          abonos_credito, 
+          productos, 
+          total_abonado, 
+          completado, 
+          ...credito 
+        }) => ({
+          ...credito,
+          saldo_pendiente: 0,
+          total_abonado: total_abonado || 0,
+          fecha_archivado: new Date().toISOString(),
+          usuario_archivo: JSON.parse(localStorage.getItem('usuarioArelyz'))?.nombre || 'Sistema'
+        }))
+        
+        const { error: errorArchivo } = await supabase
+          .from('creditos_archivados')
+          .insert(creditosParaArchivar)
+        
+        if (errorArchivo) {
+          console.warn('No se pudo archivar, tabla no existe. Eliminando directamente...')
+        }
+      } catch (archivoError) {
+        console.warn('Error en archivo, continuando con eliminación directa:', archivoError)
+      }
       
-      // Eliminar los créditos completados de la tabla principal
-      const idsCompletados = creditos
-        .filter(c => c.saldo_pendiente === 0)
-        .map(c => c.id)
+      // Eliminar los créditos completados
+      const idsCompletados = creditosCompletados.map(c => c.id)
       
       if (idsCompletados.length > 0) {
+        // Usar ROW para eliminación masiva más eficiente
         const { error: errorEliminar } = await supabase
           .from('ventas_credito')
           .delete()
@@ -272,11 +304,37 @@ const Creditos = () => {
         if (errorEliminar) throw errorEliminar
       }
       
-      alert(`${resumen.creditosCompletados} créditos completados archivados y eliminados`)
+      alert(`✅ ${creditosCompletados.length} créditos completados eliminados`)
       cargarDatos()
+      
     } catch (error) {
-      console.error('Error archivando créditos:', error)
-      alert('Error al archivar créditos')
+      console.error('Error eliminando créditos:', error)
+      
+      if (error.code === 'PGRST205') {
+        alert(
+          'Error: La tabla creditos_archivados no existe.\n\n' +
+          'Ejecuta este SQL en Supabase para crearla:\n\n' +
+          'CREATE TABLE creditos_archivados (\n' +
+          '  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),\n' +
+          '  producto_id uuid REFERENCES productos(id),\n' +
+          '  cantidad integer NOT NULL,\n' +
+          '  precio_unitario numeric(10,2) NOT NULL,\n' +
+          '  total numeric(10,2) NOT NULL,\n' +
+          '  nombre_cliente text NOT NULL,\n' +
+          '  fecha_inicio date NOT NULL,\n' +
+          '  fecha_fin date NOT NULL,\n' +
+          '  fecha timestamp DEFAULT now(),\n' +
+          '  saldo_pendiente numeric(10,2) DEFAULT 0,\n' +
+          '  total_abonado numeric(10,2) DEFAULT 0,\n' +
+          '  fecha_archivado timestamp DEFAULT now(),\n' +
+          '  usuario_archivo text DEFAULT \'Sistema\'\n' +
+          ');'
+        )
+      } else {
+        alert(`Error al eliminar créditos: ${error.message || 'Error desconocido'}`)
+      }
+    } finally {
+      setArchivando(false)
     }
   }
 
@@ -291,6 +349,7 @@ const Creditos = () => {
         <button
           onClick={handleAgregarCredito}
           className="btn-agregar-credito"
+          disabled={loading || archivando}
         >
           <svg className="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -305,18 +364,21 @@ const Creditos = () => {
           <button
             className={`filtro-btn ${filtroMostrar === 'pendientes' ? 'active' : ''}`}
             onClick={() => handleCambiarFiltro('pendientes')}
+            disabled={loading || archivando}
           >
             Pendientes ({resumen.creditosPendientes})
           </button>
           <button
             className={`filtro-btn ${filtroMostrar === 'completados' ? 'active' : ''}`}
             onClick={() => handleCambiarFiltro('completados')}
+            disabled={loading || archivando}
           >
             Completados ({resumen.creditosCompletados})
           </button>
           <button
             className={`filtro-btn ${filtroMostrar === 'todos' ? 'active' : ''}`}
             onClick={() => handleCambiarFiltro('todos')}
+            disabled={loading || archivando}
           >
             Todos ({resumen.totalCreditos})
           </button>
@@ -326,13 +388,23 @@ const Creditos = () => {
           <button
             onClick={handleArchivarCompletados}
             className="btn-archivar-completados"
-            title="Archivar créditos completados"
+            title="Eliminar créditos completados"
+            disabled={loading || archivando}
           >
-            <svg className="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-            </svg>
-            Archivar Completados
+            {archivando ? (
+              <>
+                <div className="spinner-small"></div>
+                Eliminando...
+              </>
+            ) : (
+              <>
+                <svg className="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                    d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                </svg>
+                Eliminar Completados ({resumen.creditosCompletados})
+              </>
+            )}
           </button>
         )}
       </div>
