@@ -1,25 +1,20 @@
-import { Navigate, Outlet, useLocation, useNavigate } from 'react-router-dom'
+// En tu archivo RutasProtegidas.jsx
+import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import Encabezado from './components/Encabezado'
 
-const RutasProtegidas = () => {
-  const [usuario, setUsuario] = useState(null)
+const RutasProtegidas = ({ onLogout, isAuthenticated }) => {
   const [cargando, setCargando] = useState(true)
-  const navigate = useNavigate()
   const location = useLocation()
 
   useEffect(() => {
-    // Verificar usuario en localStorage
-    const usuarioStorage = JSON.parse(localStorage.getItem('usuarioArelyz'))
-    setUsuario(usuarioStorage)
-    setCargando(false)
+    // Simular tiempo de carga
+    const timer = setTimeout(() => {
+      setCargando(false)
+    }, 300)
     
-    // Si no hay usuario y NO estamos en la página de login
-    if (!usuarioStorage && location.pathname !== '/') {
-      // Redirigir al login y reemplazar el historial
-      navigate('/', { replace: true })
-    }
-  }, [location.pathname, navigate])
+    return () => clearTimeout(timer)
+  }, [])
 
   if (cargando) {
     return (
@@ -29,14 +24,14 @@ const RutasProtegidas = () => {
     )
   }
 
-  if (!usuario) {
-    // Reemplazar en el historial para evitar que vuelva atrás
+  // Usar isAuthenticated de las props en lugar de verificar localStorage
+  if (!isAuthenticated) {
     return <Navigate to="/" replace state={{ from: location }} />
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Encabezado />
+      <Encabezado onLogout={onLogout} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Outlet />
       </div>

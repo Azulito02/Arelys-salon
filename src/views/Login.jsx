@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../database/supabase'
 import './Login.css'
 
-const Login = () => {
+const Login = ({ onLogin }) => {  // Añade onLogin como prop
   const [credenciales, setCredenciales] = useState({
     usuario: '',
     contrasena: ''
@@ -39,8 +39,14 @@ const Login = () => {
           nombre: usuarios.nombre,
           rol: usuarios.rol || 'administrador'
         }))
+
+        // Llamar a onLogin para actualizar el estado global
+        if (onLogin) {
+          onLogin()
+        }
         
-        navigate('/inicio')
+        // Redirigir a inicio con replace para limpiar historial
+        navigate('/inicio', { replace: true })
       } else {
         setError('Usuario o contraseña incorrectos')
       }
@@ -73,6 +79,7 @@ const Login = () => {
               className="form-input"
               placeholder="Ingresa tu usuario"
               required
+              autoComplete="username"
             />
           </div>
           
@@ -88,6 +95,7 @@ const Login = () => {
               className="form-input"
               placeholder="Ingresa tu contraseña"
               required
+              autoComplete="current-password"
             />
           </div>
           
