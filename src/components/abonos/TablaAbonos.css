@@ -111,6 +111,7 @@
   font-size: 13px;
   font-weight: 600;
   border: 1px solid transparent;
+  position: relative;
 }
 
 .tabla-abonos .metodo-pago-icono {
@@ -140,10 +141,68 @@
   border-color: #ddd6fe;
 }
 
+.tabla-abonos .metodo-mixto {
+  background-color: #fef3c7;
+  color: #92400e;
+  border-color: #fde68a;
+  padding-left: 36px;
+}
+
+.tabla-abonos .metodo-mixto::before {
+  content: '🔄';
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+}
+
 .tabla-abonos .metodo-default {
   background-color: #f1f5f9;
   color: #475569;
   border-color: #e2e8f0;
+}
+
+/* Detalles de pago mixto */
+.detalles-mixto {
+  margin-top: 8px;
+  padding: 12px;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  border-left: 3px solid #fbbf24;
+  font-size: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.detalle-pago {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background-color: white;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+  min-width: 120px;
+}
+
+.detalle-pago .monto {
+  font-weight: 600;
+  color: #1f2937;
+  font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+}
+
+.detalle-banco {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background-color: #eff6ff;
+  border-radius: 6px;
+  border: 1px solid #dbeafe;
+  color: #1e40af;
+  font-size: 11px;
 }
 
 /* Fechas */
@@ -287,7 +346,6 @@
   color: #1e293b;
   font-weight: 700;
 }
-
 
 /* Estilos para filtros */
 .filtros-abonos {
@@ -467,4 +525,147 @@
 
 .celda-estado {
   text-align: center;
+}
+
+/* Añade estos estilos al archivo TablaAbonos.css existente */
+
+/* Nuevas columnas */
+.tabla-abonos .columna-total-credito {
+  min-width: 140px;
+}
+
+.tabla-abonos .columna-saldo-pendiente {
+  min-width: 180px;
+}
+
+/* Estilos para información de montos */
+.monto-abono-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.monto-abono {
+  color: #059669;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.porcentaje-abono {
+  font-size: 12px;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 2px 6px;
+  border-radius: 10px;
+  display: inline-block;
+  width: fit-content;
+}
+
+/* Estilos para total de crédito */
+.total-credito-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.total-credito {
+  color: #1f2937;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.detalle-total {
+  font-size: 12px;
+}
+
+.total-abonado {
+  color: #10b981;
+  background: #d1fae5;
+  padding: 2px 6px;
+  border-radius: 10px;
+  display: inline-block;
+}
+
+/* Estilos para saldo pendiente */
+.saldo-pendiente-info {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.saldo-pendiente.saldo-cero .saldo-monto {
+  color: #10b981;
+}
+
+.saldo-pendiente.saldo-pendiente .saldo-monto {
+  color: #dc2626;
+}
+
+.saldo-monto {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.progreso-saldo {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.barra-progreso {
+  width: 100%;
+  height: 6px;
+  background-color: #e5e7eb;
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progreso-llenado {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.porcentaje-completado {
+  font-size: 11px;
+  color: #6b7280;
+  text-align: right;
+}
+
+/* Sin información */
+.sin-info {
+  color: #9ca3af;
+  font-size: 14px;
+  font-style: italic;
+}
+
+/* Resumen actualizado */
+.resumen-item:nth-child(3) strong {
+  color: #3b82f6;
+}
+
+.resumen-item:nth-child(4) strong {
+  color: #10b981;
+}
+
+/* Ajuste responsive para más columnas */
+@media (max-width: 1400px) {
+  .tabla-abonos-card {
+    overflow-x: auto;
+  }
+  
+  .tabla-abonos {
+    min-width: 1300px;
+  }
+}
+
+/* Ajustes específicos para las nuevas columnas */
+.celda-total-credito,
+.celda-saldo-pendiente {
+  vertical-align: top;
+}
+
+/* Animación suave para hover */
+.fila-abono:hover .progreso-llenado {
+  transform: scaleY(1.2);
 }

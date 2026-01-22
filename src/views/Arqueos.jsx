@@ -5,11 +5,15 @@ import './Arqueos.css'
 const Arqueos = () => {
   const [arqueos, setArqueos] = useState([])
   const [loading, setLoading] = useState(true)
-  const [calculando, setCalculando] = useState(false) // <-- AGREGADO ESTE ESTADO
+  const [calculando, setCalculando] = useState(false)
   const [modalAbierto, setModalAbierto] = useState(false)
   const [resumenTurno, setResumenTurno] = useState(null)
   const [efectivoContado, setEfectivoContado] = useState('')
   const [ultimoArqueo, setUltimoArqueo] = useState(null)
+  const [creditosCompletadosInfo, setCreditosCompletadosInfo] = useState({
+    cantidad: 0,
+    clientes: []
+  })
   
   useEffect(() => {
     cargarArqueos()
@@ -56,21 +60,37 @@ const Arqueos = () => {
       const fechaHasta = new Date()
       
       // Cálculo básico en frontend para preview
-      const [ventasResp, creditosResp, abonosResp, gastosResp] = await Promise.all([
+      const [ventasResp, creditosResp, abonosResp, gastosResp, completadosResp] = await Promise.all([
         supabase.from('ventas').select('*').gte('fecha', fechaDesde.toISOString()),
         supabase.from('ventas_credito').select('*').gte('fecha', fechaDesde.toISOString()),
         supabase.from('abonos_credito').select('*').gte('fecha', fechaDesde.toISOString()),
-        supabase.from('gastos').select('*').gte('fecha', fechaDesde.toISOString())
+        supabase.from('gastos').select('*').gte('fecha', fechaDesde.toISOString()),
+        // Obtener créditos completados en el período
+        supabase.from('ventas_credito')
+          .select('*')
+          .gte('fecha', fechaDesde.toISOString())
+          .eq('saldo_pendiente', 0)
       ])
       
       const ventas = ventasResp.data || []
       const creditos = creditosResp.data || []
       const abonos = abonosResp.data || []
       const gastos = gastosResp.data || []
+      const completados = completadosResp.data || []
+      
+      // Calcular créditos completados y sus abonos
+      const abonosCompletados = abonos.filter(a => 
+        completados.some(c => c.id === a.venta_credito_id && a.metodo_pago === 'efectivo')
+      )
+      
+      const abonosEfectivoCompletados = abonosCompletados.reduce((s, a) => 
+        s + (parseFloat(a.monto) || 0), 0
+      )
       
       const totalVentas = ventas.reduce((s, v) => s + (parseFloat(v.total) || 0), 0)
       const totalCreditos = creditos.reduce((s, c) => s + (parseFloat(c.total) || 0), 0)
       
+      // TODOS los abonos en efectivo (incluyendo los que completaron créditos)
       const abonosEfectivo = abonos
         .filter(a => a.metodo_pago === 'efectivo')
         .reduce((s, a) => s + (parseFloat(a.monto) || 0), 0)
@@ -86,16 +106,18 @@ const Arqueos = () => {
         totalCreditos,
         abonosEfectivo,
         abonosOtros,
+        abonosEfectivoCompletados,
         totalGastos,
         efectivoNeto: totalVentas + abonosEfectivo - totalGastos,
         cantidadVentas: ventas.length,
         cantidadCreditos: creditos.length,
         cantidadAbonosEfectivo: abonos.filter(a => a.metodo_pago === 'efectivo').length,
+        cantidadAbonosEfectivoCompletados: abonosCompletados.length,
         cantidadAbonosOtros: abonos.filter(a => a.metodo_pago !== 'efectivo').length,
         cantidadGastos: gastos.length,
+        cantidadCreditosCompletados: completados.length,
         fechaDesde: fechaDesde.toLocaleString('es-MX'),
         fechaHasta: fechaHasta.toLocaleString('es-MX'),
-        // Agregar campos para mostrar en el modal
         totalVentasEfectivo: totalVentas,
         totalAbonosEfectivo: abonosEfectivo,
         totalAbonosOtros: abonosOtros,
@@ -105,6 +127,16 @@ const Arqueos = () => {
       
       setResumenTurno(resumen)
       setEfectivoContado((totalVentas + abonosEfectivo - totalGastos).toFixed(2))
+      
+      // Guardar información de créditos completados
+      setCreditosCompletadosInfo({
+        cantidad: completados.length,
+        clientes: completados.map(c => ({
+          nombre: c.nombre_cliente,
+          total: c.total
+        }))
+      })
+      
       setModalAbierto(true)
       
     } catch (error) {
@@ -123,6 +155,10 @@ const Arqueos = () => {
     setModalAbierto(false)
     setResumenTurno(null)
     setEfectivoContado('')
+    setCreditosCompletadosInfo({
+      cantidad: 0,
+      clientes: []
+    })
   }
 
   const realizarArqueo = async () => {
@@ -134,11 +170,25 @@ const Arqueos = () => {
     const usuario = JSON.parse(localStorage.getItem('usuarioArelyz'))?.nombre || 'Sistema'
     const efectivo = parseFloat(efectivoContado)
     
-    const confirmar = window.confirm(
+    // Mensaje más detallado
+    const mensajeConfirmacion = 
       `¿CONFIRMAR ARQUEO DE TURNO?\n\n` +
-      `Efectivo contado: C$${efectivo.toFixed(2)}\n\n` +
-      `Esta acción es IRREVERSIBLE. ¿Continuar?`
-    )
+      `📊 RESUMEN:\n` +
+      `• Ventas efectivo: C$${resumenTurno?.totalVentasEfectivo.toFixed(2)}\n` +
+      `• Abonos efectivo: C$${resumenTurno?.totalAbonosEfectivo.toFixed(2)} ` +
+      `(${resumenTurno?.cantidadAbonosEfectivo} abonos)\n` +
+      `• Gastos: C$${resumenTurno?.totalGastos.toFixed(2)}\n` +
+      `• Efectivo neto: C$${resumenTurno?.efectivoNeto.toFixed(2)}\n` +
+      `• Efectivo contado: C$${efectivo.toFixed(2)}\n` +
+      (creditosCompletadosInfo.cantidad > 0 ? 
+        `• Créditos completados: ${creditosCompletadosInfo.cantidad} (se eliminarán)\n` : '') +
+      `\n⚠️ Esta acción es IRREVERSIBLE.\n` +
+      `Se eliminarán ${resumenTurno?.cantidadVentas} ventas, ` +
+      `${resumenTurno?.cantidadAbonosEfectivo} abonos en efectivo y ` +
+      `${resumenTurno?.cantidadGastos} gastos.\n\n` +
+      `¿Continuar?`
+    
+    const confirmar = window.confirm(mensajeConfirmacion)
     
     if (!confirmar) return
     
@@ -157,60 +207,112 @@ const Arqueos = () => {
         throw new Error(data.error || 'Error en el arqueo')
       }
       
-      // Mostrar resultado
+      // Mostrar resultado DETALLADO
       const diferencia = data.diferencia || 0
       const resumen = data.resumen || {}
       
-      alert(
+      const mensajeExito = 
         `✅ ARQUEO COMPLETADO\n\n` +
-        `📊 Resumen:\n` +
+        `📊 RESULTADO:\n` +
         `• Ventas en efectivo: C$${(resumen.total_ventas_efectivo || 0).toFixed(2)}\n` +
         `• Abonos en efectivo: C$${(resumen.total_abonos_efectivo || 0).toFixed(2)}\n` +
         `• Gastos: C$${(resumen.total_gastos || 0).toFixed(2)}\n` +
         `• Efectivo neto esperado: C$${(resumen.efectivo_neto || 0).toFixed(2)}\n` +
         `• Efectivo contado: C$${efectivo.toFixed(2)}\n` +
-        (diferencia !== 0 ? `• Diferencia: C$${Math.abs(diferencia).toFixed(2)} ${diferencia > 0 ? '(Sobrante)' : '(Faltante)'}\n` : '') +
-        `\n🗑️ Registros procesados:\n` +
-        `• ${resumen.cantidad_ventas || 0} ventas\n` +
-        `• ${resumen.cantidad_abonos_efectivo || 0} abonos en efectivo\n` +
-        `• ${resumen.cantidad_gastos || 0} gastos`
-      )
+        (diferencia !== 0 ? 
+          `• Diferencia: C$${Math.abs(diferencia).toFixed(2)} ${diferencia > 0 ? '(Sobrante)' : '(Faltante)'}\n` : '') +
+        `\n🗑️ REGISTROS PROCESADOS:\n` +
+        `• ${resumen.cantidad_ventas || 0} ventas eliminadas\n` +
+        `• ${resumen.cantidad_abonos_efectivo || 0} abonos en efectivo eliminados\n` +
+        `• ${resumen.cantidad_gastos || 0} gastos eliminados\n` +
+        (data.creditos_completados_eliminados > 0 ? 
+          `• ${data.creditos_completados_eliminados} créditos completados eliminados\n` : '') +
+        `\n💾 HISTORIAL:\n` +
+        `• Todo el historial se guardó en la tabla "facturados"`
+      
+      alert(mensajeExito)
       
       setModalAbierto(false)
       setResumenTurno(null)
       setEfectivoContado('')
+      setCreditosCompletadosInfo({
+        cantidad: 0,
+        clientes: []
+      })
       cargarArqueos()
       
     } catch (error) {
       console.error('Error en arqueo:', error)
       
-      // Errores comunes
+      // Errores comunes con mensajes específicos
       if (error.message && error.message.includes('function realizar_arqueo_caja')) {
         alert(
-          'Error: La función SQL no está creada.\n\n' +
+          '❌ ERROR: La función SQL no está creada.\n\n' +
           'Por favor, ejecuta este SQL en el editor SQL de Supabase:\n\n' +
+          '-- 1. ELIMINAR trigger viejo\n' +
+          'DROP TRIGGER IF EXISTS trigger_actualizar_saldo ON abonos_credito;\n' +
+          'DROP FUNCTION IF EXISTS actualizar_saldo_credito();\n\n' +
+          '-- 2. CREAR nuevo trigger simple\n' +
+          'CREATE OR REPLACE FUNCTION actualizar_saldo_simple()\n' +
+          'RETURNS TRIGGER AS $$\n' +
+          'BEGIN\n' +
+          '  IF TG_OP = \'INSERT\' THEN\n' +
+          '    UPDATE ventas_credito \n' +
+          '    SET saldo_pendiente = GREATEST(saldo_pendiente - NEW.monto, 0)\n' +
+          '    WHERE id = NEW.venta_credito_id;\n' +
+          '  ELSIF TG_OP = \'DELETE\' THEN\n' +
+          '    UPDATE ventas_credito \n' +
+          '    SET saldo_pendiente = saldo_pendiente + OLD.monto\n' +
+          '    WHERE id = OLD.venta_credito_id;\n' +
+          '  ELSIF TG_OP = \'UPDATE\' THEN\n' +
+          '    UPDATE ventas_credito \n' +
+          '    SET saldo_pendiente = GREATEST(saldo_pendiente + OLD.monto - NEW.monto, 0)\n' +
+          '    WHERE id = NEW.venta_credito_id;\n' +
+          '  END IF;\n' +
+          '  RETURN NULL;\n' +
+          'END;\n' +
+          '$$ LANGUAGE plpgsql;\n\n' +
+          'CREATE TRIGGER trigger_actualizar_saldo_simple\n' +
+          'AFTER INSERT OR UPDATE OR DELETE ON abonos_credito\n' +
+          'FOR EACH ROW EXECUTE FUNCTION actualizar_saldo_simple();\n\n' +
+          '-- 3. CREAR función de arqueo mejorada\n' +
           'CREATE OR REPLACE FUNCTION realizar_arqueo_caja(\n' +
           '  p_efectivo_contado numeric,\n' +
           '  p_usuario_nombre text DEFAULT \'Sistema\'\n' +
           ') RETURNS json AS $$\n' +
-          '-- (código SQL que te proporcioné anteriormente)\n' +
+          'DECLARE\n' +
+          '  v_ultimo_arqueo timestamp;\n' +
+          '  v_fecha_desde timestamp;\n' +
+          '  v_fecha_hasta timestamp := now();\n' +
+          '  v_resumen json;\n' +
+          '  v_arqueo_id uuid;\n' +
+          '  v_creditos_completados integer := 0;\n' +
+          'BEGIN\n' +
+          '  SELECT MAX(fecha) INTO v_ultimo_arqueo FROM arqueos;\n' +
+          '  IF v_ultimo_arqueo IS NULL THEN\n' +
+          '    v_fecha_desde := date_trunc(\'day\', now());\n' +
+          '  ELSE\n' +
+          '    v_fecha_desde := v_ultimo_arqueo;\n' +
+          '  END IF;\n' +
+          '  -- (resto del código SQL que te di anteriormente)\n' +
           '$$ LANGUAGE plpgsql SECURITY DEFINER;'
         )
       } else if (error.message && error.message.includes('column')) {
         alert(
-          'Error: Faltan columnas en la tabla.\n\n' +
+          '❌ ERROR: Faltan columnas en la tabla.\n\n' +
           'Ejecuta este SQL en Supabase:\n\n' +
           'ALTER TABLE arqueos \n' +
           'ADD COLUMN IF NOT EXISTS ventas_eliminadas integer DEFAULT 0,\n' +
           'ADD COLUMN IF NOT EXISTS abonos_efectivo_eliminados integer DEFAULT 0,\n' +
           'ADD COLUMN IF NOT EXISTS gastos_eliminados integer DEFAULT 0,\n' +
+          'ADD COLUMN IF NOT EXISTS creditos_completados_eliminados integer DEFAULT 0,\n' +
           'ADD COLUMN IF NOT EXISTS periodo_desde text,\n' +
           'ADD COLUMN IF NOT EXISTS periodo_hasta text,\n' +
           'ADD COLUMN IF NOT EXISTS diferencia_efectivo numeric(10,2) DEFAULT 0,\n' +
           'ADD COLUMN IF NOT EXISTS usuario text DEFAULT \'Sistema\';'
         )
       } else {
-        alert(`Error: ${error.message || 'No se pudo completar el arqueo'}`)
+        alert(`❌ ERROR: ${error.message || 'No se pudo completar el arqueo'}`)
       }
     } finally {
       setLoading(false)
@@ -248,6 +350,11 @@ const Arqueos = () => {
             <div className="ultimo-arqueo-info">
               <span className="info-label">Último arqueo:</span>
               <span className="info-valor">{formatFechaNicaragua(ultimoArqueo.fecha)}</span>
+              {ultimoArqueo.creditos_completados_eliminados > 0 && (
+                <span className="info-extra">
+                  • {ultimoArqueo.creditos_completados_eliminados} créditos eliminados
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -291,6 +398,16 @@ const Arqueos = () => {
             <div className="estadistica-contenido">
               <p className="estadistica-valor">{arqueos.length}</p>
               <p className="estadistica-label">Arqueos totales</p>
+            </div>
+          </div>
+          
+          <div className="estadistica-card">
+            <div className="estadistica-icono">💳</div>
+            <div className="estadistica-contenido">
+              <p className="estadistica-valor">
+                {ultimoArqueo.creditos_completados_eliminados || 0}
+              </p>
+              <p className="estadistica-label">Últimos créditos eliminados</p>
             </div>
           </div>
           
@@ -371,7 +488,7 @@ const Arqueos = () => {
                         <button 
                           className="btn-detalle"
                           onClick={() => {
-                            alert(
+                            const mensajeDetalle = 
                               `📋 DETALLE DEL ARQUEO\n\n` +
                               `📅 Fecha: ${formatFechaNicaragua(arqueo.fecha)}\n` +
                               `💰 Ventas totales: C$${arqueo.total_ventas}\n` +
@@ -379,10 +496,15 @@ const Arqueos = () => {
                               `💵 Efectivo bruto: C$${arqueo.total_efectivo}\n` +
                               `📉 Gastos: C$${arqueo.total_gastos}\n` +
                               `🏦 Efectivo en caja: C$${arqueo.efectivo_en_caja}\n` +
-                              (arqueo.ventas_eliminadas ? `📊 Ventas eliminadas: ${arqueo.ventas_eliminadas}\n` : '') +
+                              `📊 Diferencia: C$${arqueo.diferencia_efectivo || 0}\n` +
+                              (arqueo.ventas_eliminadas ? `🗑️ Ventas eliminadas: ${arqueo.ventas_eliminadas}\n` : '') +
                               (arqueo.abonos_efectivo_eliminados ? `💸 Abonos eliminados: ${arqueo.abonos_efectivo_eliminados}\n` : '') +
-                              (arqueo.gastos_eliminados ? `📋 Gastos eliminados: ${arqueo.gastos_eliminados}\n` : '')
-                            )
+                              (arqueo.gastos_eliminados ? `📋 Gastos eliminados: ${arqueo.gastos_eliminados}\n` : '') +
+                              (arqueo.creditos_completados_eliminados ? 
+                                `💳 Créditos completados eliminados: ${arqueo.creditos_completados_eliminados}\n` : '') +
+                              (arqueo.usuario ? `👤 Usuario: ${arqueo.usuario}` : '')
+                            
+                            alert(mensajeDetalle)
                           }}
                         >
                           Ver detalle
@@ -415,6 +537,21 @@ const Arqueos = () => {
                 </p>
               </div>
               
+              {/* Información especial sobre abonos completos */}
+              {resumenTurno.cantidadAbonosEfectivoCompletados > 0 && (
+                <div className="info-abonos-completos">
+                  <div className="info-icono">💡</div>
+                  <div className="info-contenido">
+                    <p className="info-titulo">ABONOS COMPLETOS INCLUIDOS</p>
+                    <p className="info-texto">
+                      Se detectaron <strong>{resumenTurno.cantidadAbonosEfectivoCompletados}</strong> abonos 
+                      que completaron créditos (C${resumenTurno.abonosEfectivoCompletados.toFixed(2)}). 
+                      Estos aparecen en "Abonos en efectivo" y los créditos completados se eliminarán en el arqueo.
+                    </p>
+                  </div>
+                </div>
+              )}
+              
               <div className="resumen-grid">
                 {/* Columna izquierda - Ingresos */}
                 <div className="resumen-columna ingresos-col">
@@ -428,12 +565,19 @@ const Arqueos = () => {
                     <span className="resumen-cantidad">({resumenTurno.cantidadVentas} ventas)</span>
                   </div>
                   
-                  <div className="resumen-item">
+                  <div className="resumen-item destacado">
                     <span className="resumen-label">Abonos en efectivo:</span>
                     <span className="resumen-valor positivo">
                       C${resumenTurno.totalAbonosEfectivo.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                     </span>
-                    <span className="resumen-cantidad">({resumenTurno.cantidadAbonosEfectivo} abonos)</span>
+                    <span className="resumen-cantidad">
+                      ({resumenTurno.cantidadAbonosEfectivo} abonos)
+                      {resumenTurno.cantidadAbonosEfectivoCompletados > 0 && (
+                        <span className="completos-info">
+                          • {resumenTurno.cantidadAbonosEfectivoCompletados} completaron créditos
+                        </span>
+                      )}
+                    </span>
                   </div>
                   
                   <div className="resumen-item">
@@ -529,9 +673,18 @@ const Arqueos = () => {
                   <li><span className="eliminar-item">🗑️ {resumenTurno.cantidadVentas} ventas en efectivo</span></li>
                   <li><span className="eliminar-item">🗑️ {resumenTurno.cantidadAbonosEfectivo} abonos en efectivo</span></li>
                   <li><span className="eliminar-item">🗑️ {resumenTurno.cantidadGastos} gastos</span></li>
+                  {creditosCompletadosInfo.cantidad > 0 && (
+                    <li><span className="eliminar-item">🗑️ {creditosCompletadosInfo.cantidad} créditos completados</span></li>
+                  )}
                   <li><span className="mantener-item">✅ {resumenTurno.cantidadCreditos} créditos activos (se mantienen)</span></li>
                   <li><span className="mantener-item">✅ {resumenTurno.cantidadAbonosOtros} abonos otros métodos (se mantienen)</span></li>
                 </ul>
+                
+                <div className="advertencia-footer">
+                  <p className="advertencia-nota">
+                    💾 <strong>Nota:</strong> Todo el historial se guardará en la tabla "facturados" para consultas futuras.
+                  </p>
+                </div>
               </div>
             </div>
             

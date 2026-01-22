@@ -39,6 +39,19 @@ const TablaAbonos = ({
     return credito?.saldo_pendiente === 0;
   };
 
+  // Función para obtener el crédito asociado
+  const getCreditoInfo = (abono) => {
+    const credito = creditos.find(c => c.id === abono.venta_credito_id);
+    if (!credito) return null;
+    
+    return {
+      total: credito.total || 0,
+      saldoPendiente: credito.saldo_pendiente || 0,
+      totalAbonado: credito.total_abonado || 0,
+      completado: credito.saldo_pendiente === 0
+    };
+  };
+
   // Función para obtener el estado del crédito
   const getEstadoCredito = (abono) => {
     const credito = creditos.find(c => c.id === abono.venta_credito_id);
@@ -90,7 +103,9 @@ const TablaAbonos = ({
               <tr>
                 <th className="columna-cliente">Cliente</th>
                 <th className="columna-producto">Producto</th>
-                <th className="columna-monto">Monto</th>
+                <th className="columna-monto">Monto Abono</th>
+                <th className="columna-total-credito">Total Crédito</th>
+                <th className="columna-saldo-pendiente">Saldo Pendiente</th>
                 <th className="columna-metodo">Método de Pago</th>
                 <th className="columna-fecha">Fecha</th>
                 <th className="columna-estado">Estado Crédito</th>
@@ -100,20 +115,21 @@ const TablaAbonos = ({
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="7" className="cargando-mensaje">
+                  <td colSpan="9" className="cargando-mensaje">
                     <div className="spinner"></div>
                     Cargando abonos...
                   </td>
                 </tr>
               ) : abonos.length === 0 ? (
                 <tr>
-                  <td colSpan="7" className="sin-registros">
+                  <td colSpan="9" className="sin-registros">
                     No hay abonos registrados
                   </td>
                 </tr>
               ) : (
                 abonos.map((abono) => {
                   const credito = creditos.find(c => c.id === abono.venta_credito_id);
+                  const creditoInfo = getCreditoInfo(abono);
                   const creditoCompletado = isCreditoCompletado(abono);
                   
                   return (
@@ -139,9 +155,63 @@ const TablaAbonos = ({
                         )}
                       </td>
                       <td className="celda-monto">
-                        <strong>
-                          ${parseFloat(abono.monto).toFixed(2)}
-                        </strong>
+                        <div className="monto-abono-info">
+                          <strong className="monto-abono">
+                            ${parseFloat(abono.monto).toFixed(2)}
+                          </strong>
+                          {creditoInfo && (
+                            <div className="porcentaje-abono">
+                              {(creditoInfo.total > 0 ? (abono.monto / creditoInfo.total * 100).toFixed(1) : '0')}% del total
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="celda-total-credito">
+                        {creditoInfo ? (
+                          <div className="total-credito-info">
+                            <strong className="total-credito">
+                              ${parseFloat(creditoInfo.total).toFixed(2)}
+                            </strong>
+                            <div className="detalle-total">
+                              {creditoInfo.totalAbonado > 0 && (
+                                <span className="total-abonado">
+                                  ${parseFloat(creditoInfo.totalAbonado).toFixed(2)} abonado
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="sin-info">N/A</span>
+                        )}
+                      </td>
+                      <td className="celda-saldo-pendiente">
+                        {creditoInfo ? (
+                          <div className={`saldo-pendiente-info ${creditoInfo.saldoPendiente === 0 ? 'saldo-cero' : 'saldo-pendiente'}`}>
+                            <strong className="saldo-monto">
+                              ${parseFloat(creditoInfo.saldoPendiente).toFixed(2)}
+                            </strong>
+                            <div className="progreso-saldo">
+                              {creditoInfo.total > 0 && (
+                                <div className="barra-progreso">
+                                  <div 
+                                    className="progreso-llenado"
+                                    style={{ 
+                                      width: `${(creditoInfo.totalAbonado / creditoInfo.total * 100).toFixed(1)}%`,
+                                      backgroundColor: creditoInfo.saldoPendiente === 0 ? '#10b981' : '#3b82f6'
+                                    }}
+                                  ></div>
+                                </div>
+                              )}
+                              {creditoInfo.total > 0 && (
+                                <div className="porcentaje-completado">
+                                  {((creditoInfo.totalAbonado / creditoInfo.total) * 100).toFixed(1)}% completado
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="sin-info">N/A</span>
+                        )}
                       </td>
                       <td className="celda-metodo">
                         <div className={`metodo-pago-badge ${getMetodoPagoColor(abono.metodo_pago)}`}>
@@ -202,23 +272,21 @@ const TablaAbonos = ({
               <strong>{abonos.length} registros</strong>
             </div>
             <div className="resumen-item">
-              <span>Abonos activos:</span>
-              <strong>
-                {abonos.filter(a => !isCreditoCompletado(a)).length} activos
-              </strong>
-            </div>
-            <div className="resumen-item">
-              <span>Total monto:</span>
+              <span>Total monto abonos:</span>
               <strong>
                 ${abonos.reduce((sum, abono) => sum + parseFloat(abono.monto), 0).toFixed(2)}
               </strong>
             </div>
             <div className="resumen-item">
-              <span>Clientes únicos:</span>
+              <span>Créditos pendientes:</span>
               <strong>
-                {[...new Set(abonos.map(a => 
-                  creditos.find(c => c.id === a.venta_credito_id)?.nombre_cliente
-                ).filter(Boolean))].length} clientes
+                {creditos.filter(c => c.saldo_pendiente > 0).length} activos
+              </strong>
+            </div>
+            <div className="resumen-item">
+              <span>Créditos completados:</span>
+              <strong>
+                {creditos.filter(c => c.saldo_pendiente === 0).length} pagados
               </strong>
             </div>
           </div>
