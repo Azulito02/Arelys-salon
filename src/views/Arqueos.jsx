@@ -1,7 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../database/supabase'
 import * as XLSX from 'xlsx'
-import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import './Arqueos.css'
 
@@ -47,17 +46,17 @@ const Arqueos = () => {
     try {
       setCalculando(true)
       
-      // Siempre desde inicio del día actual
       let fechaDesde = new Date()
       fechaDesde.setHours(0, 0, 0, 0)
-      
       const fechaHasta = new Date()
       
-      // Cálculo de todos los datos del día
+      // Obtener SOLO abonos NO procesados en arqueo
       const [ventasResp, creditosResp, abonosResp, gastosResp] = await Promise.all([
         supabase.from('ventas').select('*').gte('fecha', fechaDesde.toISOString()),
         supabase.from('ventas_credito').select('*').gte('fecha', fechaDesde.toISOString()),
-        supabase.from('abonos_credito').select('*').gte('fecha', fechaDesde.toISOString()),
+        supabase.from('abonos_credito').select('*')
+          .gte('fecha', fechaDesde.toISOString())
+          .is('procesado_en_arqueo', false),
         supabase.from('gastos').select('*').gte('fecha', fechaDesde.toISOString())
       ])
       
@@ -66,54 +65,129 @@ const Arqueos = () => {
       const abonos = abonosResp.data || []
       const gastos = gastosResp.data || []
       
-      // Calcular totales
-      const totalVentas = ventas.reduce((s, v) => s + (parseFloat(v.total) || 0), 0)
+      // ============ CALCULAR VENTAS POR MÉTODO DE PAGO ============
+      let totalVentasEfectivo = 0
+      let totalVentasTarjeta = 0
+      let totalVentasTransferencia = 0
+      
+      let cantidadVentasEfectivo = 0
+      let cantidadVentasTarjeta = 0
+      let cantidadVentasTransferencia = 0
+      
+      // Contadores específicos para cada método
+      ventas.forEach(venta => {
+        switch(venta.metodo_pago) {
+          case 'efectivo':
+            totalVentasEfectivo += parseFloat(venta.total) || 0
+            cantidadVentasEfectivo++
+            break
+          case 'tarjeta':
+            totalVentasTarjeta += parseFloat(venta.total) || 0
+            cantidadVentasTarjeta++
+            break
+          case 'transferencia':
+            totalVentasTransferencia += parseFloat(venta.total) || 0
+            cantidadVentasTransferencia++
+            break
+          case 'mixto':
+            // Para ventas mixtas, sumar a cada método según corresponda
+            totalVentasEfectivo += parseFloat(venta.efectivo) || 0
+            totalVentasTarjeta += parseFloat(venta.tarjeta) || 0
+            totalVentasTransferencia += parseFloat(venta.transferencia) || 0
+            
+            // CONTAR LA VENTA COMPLETA (1 venta total)
+            // Pero sumar cantidades a cada método si tiene monto
+            if (parseFloat(venta.efectivo) > 0) cantidadVentasEfectivo++
+            if (parseFloat(venta.tarjeta) > 0) cantidadVentasTarjeta++
+            if (parseFloat(venta.transferencia) > 0) cantidadVentasTransferencia++
+            break
+        }
+      })
+      
+      // ============ CALCULAR ABONOS POR MÉTODO DE PAGO ============
+      let abonosEfectivo = 0
+      let abonosTarjeta = 0
+      let abonosTransferencia = 0
+      
+      let cantidadAbonosEfectivo = 0
+      let cantidadAbonosTarjeta = 0
+      let cantidadAbonosTransferencia = 0
+      
+      // CORRECCIÓN IMPORTANTE: Aquí estaba el error
+      abonos.forEach(abono => {
+        switch(abono.metodo_pago) {
+          case 'efectivo':
+            abonosEfectivo += parseFloat(abono.monto) || 0
+            cantidadAbonosEfectivo++  // ¡ESTE CONTADOR SÍ DEBE INCREMENTAR!
+            break
+          case 'tarjeta':
+            abonosTarjeta += parseFloat(abono.monto) || 0
+            cantidadAbonosTarjeta++  // ¡ESTE CONTADOR SÍ DEBE INCREMENTAR!
+            break
+          case 'transferencia':
+            abonosTransferencia += parseFloat(abono.monto) || 0
+            cantidadAbonosTransferencia++  // ¡ESTE CONTADOR SÍ DEBE INCREMENTAR!
+            break
+          case 'mixto':
+            // Para abonos mixtos, dividir por método
+            abonosEfectivo += parseFloat(abono.efectivo) || 0
+            abonosTarjeta += parseFloat(abono.tarjeta) || 0
+            abonosTransferencia += parseFloat(abono.transferencia) || 0
+            
+            // CONTAR CADA MÉTODO SI TIENE MONTO
+            if (parseFloat(abono.efectivo) > 0) cantidadAbonosEfectivo++
+            if (parseFloat(abono.tarjeta) > 0) cantidadAbonosTarjeta++
+            if (parseFloat(abono.transferencia) > 0) cantidadAbonosTransferencia++
+            break
+        }
+      })
+      
       const totalCreditos = creditos.reduce((s, c) => s + (parseFloat(c.total) || 0), 0)
-      
-      // Separar abonos por método
-      const abonosEfectivo = abonos
-        .filter(a => a.metodo_pago === 'efectivo')
-        .reduce((s, a) => s + (parseFloat(a.monto) || 0), 0)
-      
-      const abonosTarjeta = abonos
-        .filter(a => a.metodo_pago === 'tarjeta')
-        .reduce((s, a) => s + (parseFloat(a.monto) || 0), 0)
-      
-      const abonosTransferencia = abonos
-        .filter(a => a.metodo_pago === 'transferencia')
-        .reduce((s, a) => s + (parseFloat(a.monto) || 0), 0)
-      
       const totalGastos = gastos.reduce((s, g) => s + (parseFloat(g.monto) || 0), 0)
       
       const resumen = {
-        totalVentas,
-        totalCreditos,
-        abonosEfectivo,
+        // Totales por método de pago
+        totalVentasEfectivo,
+        totalVentasTarjeta,
+        totalVentasTransferencia,
+        
+        totalAbonosEfectivo: abonosEfectivo,
         abonosTarjeta,
         abonosTransferencia,
-        totalGastos,
-        efectivoNeto: totalVentas + abonosEfectivo - totalGastos,
         
-        // Cantidades
+        totalCreditos,
+        totalGastos,
+        
+        // Cálculo de efectivo para arqueo
+        efectivoNeto: totalVentasEfectivo + abonosEfectivo - totalGastos,
+        totalEfectivo: totalVentasEfectivo + abonosEfectivo,
+        
+        // Cantidades CORREGIDAS
         cantidadVentas: ventas.length,
+        cantidadVentasEfectivo,
+        cantidadVentasTarjeta,
+        cantidadVentasTransferencia,
+        
         cantidadCreditos: creditos.length,
-        cantidadAbonosEfectivo: abonos.filter(a => a.metodo_pago === 'efectivo').length,
-        cantidadAbonosTarjeta: abonos.filter(a => a.metodo_pago === 'tarjeta').length,
-        cantidadAbonosTransferencia: abonos.filter(a => a.metodo_pago === 'transferencia').length,
+        
+        // ¡¡¡CANTIDADES CORREGIDAS!!!
+        cantidadAbonosEfectivo,
+        cantidadAbonosTarjeta,
+        cantidadAbonosTransferencia,
+        
         cantidadGastos: gastos.length,
         
         // Fechas
         fechaDesde: fechaDesde.toLocaleString('es-MX'),
         fechaHasta: fechaHasta.toLocaleString('es-MX'),
         
-        // Totales para cálculo
-        totalVentasEfectivo: totalVentas,
-        totalAbonosEfectivo: abonosEfectivo,
-        totalEfectivo: totalVentas + abonosEfectivo
+        // Totales generales
+        totalVentasGeneral: totalVentasEfectivo + totalVentasTarjeta + totalVentasTransferencia,
+        totalAbonosGeneral: abonosEfectivo + abonosTarjeta + abonosTransferencia
       }
       
       setResumenTurno(resumen)
-      setEfectivoContado((totalVentas + abonosEfectivo - totalGastos).toFixed(2))
+      setEfectivoContado((totalVentasEfectivo + abonosEfectivo - totalGastos).toFixed(2))
       setModalAbierto(true)
       
     } catch (error) {
@@ -143,19 +217,26 @@ const Arqueos = () => {
     const usuario = JSON.parse(localStorage.getItem('usuarioArelyz'))?.nombre || 'Sistema'
     const efectivo = parseFloat(efectivoContado)
     
+    // Mensaje de confirmación CON CANTIDADES CORRECTAS
     const mensajeConfirmacion = 
       `¿CONFIRMAR ARQUEO DE TURNO?\n\n` +
-      `📊 RESUMEN DE EFECTIVO:\n` +
-      `• Ventas efectivo: C$${resumenTurno?.totalVentasEfectivo.toFixed(2)}\n` +
-      `• Abonos efectivo: C$${resumenTurno?.totalAbonosEfectivo.toFixed(2)} ` +
+      `💰 RESUMEN DE EFECTIVO (SOLO PARA CAJA):\n` +
+      `• Ventas en efectivo: C$${resumenTurno?.totalVentasEfectivo.toFixed(2)} ` +
+      `(${resumenTurno?.cantidadVentasEfectivo} ventas)\n` +
+      `• Abonos en efectivo: C$${resumenTurno?.totalAbonosEfectivo.toFixed(2)} ` +
       `(${resumenTurno?.cantidadAbonosEfectivo} abonos)\n` +
-      `• Gastos: C$${resumenTurno?.totalGastos.toFixed(2)}\n` +
+      `• Gastos: C$${resumenTurno?.totalGastos.toFixed(2)} ` +
+      `(${resumenTurno?.cantidadGastos} gastos)\n` +
       `• Efectivo neto esperado: C$${resumenTurno?.efectivoNeto.toFixed(2)}\n` +
       `• Efectivo contado: C$${efectivo.toFixed(2)}\n` +
-      `\n💳 OTROS MÉTODOS:\n` +
-      `• Tarjetas: C$${resumenTurno?.abonosTarjeta.toFixed(2)} ` +
+      `\n💳 OTROS MÉTODOS DE PAGO (NO VAN A CAJA):\n` +
+      `• Ventas con tarjeta: C$${resumenTurno?.totalVentasTarjeta.toFixed(2)} ` +
+      `(${resumenTurno?.cantidadVentasTarjeta} ventas)\n` +
+      `• Ventas con transferencia: C$${resumenTurno?.totalVentasTransferencia.toFixed(2)} ` +
+      `(${resumenTurno?.cantidadVentasTransferencia} ventas)\n` +
+      `• Abonos con tarjeta: C$${resumenTurno?.abonosTarjeta.toFixed(2)} ` +
       `(${resumenTurno?.cantidadAbonosTarjeta} abonos)\n` +
-      `• Transferencias: C$${resumenTurno?.abonosTransferencia.toFixed(2)} ` +
+      `• Abonos con transferencia: C$${resumenTurno?.abonosTransferencia.toFixed(2)} ` +
       `(${resumenTurno?.cantidadAbonosTransferencia} abonos)\n` +
       `\n⚠️ Esta acción es IRREVERSIBLE.\n` +
       `¿Continuar?`
@@ -182,25 +263,30 @@ const Arqueos = () => {
       
       const mensajeExito = 
         `✅ ARQUEO COMPLETADO\n\n` +
-        `📊 RESULTADO DE EFECTIVO:\n` +
-        `• Ventas en efectivo: C$${(resumen.total_ventas_efectivo || 0).toFixed(2)}\n` +
-        `• Abonos en efectivo: C$${(resumen.total_abonos_efectivo || 0).toFixed(2)}\n` +
-        `• Gastos: C$${(resumen.total_gastos || 0).toFixed(2)}\n` +
+        `💰 RESULTADO DE EFECTIVO EN CAJA:\n` +
+        `• Ventas en efectivo: C$${(resumen.total_ventas_efectivo || 0).toFixed(2)} ` +
+        `(${resumen.cantidad_ventas_efectivo || 0} ventas)\n` +
+        `• Abonos en efectivo: C$${(resumen.total_abonos_efectivo || 0).toFixed(2)} ` +
+        `(${resumen.cantidad_abonos_efectivo || 0} abonos)\n` +
+        `• Gastos: C$${(resumen.total_gastos || 0).toFixed(2)} ` +
+        `(${resumen.cantidad_gastos || 0} gastos)\n` +
         `• Efectivo neto esperado: C$${(resumen.efectivo_neto || 0).toFixed(2)}\n` +
         `• Efectivo contado: C$${efectivo.toFixed(2)}\n` +
         (diferencia !== 0 ? 
           `• Diferencia: C$${Math.abs(diferencia).toFixed(2)} ${diferencia > 0 ? '(Sobrante)' : '(Faltante)'}\n` : '') +
-        `\n💳 OTROS MÉTODOS:\n` +
-        `• Tarjetas: C$${(resumen.total_abonos_tarjeta || 0).toFixed(2)} ` +
+        `\n💳 OTROS MÉTODOS PROCESADOS:\n` +
+        `• Ventas tarjeta: C$${(resumen.total_ventas_tarjeta || 0).toFixed(2)} ` +
+        `(${resumen.cantidad_ventas_tarjeta || 0} ventas)\n` +
+        `• Ventas transferencia: C$${(resumen.total_ventas_transferencia || 0).toFixed(2)} ` +
+        `(${resumen.cantidad_ventas_transferencia || 0} ventas)\n` +
+        `• Abonos tarjeta: C$${(resumen.total_abonos_tarjeta || 0).toFixed(2)} ` +
         `(${resumen.cantidad_abonos_tarjeta || 0} abonos)\n` +
-        `• Transferencias: C$${(resumen.total_abonos_transferencia || 0).toFixed(2)} ` +
+        `• Abonos transferencia: C$${(resumen.total_abonos_transferencia || 0).toFixed(2)} ` +
         `(${resumen.cantidad_abonos_transferencia || 0} abonos)\n` +
         `\n🗑️ REGISTROS PROCESADOS:\n` +
         `• ${resumen.cantidad_ventas || 0} ventas eliminadas\n` +
-        `• ${resumen.cantidad_abonos_efectivo || 0} abonos en efectivo (mantenidos)\n` +
         `• ${resumen.cantidad_gastos || 0} gastos eliminados\n` +
-        `• ${resumen.cantidad_abonos_tarjeta || 0} abonos con tarjeta (mantenidos)\n` +
-        `• ${resumen.cantidad_abonos_transferencia || 0} abonos con transferencia (mantenidos)`
+        `• ${resumen.cantidad_abonos_efectivo || 0} abonos en efectivo marcados como procesados`
       
       alert(mensajeExito)
       
@@ -295,8 +381,6 @@ const Arqueos = () => {
       // Configuración de colores
       const colorPrimario = [139, 92, 246] // Morado
       const colorSecundario = [59, 130, 246] // Azul
-      const colorExito = [16, 185, 129] // Verde
-      const colorError = [239, 68, 68] // Rojo
       
       // Título
       doc.setFontSize(20)
@@ -420,43 +504,6 @@ const Arqueos = () => {
     const estadoDiferencia = diferencia > 0 ? '💰 SOBRANTE' : diferencia < 0 ? '📉 FALTANTE' : '✅ EXACTO'
     const colorDiferencia = diferencia > 0 ? '#059669' : diferencia < 0 ? '#dc2626' : '#3b82f6'
     
-    const mensaje = `
-🎯 **DETALLE COMPLETO DEL ARQUEO**
-
-📅 **FECHA Y HORA**
-• ${formatFechaNicaragua(arqueo.fecha)}
-• Usuario: ${arqueo.usuario || 'Sistema'}
-• ID: ${arqueo.id.substring(0, 8)}...
-
-📊 **RESUMEN FINANCIERO**
-• 💰 Ventas Totales: C$${parseFloat(arqueo.total_ventas).toFixed(2)}
-• 💳 Ventas Crédito: C$${parseFloat(arqueo.total_credito).toFixed(2)}
-• 💵 Efectivo Bruto: C$${parseFloat(arqueo.total_efectivo).toFixed(2)}
-• 📉 Gastos: C$${parseFloat(arqueo.total_gastos).toFixed(2)}
-• 🏦 Efectivo en Caja: C$${parseFloat(arqueo.efectivo_en_caja).toFixed(2)}
-
-📈 **ANÁLISIS DE DIFERENCIA**
-• Diferencia: C$${Math.abs(diferencia).toFixed(2)}
-• Estado: <span style="color: ${colorDiferencia}; font-weight: bold;">${estadoDiferencia}</span>
-${diferencia !== 0 ? `• Observación: ${diferencia > 0 ? 'Hay más efectivo del esperado' : 'Hay menos efectivo del esperado'}` : ''}
-
-🗂️ **DETALLES OPERATIVOS**
-• Ventas eliminadas: ${arqueo.ventas_eliminadas || 0}
-• Gastos eliminados: ${arqueo.gastos_eliminados || 0}
-• Abonos tarjeta: C$${parseFloat(arqueo.total_abonos_tarjeta || 0).toFixed(2)}
-• Abonos transferencia: C$${parseFloat(arqueo.total_abonos_transferencia || 0).toFixed(2)}
-
-📅 **PERÍODO CONTABILIZADO**
-• Desde: ${arqueo.periodo_desde || 'No especificado'}
-• Hasta: ${arqueo.periodo_hasta || 'No especificado'}
-
-💡 **INFORMACIÓN ADICIONAL**
-${diferencia === 0 ? '✅ El arqueo coincide exactamente con lo esperado' : 
-  diferencia > 0 ? '💡 Considerar revisión de ingresos no registrados' : 
-  '⚠️ Verificar posibles gastos no registrados o errores en cobros'}
-    `.trim()
-    
-    // Crear ventana personalizada
     const ventana = window.open('', '_blank', 'width=600,height=700,scrollbars=yes')
     ventana.document.write(`
       <html>
@@ -611,7 +658,6 @@ ${diferencia === 0 ? '✅ El arqueo coincide exactamente con lo esperado' :
     `)
     ventana.document.close()
     
-    // Escuchar mensajes desde la ventana hija
     const handleMessage = (event) => {
       if (event.data.type === 'exportExcel') {
         exportarArqueoExcel(arqueo)
@@ -622,7 +668,6 @@ ${diferencia === 0 ? '✅ El arqueo coincide exactamente con lo esperado' :
     
     window.addEventListener('message', handleMessage)
     
-    // Limpiar el listener cuando se cierre la ventana
     const checkClose = setInterval(() => {
       if (ventana.closed) {
         window.removeEventListener('message', handleMessage)
@@ -849,14 +894,14 @@ ${diferencia === 0 ? '✅ El arqueo coincide exactamente con lo esperado' :
               <div className="resumen-grid">
                 {/* Columna izquierda - Ingresos */}
                 <div className="resumen-columna ingresos-col">
-                  <h4 className="resumen-subtitulo">📈 INGRESOS</h4>
+                  <h4 className="resumen-subtitulo">💰 EFECTIVO PARA CAJA</h4>
                   
                   <div className="resumen-item">
                     <span className="resumen-label">Ventas en efectivo:</span>
                     <span className="resumen-valor positivo">
                       C${resumenTurno.totalVentasEfectivo.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                     </span>
-                    <span className="resumen-cantidad">({resumenTurno.cantidadVentas} ventas)</span>
+                    <span className="resumen-cantidad">({resumenTurno.cantidadVentasEfectivo} ventas)</span>
                   </div>
                   
                   <div className="resumen-item">
@@ -867,12 +912,30 @@ ${diferencia === 0 ? '✅ El arqueo coincide exactamente con lo esperado' :
                     <span className="resumen-cantidad">({resumenTurno.cantidadAbonosEfectivo} abonos)</span>
                   </div>
                   
+                  <h4 className="resumen-subtitulo" style={{marginTop: '20px'}}>💳 OTROS MÉTODOS</h4>
+                  
+                  <div className="resumen-item">
+                    <span className="resumen-label">Ventas con tarjeta:</span>
+                    <span className="resumen-valor tarjeta">
+                      C${resumenTurno.totalVentasTarjeta.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    </span>
+                    <span className="resumen-cantidad">({resumenTurno.cantidadVentasTarjeta} ventas)</span>
+                  </div>
+                  
+                  <div className="resumen-item">
+                    <span className="resumen-label">Ventas con transferencia:</span>
+                    <span className="resumen-valor transferencia">
+                      C${resumenTurno.totalVentasTransferencia.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    </span>
+                    <span className="resumen-cantidad">({resumenTurno.cantidadVentasTransferencia} ventas)</span>
+                  </div>
+                  
                   <div className="resumen-item">
                     <span className="resumen-label">Abonos con tarjeta:</span>
                     <span className="resumen-valor tarjeta">
                       C${resumenTurno.abonosTarjeta.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                     </span>
-                    <span className="resumen-cantidad">({resumenTurno.cantidadAbonosTarjeta} abonos) 💳</span>
+                    <span className="resumen-cantidad">({resumenTurno.cantidadAbonosTarjeta} abonos)</span>
                   </div>
                   
                   <div className="resumen-item">
@@ -880,7 +943,7 @@ ${diferencia === 0 ? '✅ El arqueo coincide exactamente con lo esperado' :
                     <span className="resumen-valor transferencia">
                       C${resumenTurno.abonosTransferencia.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                     </span>
-                    <span className="resumen-cantidad">({resumenTurno.cantidadAbonosTransferencia} abonos) 📤</span>
+                    <span className="resumen-cantidad">({resumenTurno.cantidadAbonosTransferencia} abonos)</span>
                   </div>
                   
                   <div className="resumen-item">
@@ -888,17 +951,7 @@ ${diferencia === 0 ? '✅ El arqueo coincide exactamente con lo esperado' :
                     <span className="resumen-valor credito">
                       C${resumenTurno.totalCreditos.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                     </span>
-                    <span className="resumen-cantidad">({resumenTurno.cantidadCreditos} créditos) 🔒</span>
-                  </div>
-                  
-                  <div className="resumen-total">
-                    <span className="total-label">TOTAL INGRESOS:</span>
-                    <span className="total-valor">
-                      C${(resumenTurno.totalVentas + resumenTurno.totalCreditos + 
-                          resumenTurno.totalAbonosEfectivo + 
-                          resumenTurno.abonosTarjeta + 
-                          resumenTurno.abonosTransferencia).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                    </span>
+                    <span className="resumen-cantidad">({resumenTurno.cantidadCreditos} créditos)</span>
                   </div>
                 </div>
                 
@@ -917,7 +970,7 @@ ${diferencia === 0 ? '✅ El arqueo coincide exactamente con lo esperado' :
                   <div className="resumen-separador"></div>
                   
                   <div className="resumen-calculo">
-                    <h5 className="calculo-titulo">CÁLCULO DE EFECTIVO</h5>
+                    <h5 className="calculo-titulo">💰 CÁLCULO DE EFECTIVO PARA CAJA</h5>
                     <div className="calculo-item">
                       <span>Ventas en efectivo:</span>
                       <span>C${resumenTurno.totalVentasEfectivo.toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
@@ -983,25 +1036,25 @@ ${diferencia === 0 ? '✅ El arqueo coincide exactamente con lo esperado' :
                   <div className="advertencia-col">
                     <p className="advertencia-subtitulo">🗑️ ELIMINADOS:</p>
                     <ul className="advertencia-lista">
-                      <li><span className="eliminar-item">{resumenTurno.cantidadVentas} ventas en efectivo</span></li>
+                      <li><span className="eliminar-item">{resumenTurno.cantidadVentas} ventas</span></li>
                       <li><span className="eliminar-item">{resumenTurno.cantidadGastos} gastos</span></li>
                     </ul>
                   </div>
                   <div className="advertencia-col">
-                    <p className="advertencia-subtitulo">✅ MANTENIDOS:</p>
+                    <p className="advertencia-subtitulo">✅ PROCESADOS:</p>
                     <ul className="advertencia-lista">
                       <li><span className="mantener-item">{resumenTurno.cantidadAbonosEfectivo} abonos en efectivo</span></li>
                       <li><span className="mantener-item">{resumenTurno.cantidadAbonosTarjeta} abonos con tarjeta</span></li>
                       <li><span className="mantener-item">{resumenTurno.cantidadAbonosTransferencia} abonos con transferencia</span></li>
-                      <li><span className="mantener-item">{resumenTurno.cantidadCreditos} créditos activos</span></li>
+                      <li><span className="mantener-item">{resumenTurno.cantidadCreditos} créditos (mantenidos)</span></li>
                     </ul>
                   </div>
                 </div>
                 
                 <div className="advertencia-footer">
                   <p className="advertencia-nota">
-                    💾 <strong>Nota:</strong> Todo el historial se guardará en la tabla "facturados" para consultas futuras.
-                    Los abonos y créditos permanecen en el sistema para seguimiento.
+                    💾 <strong>Nota:</strong> Todo el historial se guardará en "facturados". 
+                    Los abonos se marcan como procesados (no se eliminan) y solo se contabilizan UNA VEZ en el arqueo.
                   </p>
                 </div>
               </div>

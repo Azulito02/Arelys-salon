@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
-import { supabase } from '../database/supabase' // Asegúrate de importar supabase
+import { supabase } from '../database/supabase'
 import './Inicio.css'
 
 const Inicio = () => {
@@ -28,6 +28,13 @@ const Inicio = () => {
 
   useEffect(() => {
     cargarEstadisticas()
+    
+    // Actualizar cada 30 segundos para ver cambios en tiempo real
+    const intervalo = setInterval(() => {
+      cargarEstadisticas()
+    }, 30000)
+    
+    return () => clearInterval(intervalo)
   }, [])
 
   const cargarEstadisticas = async () => {
@@ -41,24 +48,45 @@ const Inicio = () => {
       
       if (errorProductos) throw errorProductos
 
-      // 2. Obtener ventas de hoy
+      // 2. Obtener ventas del turno ACTUAL (solo ventas NO procesadas)
       const hoy = new Date()
       const inicioHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
       const finHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + 1)
       
+      let totalVentasHoy = 0
+      
+      // 2.1 Ventas normales NO procesadas (tabla ventas - estas son las del turno actual)
       const { data: ventasHoyData, error: errorVentas } = await supabase
         .from('ventas')
         .select('total')
         .gte('fecha', inicioHoy.toISOString())
         .lt('fecha', finHoy.toISOString())
       
-      if (errorVentas) throw errorVentas
+      if (!errorVentas && ventasHoyData) {
+        totalVentasHoy += ventasHoyData.reduce((sum, venta) => 
+          sum + parseFloat(venta.total || 0), 0)
+      }
       
-      const totalVentasHoy = ventasHoyData.reduce((sum, venta) => 
-        sum + parseFloat(venta.total || 0), 0)
+      // 2.2 Abonos NO procesados (del turno actual)
+      const { data: abonosHoyData, error: errorAbonos } = await supabase
+        .from('abonos_credito')
+        .select('monto, procesado_en_arqueo')
+        .gte('fecha', inicioHoy.toISOString())
+        .lt('fecha', finHoy.toISOString())
+      
+      if (!errorAbonos && abonosHoyData) {
+        // Sumar SOLO abonos que NO han sido procesados en arqueo
+        const abonosNoProcesados = abonosHoyData
+          .filter(abono => !abono.procesado_en_arqueo)
+          .reduce((sum, abono) => sum + parseFloat(abono.monto || 0), 0)
+        
+        totalVentasHoy += abonosNoProcesados
+      }
+      
+      // NOTA: NO sumamos de la tabla facturados porque esas ya fueron procesadas en arqueos anteriores
+      // Solo mostramos lo que está pendiente para el próximo arqueo
 
       // 3. Obtener créditos activos (con saldo pendiente > 0)
-      // Primero cargar todos los créditos con sus abonos
       const { data: creditosData, error: errorCreditos } = await supabase
         .from('ventas_credito')
         .select(`
@@ -74,35 +102,17 @@ const Inicio = () => {
         const totalAbonado = credito.abonos_credito?.reduce((sum, abono) => 
           sum + parseFloat(abono.monto || 0), 0) || 0
         
-        // Si hay columna saldo_pendiente en la DB, usarla
         if (credito.saldo_pendiente !== null && credito.saldo_pendiente !== undefined) {
           return parseFloat(credito.saldo_pendiente) > 0
         } else {
-          // Calcular saldo pendiente
           const saldoPendiente = total - totalAbonado
           return saldoPendiente > 0
         }
       })
-      
-      // Opcional: Obtener también abonos de hoy
-      const { data: abonosHoyData, error: errorAbonos } = await supabase
-        .from('abonos_credito')
-        .select('monto')
-        .gte('fecha', inicioHoy.toISOString())
-        .lt('fecha', finHoy.toISOString())
-      
-      let abonosHoy = 0
-      if (!errorAbonos) {
-        abonosHoy = abonosHoyData.reduce((sum, abono) => 
-          sum + parseFloat(abono.monto || 0), 0)
-      }
-      
-      // Sumar abonos a las ventas de hoy si quieres incluir abonos en el total
-      const ventasTotalesHoy = totalVentasHoy + abonosHoy
 
       setEstadisticas({
         totalProductos: totalProductos || 0,
-        ventasHoy: ventasTotalesHoy,
+        ventasHoy: totalVentasHoy,
         creditosActivos: creditosConSaldo.length
       })
       
@@ -261,10 +271,10 @@ const Inicio = () => {
               {loadingEstadisticas ? (
                 <span className="cargando-estadistica">...</span>
               ) : (
-                `$${estadisticas.ventasHoy.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+                `C$${estadisticas.ventasHoy.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
               )}
             </p>
-            <p className="estadistica-label">Ventas Hoy</p>
+            <p className="estadistica-label">Ventas del Turno</p>
           </div>
         </div>
         
@@ -281,6 +291,15 @@ const Inicio = () => {
             <p className="estadistica-label">Créditos Activos</p>
           </div>
         </div>
+      </div>
+      
+      {/* Nota sobre las ventas del turno */}
+      <div className="nota-ventas-turno">
+        <p className="nota-texto">
+          💡 <strong>Nota:</strong> "Ventas del Turno" muestra solo las ventas y abonos que 
+          <strong> aún no se han procesado en un arqueo</strong>. 
+          Después de hacer el arqueo, se reiniciará a C$0.00.
+        </p>
       </div>
     </div>
   )
