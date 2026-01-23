@@ -6,8 +6,6 @@ const TablaAbonos = ({
   loading, 
   onEditar, 
   onEliminar, 
-  getMetodoPagoColor, 
-  getMetodoPagoIcon,
   creditos = [] // Recibir créditos para verificar estado
 }) => {
   
@@ -92,6 +90,146 @@ const TablaAbonos = ({
     if (diferenciaDias < 0) return 'estado-credito-vencido';
     if (diferenciaDias <= 3) return 'estado-credito-por-vencer';
     return 'estado-credito-activo';
+  };
+
+  // Función para renderizar el método de pago con detalles
+  const renderMetodoPago = (abono) => {
+    const metodo = abono.metodo_pago || '';
+    const metodoLower = metodo.toLowerCase();
+    
+    // Verificar si tiene detalles de pago mixto
+    const tieneDetallesMixto = abono.detalles_pago && Object.keys(abono.detalles_pago).length > 0;
+    const esMixto = metodoLower.includes('mixto') || tieneDetallesMixto;
+    
+    if (esMixto && abono.detalles_pago) {
+      // Renderizar detalles de pago mixto
+      return renderDetallesPagoMixto(abono);
+    } else {
+      // Renderizar método de pago simple
+      return renderMetodoPagoSimple(abono);
+    }
+  };
+
+  // Función para renderizar método de pago simple
+  const renderMetodoPagoSimple = (abono) => {
+    const metodo = abono.metodo_pago || '';
+    const metodoLower = metodo.toLowerCase();
+    
+    let icono = '❓';
+    let clase = 'metodo-default';
+    
+    if (metodoLower.includes('efectivo')) {
+      icono = '💵';
+      clase = 'metodo-efectivo';
+    } else if (metodoLower.includes('tarjeta')) {
+      icono = '💳';
+      clase = 'metodo-tarjeta';
+    } else if (metodoLower.includes('transferencia')) {
+      icono = '🏦';
+      clase = 'metodo-transferencia';
+    } else if (metodoLower.includes('mixto')) {
+      icono = '🔄';
+      clase = 'metodo-mixto';
+    }
+    
+    return (
+      <div className={`metodo-pago-badge ${clase}`}>
+        <span className="metodo-pago-icono">{icono}</span>
+        <span className="metodo-pago-texto">
+          {metodo.charAt(0).toUpperCase() + metodo.slice(1)}
+        </span>
+      </div>
+    );
+  };
+
+  // Función para renderizar detalles de pago mixto
+  const renderDetallesPagoMixto = (abono) => {
+    const detalles = abono.detalles_pago || {};
+    const metodo = abono.metodo_pago || 'Mixto';
+    
+    // Extraer los montos de cada método
+    const efectivo = parseFloat(detalles.efectivo || 0);
+    const tarjeta = parseFloat(detalles.tarjeta || 0);
+    const transferencia = parseFloat(detalles.transferencia || 0);
+    
+    // Extraer información de bancos
+    const bancoTarjeta = detalles.banco_tarjeta || detalles.banco || '';
+    const bancoTransferencia = detalles.banco_transferencia || detalles.banco || '';
+    
+    // Calcular total
+    const totalMixto = efectivo + tarjeta + transferencia;
+    
+    // Crear array de detalles para renderizar
+    const detallesArray = [];
+    
+    if (efectivo > 0) {
+      detallesArray.push({
+        tipo: 'Efectivo',
+        monto: efectivo,
+        icono: '💵'
+      });
+    }
+    
+    if (tarjeta > 0) {
+      detallesArray.push({
+        tipo: 'Tarjeta',
+        monto: tarjeta,
+        icono: '💳',
+        banco: bancoTarjeta
+      });
+    }
+    
+    if (transferencia > 0) {
+      detallesArray.push({
+        tipo: 'Transferencia',
+        monto: transferencia,
+        icono: '🏦',
+        banco: bancoTransferencia
+      });
+    }
+    
+    // Verificar si hay información de banco
+    const tieneInfoBanco = bancoTarjeta || bancoTransferencia;
+    const bancosUnicos = [...new Set([bancoTarjeta, bancoTransferencia].filter(Boolean))];
+    
+    return (
+      <div className="metodo-pago-mixto-container">
+        <div className="metodo-pago-header">
+          <span className="metodo-pago-icono">🔄</span>
+          <span className="metodo-pago-titulo">{metodo.charAt(0).toUpperCase() + metodo.slice(1)}</span>
+        </div>
+        
+        <div className="detalles-mixto-abono">
+          <div className="detalles-mixto-header">
+            <span className="total-mixto">Total: ${totalMixto.toFixed(2)}</span>
+          </div>
+          
+          {detallesArray.map((detalle, index) => (
+            <div key={index} className="detalle-pago-mixto">
+              <div className="detalle-tipo">
+                <span className="detalle-icono">{detalle.icono}</span>
+                <span className="detalle-nombre">{detalle.tipo}:</span>
+              </div>
+              <div className="detalle-info">
+                <span className="detalle-monto">${detalle.monto.toFixed(2)}</span>
+                {detalle.banco && (
+                  <span className="detalle-banco">{detalle.banco}</span>
+                )}
+              </div>
+            </div>
+          ))}
+          
+          {tieneInfoBanco && (
+            <div className="detalles-bancos">
+              <span className="banco-label">Bancos: </span>
+              {bancosUnicos.map((banco, index) => (
+                <span key={index} className="banco-tag">{banco}</span>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -214,14 +352,7 @@ const TablaAbonos = ({
                         )}
                       </td>
                       <td className="celda-metodo">
-                        <div className={`metodo-pago-badge ${getMetodoPagoColor(abono.metodo_pago)}`}>
-                          <span className="metodo-pago-icono">
-                            {getMetodoPagoIcon(abono.metodo_pago)}
-                          </span>
-                          <span className="metodo-pago-texto">
-                            {abono.metodo_pago.charAt(0).toUpperCase() + abono.metodo_pago.slice(1)}
-                          </span>
-                        </div>
+                        {renderMetodoPago(abono)}
                       </td>
                       <td className="celda-fecha">
                         {formatFechaNicaragua(abono.fecha)}

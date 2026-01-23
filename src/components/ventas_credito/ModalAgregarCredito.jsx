@@ -48,55 +48,60 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
     }
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    
-    if (!formData.producto_id || formData.cantidad < 1 || !formData.nombre_cliente.trim() || !formData.fecha_fin) {
-      setError('Por favor completa todos los campos obligatorios')
-      return
-    }
-
-    setLoading(true)
-    setError('')
-
-    try {
-      const total = calcularTotal()
-      
-      const creditoData = {
-        producto_id: formData.producto_id,
-        cantidad: parseInt(formData.cantidad),
-        precio_unitario: parseFloat(formData.precio_unitario),
-        total: total,
-        nombre_cliente: formData.nombre_cliente.trim(),
-        fecha_inicio: formData.fecha_inicio,
-        fecha_fin: formData.fecha_fin
-      }
-
-      const { error: supabaseError } = await supabase
-        .from('ventas_credito')
-        .insert([creditoData])
-      
-      if (supabaseError) throw supabaseError
-      
-      // Reset form
-      setFormData({
-        producto_id: '',
-        cantidad: 1,
-        precio_unitario: '',
-        nombre_cliente: '',
-        fecha_inicio: new Date().toISOString().split('T')[0],
-        fecha_fin: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-      })
-      
-      onCreditoAgregado()
-    } catch (err) {
-      console.error('Error agregando crédito:', err)
-      setError('Error al registrar el crédito. Por favor intenta de nuevo.')
-    } finally {
-      setLoading(false)
-    }
+const handleSubmit = async (e) => {
+  e.preventDefault()
+  
+  if (!formData.producto_id || formData.cantidad < 1 || !formData.nombre_cliente.trim() || !formData.fecha_fin) {
+    setError('Por favor completa todos los campos obligatorios')
+    return
   }
 
+  setLoading(true)
+  setError('')
+
+  try {
+    const total = calcularTotal()
+    
+    const creditoData = {
+      producto_id: formData.producto_id,
+      cantidad: parseInt(formData.cantidad),
+      precio_unitario: parseFloat(formData.precio_unitario),
+      total: total,
+      nombre_cliente: formData.nombre_cliente.trim(),
+      fecha_inicio: formData.fecha_inicio,
+      fecha_fin: formData.fecha_fin,
+      saldo_pendiente: total // ← ¡ESTO ES IMPORTANTE!
+    }
+
+    console.log('Creando crédito con datos:', creditoData)
+    
+    const { error: supabaseError, data } = await supabase
+      .from('ventas_credito')
+      .insert([creditoData])
+      .select() // Para obtener el crédito creado
+    
+    if (supabaseError) throw supabaseError
+    
+    console.log('Crédito creado exitosamente:', data)
+    
+    // Reset form
+    setFormData({
+      producto_id: '',
+      cantidad: 1,
+      precio_unitario: '',
+      nombre_cliente: '',
+      fecha_inicio: new Date().toISOString().split('T')[0],
+      fecha_fin: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+    })
+    
+    onCreditoAgregado()
+  } catch (err) {
+    console.error('Error agregando crédito:', err)
+    setError('Error al registrar el crédito. Por favor intenta de nuevo.')
+  } finally {
+    setLoading(false)
+  }
+}
   const productoSeleccionado = productos.find(p => p.id === formData.producto_id)
 
   return (

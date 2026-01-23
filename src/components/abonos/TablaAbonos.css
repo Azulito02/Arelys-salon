@@ -61,7 +61,8 @@
 }
 
 .tabla-abonos .columna-metodo {
-  min-width: 140px;
+  min-width: 220px;
+  width: 220px;
 }
 
 .tabla-abonos .columna-fecha {
@@ -101,7 +102,7 @@
   font-size: 15px;
 }
 
-/* Métodos de pago */
+/* ========== MÉTODOS DE PAGO SIMPLES ========== */
 .tabla-abonos .metodo-pago-badge {
   display: inline-flex;
   align-items: center;
@@ -112,6 +113,7 @@
   font-weight: 600;
   border: 1px solid transparent;
   position: relative;
+  white-space: nowrap;
 }
 
 .tabla-abonos .metodo-pago-icono {
@@ -123,6 +125,7 @@
   white-space: nowrap;
 }
 
+/* Colores para cada método */
 .tabla-abonos .metodo-efectivo {
   background-color: #d1fae5;
   color: #065f46;
@@ -145,16 +148,6 @@
   background-color: #fef3c7;
   color: #92400e;
   border-color: #fde68a;
-  padding-left: 36px;
-}
-
-.tabla-abonos .metodo-mixto::before {
-  content: '🔄';
-  position: absolute;
-  left: 12px;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 14px;
 }
 
 .tabla-abonos .metodo-default {
@@ -163,46 +156,119 @@
   border-color: #e2e8f0;
 }
 
-/* Detalles de pago mixto */
-.detalles-mixto {
-  margin-top: 8px;
-  padding: 12px;
-  background-color: #f8fafc;
-  border-radius: 8px;
-  border-left: 3px solid #fbbf24;
-  font-size: 12px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
+/* ========== ESTILOS PARA PAGO MIXTO DETALLADO ========== */
+.tabla-abonos .metodo-pago-mixto-container {
+  width: 100%;
 }
 
-.detalle-pago {
+.tabla-abonos .metodo-pago-header {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  background-color: white;
-  border-radius: 6px;
-  border: 1px solid #e5e7eb;
-  min-width: 120px;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
-.detalle-pago .monto {
+.tabla-abonos .metodo-pago-titulo {
   font-weight: 600;
-  color: #1f2937;
+  color: #92400e;
+  font-size: 13px;
+}
+
+.tabla-abonos .detalles-mixto-abono {
+  background-color: #fef3c7;
+  border-radius: 8px;
+  padding: 10px;
+  border: 1px solid #fde68a;
+}
+
+.tabla-abonos .detalles-mixto-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px dashed #d97706;
+}
+
+.tabla-abonos .total-mixto {
+  font-weight: 600;
+  color: #92400e;
+  font-size: 12px;
   font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
 }
 
-.detalle-banco {
+.tabla-abonos .detalle-pago-mixto {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 4px 0;
+  font-size: 11px;
+}
+
+.tabla-abonos .detalle-pago-mixto:not(:last-child) {
+  border-bottom: 1px solid #fde68a;
+}
+
+.tabla-abonos .detalle-tipo {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 10px;
-  background-color: #eff6ff;
-  border-radius: 6px;
-  border: 1px solid #dbeafe;
-  color: #1e40af;
-  font-size: 11px;
+  flex: 1;
+}
+
+.tabla-abonos .detalle-icono {
+  font-size: 12px;
+}
+
+.tabla-abonos .detalle-nombre {
+  color: #92400e;
+  font-weight: 500;
+}
+
+.tabla-abonos .detalle-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tabla-abonos .detalle-monto {
+  font-weight: 600;
+  color: #111827;
+  font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+}
+
+.tabla-abonos .detalle-banco {
+  font-size: 10px;
+  color: #059669;
+  background-color: #d1fae5;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-weight: 500;
+}
+
+.tabla-abonos .detalles-bancos {
+  margin-top: 6px;
+  padding-top: 4px;
+  border-top: 1px dashed #d97706;
+  font-size: 10px;
+}
+
+.tabla-abonos .banco-label {
+  color: #92400e;
+  font-weight: 500;
+  margin-right: 4px;
+}
+
+.tabla-abonos .banco-tag {
+  display: inline-block;
+  background-color: #d1fae5;
+  color: #059669;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 9px;
+  font-weight: 500;
+  margin-right: 4px;
+  margin-bottom: 2px;
 }
 
 /* Fechas */
@@ -526,8 +592,6 @@
 .celda-estado {
   text-align: center;
 }
-
-/* Añade estos estilos al archivo TablaAbonos.css existente */
 
 /* Nuevas columnas */
 .tabla-abonos .columna-total-credito {

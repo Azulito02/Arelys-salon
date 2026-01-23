@@ -55,70 +55,57 @@ const Creditos = () => {
   }
 
   const cargarDatos = async () => {
-    try {
-      setLoading(true)
+  try {
+    setLoading(true)
+    
+    // Cargar productos
+    const { data: productosData, error: errorProductos } = await supabase
+      .from('productos')
+      .select('*')
+      .order('nombre')
+    
+    if (errorProductos) throw errorProductos
+    setProductos(productosData || [])
+    
+    // Cargar ventas a crédito - SOLO necesitamos datos básicos
+    const { data: creditosData, error: errorCreditos } = await supabase
+      .from('ventas_credito')
+      .select(`
+        *,
+        productos (*)
+      `)
+      .order('fecha', { ascending: false })
+    
+    if (errorCreditos) throw errorCreditos
+    
+    // Procesar créditos - usar saldo_pendiente DIRECTAMENTE de la DB
+    const creditosProcesados = (creditosData || []).map(credito => {
+      const total = parseFloat(credito.total) || 0
+      const precio_unitario = parseFloat(credito.precio_unitario) || 0
+      const saldo_pendiente = parseFloat(credito.saldo_pendiente) || 0
       
-      // Cargar productos
-      const { data: productosData, error: errorProductos } = await supabase
-        .from('productos')
-        .select('*')
-        .order('nombre')
+      // Calcular total abonado como diferencia
+      const total_abonado = Math.max(0, total - saldo_pendiente)
       
-      if (errorProductos) throw errorProductos
-      setProductos(productosData || [])
-      
-      // Cargar ventas a crédito con productos Y ABONOS
-      const { data: creditosData, error: errorCreditos } = await supabase
-        .from('ventas_credito')
-        .select(`
-          *,
-          productos (*),
-          abonos_credito (*)
-        `)
-        .order('fecha', { ascending: false })
-      
-      if (errorCreditos) throw errorCreditos
-      
-      // Procesar créditos para asegurar tipos de datos correctos
-      const creditosProcesados = (creditosData || []).map(credito => {
-        const total = parseFloat(credito.total) || 0
-        const precio_unitario = parseFloat(credito.precio_unitario) || 0
-        
-        // Calcular total abonado si hay abonos
-        const totalAbonado = credito.abonos_credito?.reduce((sum, abono) => 
-          sum + parseFloat(abono.monto || 0), 0) || 0
-        
-        // Si el trigger de PostgreSQL ya actualizó saldo_pendiente, usarlo
-        let saldo_pendiente
-        if (credito.saldo_pendiente !== null && credito.saldo_pendiente !== undefined) {
-          saldo_pendiente = parseFloat(credito.saldo_pendiente)
-        } else {
-          saldo_pendiente = total - totalAbonado
-        }
-        
-        // Asegurar que el saldo no sea negativo
-        saldo_pendiente = Math.max(0, saldo_pendiente)
-        
-        return {
-          ...credito,
-          total,
-          precio_unitario,
-          saldo_pendiente,
-          total_abonado: totalAbonado,
-          completado: saldo_pendiente === 0
-        }
-      })
-      
-      setCreditos(creditosProcesados)
-      
-    } catch (error) {
-      console.error('Error cargando créditos:', error)
-      alert('Error al cargar datos')
-    } finally {
-      setLoading(false)
-    }
+      return {
+        ...credito,
+        total,
+        precio_unitario,
+        saldo_pendiente, // USAR DIRECTAMENTE de la DB
+        total_abonado,
+        completado: saldo_pendiente === 0
+      }
+    })
+    
+    setCreditos(creditosProcesados)
+    
+  } catch (error) {
+    console.error('Error cargando créditos:', error)
+    alert('Error al cargar datos')
+  } finally {
+    setLoading(false)
   }
-
+}
   // Funciones para abrir modales
   const handleAgregarCredito = () => {
     setShowAgregarModal(true)
