@@ -163,7 +163,7 @@ const generarContenidoTicket = (venta) => {
 
   // 5. Construir el ticket con formato correcto
   const ticket = `
-        ARELY Z SALON
+        ARELYZ SALON
 =========================================
          TICKET DE VENTA
 =========================================
@@ -179,17 +179,14 @@ PRECIO:   C$${precioUnitario}
 -----------------------------------------
 
 SUBTOTAL:      C$${subtotal.toFixed(2).padStart(10)}
-IVA 15%:       C$${iva.toFixed(2).padStart(10)}
 TOTAL:         C$${totalVenta.toFixed(2).padStart(10)}
-
 -----------------------------------------
 MÉTODO PAGO: ${metodoPago.toUpperCase()}
 ${bancoInfo}
 -----------------------------------------
-
    ¡GRACIAS POR SU COMPRA!
    Tel: 1234-5678
-   arelyz-salon.com
+   
 
 =========================================
          CORTE AUTOMÁTICO
