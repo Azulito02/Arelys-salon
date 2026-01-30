@@ -115,105 +115,89 @@ const Ventas = () => {
   }
 
   // ==============================================
-  // GENERAR CONTENIDO DEL TICKET - VERSIÓN CORREGIDA
-  // ==============================================
+// GENERAR CONTENIDO DEL TICKET - VERSIÓN CORREGIDA
+// ==============================================
 
-  const generarContenidoTicket = (venta) => {
-    // 1. Nombre del cliente (EN TU SISTEMA NO HAY CLIENTES)
-    const nombreMostrar = "Cliente de Mostrador"  // Default ya que no hay tabla clientes
+const generarContenidoTicket = (venta) => {
+  // 1. Información básica
+  const fecha = venta.fecha 
+    ? new Date(venta.fecha).toLocaleString("es-NI", { 
+        year: "2-digit", 
+        month: "2-digit", 
+        day: "2-digit", 
+        hour: "2-digit", 
+        minute: "2-digit" 
+      })
+    : new Date().toLocaleString("es-NI", {
+        year: "2-digit", 
+        month: "2-digit", 
+        day: "2-digit", 
+        hour: "2-digit", 
+        minute: "2-digit"
+      })
 
-    // 2. Fecha formateada (usar fecha en lugar de fecha_hora)
-    const fecha = venta.fecha 
-      ? new Date(venta.fecha).toLocaleString("es-NI", { 
-          year: "2-digit", 
-          month: "2-digit", 
-          day: "2-digit", 
-          hour: "2-digit", 
-          minute: "2-digit" 
-        })
-      : ""
+  // 2. Información del producto
+  const nombreProducto = venta.productos?.nombre || "Producto sin nombre"
+  const cantidad = venta.cantidad || 0
+  const precioUnitario = Number(venta.precio_unitario || 0).toFixed(2)
+  const totalVenta = Number(venta.total || 0)
 
-    // 3. Información del producto
-    const nombreProducto = venta.productos?.nombre || "Producto"
-    const cantidad = venta.cantidad || 0
-    const precioUnitario = Number(venta.precio_unitario || 0).toFixed(2)
-    const totalVenta = Number(venta.total || 0)
-
-    // 4. Detalle del ticket
-    let detalleTexto = "DETALLE DE VENTA:\n"
-    detalleTexto += "=".repeat(32) + "\n"
-    detalleTexto += `${nombreProducto}\n`
-    detalleTexto += `Cantidad: ${cantidad} x C$${precioUnitario}\n`
-    detalleTexto += "=".repeat(32) + "\n"
-
-    // 5. Cálculos financieros
-    const iva = totalVenta * 0.15 // 15% de IVA
-    const subtotal = totalVenta - iva
-    const numeroVenta = venta.id || "-"
-    
-    // Método de pago según tu estructura
-    let metodoPago = venta.metodo_pago || "No especificado"
-    if (venta.metodo_pago && venta.efectivo > 0 && venta.tarjeta > 0 && venta.transferencia > 0) {
-      metodoPago = "Mixto"
-    } else if (venta.efectivo > 0) {
-      metodoPago = "Efectivo"
-    } else if (venta.tarjeta > 0) {
-      metodoPago = "Tarjeta"
-    } else if (venta.transferencia > 0) {
-      metodoPago = "Transferencia"
-    }
-
-    // 6. Construir ticket completo
-    const anchoLinea = 40
-    const centrar = (texto) => {
-      const espacios = Math.max(0, Math.floor((anchoLinea - texto.length) / 2))
-      return ' '.repeat(espacios) + texto
-    }
-
-    const alinearDerecha = (texto, etiqueta) => {
-      const espacio = anchoLinea - etiqueta.length - texto.length
-      return etiqueta + ' '.repeat(Math.max(1, espacio)) + texto
-    }
-
-    const ticket = `
-${centrar("ARELY Z SALON")}
-${centrar("=".repeat(20))}
-${centrar("TICKET DE VENTA")}
-${centrar("=".repeat(20))}
-
-${centrar(`#${numeroVenta}`)}
-${centrar(fecha)}
-
-CLIENTE: ${nombreMostrar}
-${"-".repeat(anchoLinea)}
-
-${detalleTexto}
-${alinearDerecha(`C$${subtotal.toFixed(2)}`, "SUBTOTAL:")}
-${alinearDerecha(`C$${iva.toFixed(2)}`, "IVA 15%:")}
-${alinearDerecha(`C$${totalVenta.toFixed(2)}`, "TOTAL:")}
-
-${"-".repeat(anchoLinea)}
-PRODUCTO: ${nombreProducto}
-CANTIDAD: ${cantidad}
-PRECIO: C$${precioUnitario}
-${"-".repeat(anchoLinea)}
-
-MÉTODO PAGO: ${metodoPago.toUpperCase()}
-${venta.banco ? `BANCO: ${venta.banco}` : ""}
-${"-".repeat(anchoLinea)}
-
-${centrar("¡GRACIAS POR SU COMPRA!")}
-${centrar("Tel: 1234-5678")}
-${centrar("arelyz-salon.com")}
-
-${centrar("=".repeat(20))}
-${centrar("CORTE AUTOMÁTICO")}
-${centrar("=".repeat(20))}
-`
-
-    return ticket.trim()
+  // 3. Cálculos
+  const iva = totalVenta * 0.15 // 15% de IVA
+  const subtotal = totalVenta - iva
+  const numeroVenta = venta.id ? venta.id.substring(0, 8) : "00000000"
+  
+  // 4. Método de pago
+  let metodoPago = venta.metodo_pago || "Efectivo"
+  let bancoInfo = ""
+  
+  if (venta.metodo_pago === "mixto") {
+    metodoPago = "Mixto"
+  } else if (venta.tarjeta > 0) {
+    metodoPago = "Tarjeta"
+    bancoInfo = venta.banco ? `BANCO: ${venta.banco}` : ""
+  } else if (venta.transferencia > 0) {
+    metodoPago = "Transferencia"
+    bancoInfo = venta.banco ? `BANCO: ${venta.banco}` : ""
   }
 
+  // 5. Construir el ticket con formato correcto
+  const ticket = `
+        ARELY Z SALON
+=========================================
+         TICKET DE VENTA
+=========================================
+          #${numeroVenta}
+          ${fecha}
+
+CLIENTE: Cliente de Mostrador
+-----------------------------------------
+
+PRODUCTO: ${nombreProducto}
+CANTIDAD: ${cantidad}
+PRECIO:   C$${precioUnitario}
+-----------------------------------------
+
+SUBTOTAL:      C$${subtotal.toFixed(2).padStart(10)}
+IVA 15%:       C$${iva.toFixed(2).padStart(10)}
+TOTAL:         C$${totalVenta.toFixed(2).padStart(10)}
+
+-----------------------------------------
+MÉTODO PAGO: ${metodoPago.toUpperCase()}
+${bancoInfo}
+-----------------------------------------
+
+   ¡GRACIAS POR SU COMPRA!
+   Tel: 1234-5678
+   arelyz-salon.com
+
+=========================================
+         CORTE AUTOMÁTICO
+=========================================
+`
+
+  return ticket.trim()
+}
   // ==============================================
   // FALLBACK PARA COPIAR CONTENIDO (MANTENER IGUAL)
   // ==============================================
