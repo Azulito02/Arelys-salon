@@ -1,4 +1,4 @@
-// Ventas.jsx
+// Ventas.jsx - VERSIÓN ANDROID BLUETOOTH
 import { useState, useEffect } from 'react'
 import { supabase } from '../database/supabase'
 import TablaVentas from '../components/ventas/TablaVentas'
@@ -20,7 +20,7 @@ const Ventas = () => {
   const [modalEditarAbierto, setModalEditarAbierto] = useState(false)
   const [modalEliminarAbierto, setModalEliminarAbierto] = useState(false)
   
-  // Estados para datos de formularios
+  // Estados para datos
   const [nuevaVenta, setNuevaVenta] = useState({
     producto_id: '',
     cantidad: 1,
@@ -34,371 +34,543 @@ const Ventas = () => {
     cargarDatos()
   }, [])
 
+  // ==============================================
+  // CARGAR DATOS
+  // ==============================================
+
   const cargarDatos = async () => {
     try {
       setLoading(true)
       setErrorCarga('')
       
-      console.log('Iniciando carga de datos de ventas...')
-      
-      // Cargar productos para el select
+      // Cargar productos
       const { data: productosData, error: errorProductos } = await supabase
         .from('productos')
         .select('*')
         .order('nombre')
       
-      console.log('Productos cargados:', productosData)
-      
-      if (errorProductos) {
-        console.error('Error cargando productos:', errorProductos)
-        throw errorProductos
-      }
+      if (errorProductos) throw errorProductos
       setProductos(productosData || [])
       
-      // Cargar ventas con información de productos
+      // Cargar ventas con detalles (ajusta según tu estructura)
       const { data: ventasData, error: errorVentas } = await supabase
         .from('ventas')
-        .select('*')
-        .order('fecha', { ascending: false })
+        .select(`
+          *,
+          clientes (*),
+          detalles_venta (
+            *,
+            productos (*),
+            sesiones_juegos (
+              juegos (*)
+            )
+          )
+        `)
+        .order('fecha_hora', { ascending: false })
       
-      console.log('Ventas cargadas:', ventasData)
-      
-      if (errorVentas) {
-        console.error('Error cargando ventas:', errorVentas)
-        throw errorVentas
-      }
-      
-      // Combinar con información de productos
-      const ventasConProductos = ventasData.map(venta => {
-        const producto = productosData?.find(p => p.id === venta.producto_id)
-        return {
-          ...venta,
-          productos: producto || null
-        }
-      })
-      
-      setVentas(ventasConProductos || [])
+      if (errorVentas) throw errorVentas
+      setVentas(ventasData || [])
       
     } catch (error) {
       console.error('Error cargando ventas:', error)
       setErrorCarga(`Error al cargar datos: ${error.message}`)
-      alert('Error al cargar datos de ventas')
     } finally {
       setLoading(false)
     }
   }
 
   // ==============================================
-  // FUNCIONES DE IMPRESIÓN CON rawbt
+  // FUNCIÓN DE IMPRESIÓN PARA ANDROID (rawbt)
   // ==============================================
 
-  // Formatear fecha para Nicaragua (resta 6 horas)
-  const formatFechaNicaragua = (fechaISO) => {
-    if (!fechaISO) return 'Fecha no disponible';
-    
-    const fechaUTC = new Date(fechaISO);
-    // RESTAR 6 horas para convertir UTC a Nicaragua (Juigalpa)
-    const fechaNicaragua = new Date(fechaUTC.getTime() - (6 * 60 * 60 * 1000));
-    
-    const dia = fechaNicaragua.getDate().toString().padStart(2, '0');
-    const mes = (fechaNicaragua.getMonth() + 1).toString().padStart(2, '0');
-    const año = fechaNicaragua.getFullYear();
-    
-    let horas = fechaNicaragua.getHours();
-    const minutos = fechaNicaragua.getMinutes().toString().padStart(2, '0');
-    const ampm = horas >= 12 ? 'p.m.' : 'a.m.';
-    
-    horas = horas % 12;
-    horas = horas ? horas.toString().padStart(2, '0') : '12';
-    
-    return `${dia}/${mes}/${año}, ${horas}:${minutos} ${ampm}`;
-  };
-
-  // Formatear fecha simple para tickets
-  const formatFechaTicket = (fechaISO) => {
-    if (!fechaISO) return '';
-    
-    const fechaUTC = new Date(fechaISO);
-    const fechaNicaragua = new Date(fechaUTC.getTime() - (6 * 60 * 60 * 1000));
-    
-    const dia = fechaNicaragua.getDate().toString().padStart(2, '0');
-    const mes = (fechaNicaragua.getMonth() + 1).toString().padStart(2, '0');
-    const año = fechaNicaragua.getFullYear().toString().slice(-2);
-    
-    let horas = fechaNicaragua.getHours();
-    const minutos = fechaNicaragua.getMinutes().toString().padStart(2, '0');
-    
-    horas = horas % 12;
-    horas = horas ? horas.toString().padStart(2, '0') : '12';
-    const ampm = fechaNicaragua.getHours() >= 12 ? 'PM' : 'AM';
-    
-    return `${dia}/${mes}/${año} ${horas}:${minutos} ${ampm}`;
-  };
-
-  // Función principal para imprimir una venta
-  const imprimirVenta = (venta) => {
+  const imprimirTicket = (venta) => {
     try {
-      setImprimiendo(true);
+      setImprimiendo(true)
       
-      // Generar el contenido del ticket usando tu formato
-      const contenido = generarTicketVenta(venta);
-      
-      // Codificar para rawbt
-      const encoded = encodeURIComponent(contenido);
-      
-      // Abrir en rawbt (para Bluetooth) o imprimir directamente (para USB)
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      
-      if (isMobile) {
-        // Modo móvil: usar rawbt para Bluetooth
-        window.location.href = `rawbt:${encoded}`;
-        console.log('Enviando a rawbt para impresión Bluetooth');
-      } else {
-        // Modo escritorio: intentar WebUSB o mostrar contenido
-        imprimirUSB(contenido);
+      // Validar que rawbt esté disponible
+      const isAndroid = /Android/.test(navigator.userAgent)
+      if (!isAndroid) {
+        alert('⚠️ Esta función solo está disponible en dispositivos Android')
+        setImprimiendo(false)
+        return
       }
       
-      // Mostrar mensaje de éxito
+      // Generar el contenido del ticket
+      const contenido = generarContenidoTicket(venta)
+      
+      // Codificar y enviar a rawbt
+      const encoded = encodeURIComponent(contenido)
+      window.location.href = `rawbt:${encoded}`
+      
+      // Fallback si rawbt no está instalado
       setTimeout(() => {
-        alert('✅ Ticket enviado a la impresora');
-        setImprimiendo(false);
-      }, 1000);
+        if (!document.hidden) {
+          mostrarContenidoParaCopiar(contenido)
+        }
+      }, 1500)
+      
+      // Resetear estado después de 2 segundos
+      setTimeout(() => {
+        setImprimiendo(false)
+      }, 2000)
       
     } catch (error) {
-      console.error('Error al imprimir:', error);
-      alert(`❌ Error al imprimir: ${error.message}`);
-      setImprimiendo(false);
+      console.error('Error al imprimir:', error)
+      alert(`❌ Error: ${error.message}`)
+      setImprimiendo(false)
     }
-  };
+  }
 
-  // Función para imprimir resumen del día
-  const imprimirResumenDia = () => {
-    try {
-      setImprimiendo(true);
-      
-      // Filtrar ventas del día actual
-      const hoy = new Date();
-      hoy.setHours(0, 0, 0, 0);
-      
-      const ventasHoy = ventas.filter(venta => {
-        const fechaVenta = new Date(venta.fecha);
-        return fechaVenta >= hoy;
-      });
-      
-      if (ventasHoy.length === 0) {
-        alert('⚠️ No hay ventas hoy para imprimir resumen');
-        setImprimiendo(false);
-        return;
+  // ==============================================
+  // GENERAR CONTENIDO DEL TICKET (ADAPTADO)
+  // ==============================================
+
+  const generarContenidoTicket = (venta) => {
+    // 1. Nombre del cliente
+    const nombreMostrar = venta.nombre_venta?.trim() || 
+      `${venta.clientes?.nombre_cliente || ""} ${venta.clientes?.apellido_cliente || ""}`.trim() || 
+      "Cliente Genérico"
+
+    // 2. Fecha formateada
+    const fecha = venta.fecha_hora 
+      ? new Date(venta.fecha_hora).toLocaleString("es-NI", { 
+          year: "2-digit", 
+          month: "2-digit", 
+          day: "2-digit", 
+          hour: "2-digit", 
+          minute: "2-digit" 
+        })
+      : ""
+
+    // 3. Detalles de la venta
+    const detalle = venta.detalles_venta || venta.detalles || venta.detalle || []
+    
+    let detalleTexto = "DETALLES DE VENTA:\nCant.  Precio  Subtotal\n"
+    detalleTexto += "=".repeat(32) + "\n"
+
+    detalle.forEach((item, index) => {
+      // Productos
+      if (item.id_producto) {
+        const nombreProducto = item.productos?.nombre_producto || item.nombre_producto || "Producto"
+        const cantidad = item.cantidad || 0
+        const precio = Number(item.precio_unitario || item.precio_unitaria || 0).toFixed(2)
+        const subtotal = Number(item.total_linea || 0).toFixed(2)
+        
+        // Formato: Producto (alineado a la izquierda)
+        detalleTexto += `${nombreProducto}\n`
+        // Formato: Cantidad (derecha) Precio (derecha) Subtotal (derecha)
+        detalleTexto += `${cantidad.toString().padStart(4)}   C$${precio.padStart(6)}   C$${subtotal.padStart(8)}\n`
+      }
+
+      // Juegos/Sesiones
+      if (item.id_sesion) {
+        const nombreJuego = item.sesiones_juegos?.juegos?.nombre_juego || item.nombre_juego || "Juego"
+        const minutos = item.cantidad || "-"
+        const monto = item.sesiones_juegos?.monto_cobrado || item.monto_cobrado || item.precio_unitario || 0
+        
+        detalleTexto += `${nombreJuego}\n`
+        detalleTexto += `Min: ${minutos}   Monto: C$${Number(monto).toFixed(2)}\n`
       }
       
-      // Generar contenido del resumen
-      const contenido = generarResumenDia(ventasHoy);
-      
-      // Codificar para rawbt
-      const encoded = encodeURIComponent(contenido);
-      
-      // Abrir en rawbt (para Bluetooth) o imprimir directamente (para USB)
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      
-      if (isMobile) {
-        // Modo móvil: usar rawbt para Bluetooth
-        window.location.href = `rawbt:${encoded}`;
-        console.log('Enviando resumen a rawbt');
-      } else {
-        // Modo escritorio
-        imprimirUSB(contenido);
+      // Separador entre items
+      if (index < detalle.length - 1) {
+        detalleTexto += "-".repeat(32) + "\n"
       }
-      
-      // Mostrar mensaje de éxito
-      setTimeout(() => {
-        alert('✅ Resumen del día enviado a la impresora');
-        setImprimiendo(false);
-      }, 1000);
-      
-    } catch (error) {
-      console.error('Error al imprimir resumen:', error);
-      alert(`❌ Error al imprimir: ${error.message}`);
-      setImprimiendo(false);
-    }
-  };
+    })
 
-  // Generar ticket para una venta específica
-  const generarTicketVenta = (venta) => {
-    const nombreProducto = venta.productos?.nombre || 'Producto';
-    const fechaFormateada = formatFechaTicket(venta.fecha);
-    const totalVenta = venta.total?.toFixed(2) || '0.00';
-    
-    // Método de pago con detalles
-    let metodoPagoTexto = '';
-    if (venta.metodo_pago === 'efectivo') {
-      metodoPagoTexto = `EFECTIVO: $${venta.efectivo?.toFixed(2) || totalVenta}`;
-    } else if (venta.metodo_pago === 'tarjeta') {
-      metodoPagoTexto = `TARJETA: $${venta.tarjeta?.toFixed(2) || totalVenta}`;
-      if (venta.banco) metodoPagoTexto += ` (${venta.banco})`;
-    } else if (venta.metodo_pago === 'transferencia') {
-      metodoPagoTexto = `TRANSFERENCIA: $${venta.transferencia?.toFixed(2) || totalVenta}`;
-      if (venta.banco) metodoPagoTexto += ` (${venta.banco})`;
-    } else if (venta.metodo_pago === 'mixto') {
-      metodoPagoTexto = 'PAGO MIXTO:\n';
-      if (venta.efectivo > 0) metodoPagoTexto += `- Efectivo: $${venta.efectivo?.toFixed(2)}\n`;
-      if (venta.tarjeta > 0) metodoPagoTexto += `- Tarjeta: $${venta.tarjeta?.toFixed(2)}\n`;
-      if (venta.transferencia > 0) metodoPagoTexto += `- Transferencia: $${venta.transferencia?.toFixed(2)}`;
-    } else {
-      metodoPagoTexto = 'NO ESPECIFICADO';
+    if (detalle.length === 0) {
+      detalleTexto += "NO HAY DETALLES REGISTRADOS\n"
     }
-    
-    // Generar el ticket con formato térmico
+
+    // 4. Cálculos financieros
+    const totalVenta = Number(venta.total || 0)
+    const iva = totalVenta * 0.15 // 15% de IVA (ajusta según tu país)
+    const subtotal = totalVenta - iva
+    const numeroVenta = venta.id_venta || venta.id || "-"
+    const metodoPago = venta.metodo_pago || venta.método_pago || "No especificado"
+    const estado = venta.estado ? "REGISTRADA" : "ANULADA"
+
+    // 5. Construir ticket completo
+    const anchoLinea = 40
+    const centrar = (texto) => {
+      const espacios = Math.max(0, Math.floor((anchoLinea - texto.length) / 2))
+      return ' '.repeat(espacios) + texto
+    }
+
+    const alinearDerecha = (texto, etiqueta) => {
+      const espacio = anchoLinea - etiqueta.length - texto.length
+      return etiqueta + ' '.repeat(Math.max(1, espacio)) + texto
+    }
+
     const ticket = `
-${centrarTexto("TIENDA EJEMPLO")}
-${centrarTexto("====================")}
-${centrarTexto("TICKET DE VENTA")}
-${centrarTexto("====================")}
+${centrar("PEKEPLAY")}
+${centrar("=".repeat(20))}
+${centrar("TICKET DE VENTA")}
+${centrar("=".repeat(20))}
 
-Fecha: ${fechaFormateada}
-Ticket #: ${venta.id || 'N/A'}
---------------------------------
-PRODUCTO:
-${nombreProducto}
---------------------------------
-Cantidad: ${venta.cantidad || 1} x $${venta.precio_unitario?.toFixed(2) || '0.00'}
---------------------------------
-${alinearDerecha(`TOTAL: $${totalVenta}`)}
---------------------------------
-METODO DE PAGO:
-${metodoPagoTexto}
---------------------------------
-${centrarTexto("¡GRACIAS POR SU COMPRA!")}
-${centrarTexto("Tel: 1234-5678")}
-${centrarTexto("www.tienda.com")}
+${centrar(`#${numeroVenta}`)}
+${centrar(fecha)}
 
-${centrarTexto("--- CORTE AUTOMÁTICO ---")}
-`;
-    
-    return ticket;
-  };
+CLIENTE: ${nombreMostrar}
+${"-".repeat(anchoLinea)}
 
-  // Generar resumen del día
-  const generarResumenDia = (ventasHoy) => {
-    // Calcular estadísticas
-    const totalVentas = ventasHoy.reduce((sum, v) => sum + v.total, 0);
-    const totalUnidades = ventasHoy.reduce((sum, v) => sum + v.cantidad, 0);
-    const totalEfectivo = ventasHoy
-      .filter(v => v.metodo_pago === 'efectivo' || v.metodo_pago === 'mixto')
-      .reduce((sum, v) => sum + (v.efectivo || 0), 0);
-    const totalTarjeta = ventasHoy
-      .filter(v => v.metodo_pago === 'tarjeta' || v.metodo_pago === 'mixto')
-      .reduce((sum, v) => sum + (v.tarjeta || 0), 0);
-    const totalTransferencia = ventasHoy
-      .filter(v => v.metodo_pago === 'transferencia' || v.metodo_pago === 'mixto')
-      .reduce((sum, v) => sum + (v.transferencia || 0), 0);
-    
-    const fechaActual = new Date();
-    const fechaFormateada = formatFechaTicket(fechaActual.toISOString());
-    
-    const resumen = `
-${centrarTexto("RESUMEN DEL DÍA")}
-${centrarTexto("====================")}
-Fecha: ${fechaFormateada}
-Total Transacciones: ${ventasHoy.length}
---------------------------------
-ESTADÍSTICAS:
-Total Ventas: $${totalVentas.toFixed(2)}
-Total Unidades: ${totalUnidades}
---------------------------------
-DISTRIBUCIÓN POR PAGO:
-Efectivo: $${totalEfectivo.toFixed(2)}
-Tarjeta: $${totalTarjeta.toFixed(2)}
-Transferencia: $${totalTransferencia.toFixed(2)}
---------------------------------
-LISTA DE VENTAS:
-${ventasHoy.map((v, i) => 
-  `${i + 1}. ${v.productos?.nombre || 'Producto'} - $${v.total.toFixed(2)}`
-).join('\n')}
---------------------------------
-${centrarTexto("FIN DEL RESUMEN")}
-${centrarTexto(`Generado: ${new Date().toLocaleTimeString()}`)}
+${detalleTexto}
+${"=".repeat(anchoLinea)}
 
-${centrarTexto("--- CORTE AUTOMÁTICO ---")}
-`;
-    
-    return resumen;
-  };
+${alinearDerecha(`C$${subtotal.toFixed(2)}`, "SUBTOTAL:")}
+${alinearDerecha(`C$${iva.toFixed(2)}`, "IVA 15%:")}
+${alinearDerecha(`C$${totalVenta.toFixed(2)}`, "TOTAL:")}
 
-  // Función auxiliar para centrar texto (40 caracteres de ancho)
-  const centrarTexto = (texto) => {
-    const ancho = 40;
-    const espacios = Math.max(0, Math.floor((ancho - texto.length) / 2));
-    return ' '.repeat(espacios) + texto;
-  };
+${"-".repeat(anchoLinea)}
+MÉTODO: ${metodoPago.toUpperCase()}
+ESTADO: ${estado}
+${"-".repeat(anchoLinea)}
 
-  // Función auxiliar para alinear a la derecha
-  const alinearDerecha = (texto) => {
-    const ancho = 40;
-    const espacios = Math.max(0, ancho - texto.length);
-    return ' '.repeat(espacios) + texto;
-  };
+${centrar("¡GRACIAS POR SU COMPRA!")}
+${centrar("Tel: 1234-5678")}
+${centrar("www.pekeplay.com")}
 
-  // Función para imprimir por USB (computadora)
-  const imprimirUSB = (contenido) => {
-    // Para computadoras, podemos usar WebUSB o mostrar el contenido
-    console.log('Contenido para imprimir:', contenido);
-    
-    // Opción 1: Intentar WebUSB
-    if (navigator.usb) {
-      console.log('WebUSB disponible, intentando conectar...');
-      // Aquí iría la lógica de WebUSB
-    }
-    
-    // Opción 2: Mostrar en una ventana para copiar/pegar
-    const ventanaImpresion = window.open('', '_blank');
-    ventanaImpresion.document.write(`
+${centrar("=".repeat(20))}
+${centrar("CORTE AUTOMÁTICO")}
+${centrar("=".repeat(20))}
+`
+
+    return ticket.trim()
+  }
+
+  // ==============================================
+  // FALLBACK PARA COPIAR CONTENIDO
+  // ==============================================
+
+  const mostrarContenidoParaCopiar = (contenido) => {
+    const ventana = window.open('', '_blank')
+    ventana.document.write(`
       <html>
         <head>
-          <title>Contenido para Imprimir</title>
+          <title>Contenido del Ticket - PEKEPLAY</title>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <style>
+            * {
+              margin: 0;
+              padding: 0;
+              box-sizing: border-box;
+            }
+            
             body {
-              font-family: 'Courier New', monospace;
-              white-space: pre;
+              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
               padding: 20px;
-              background: #f5f5f5;
+              min-height: 100vh;
             }
-            .contenido {
-              background: white;
-              padding: 20px;
-              border: 1px solid #ddd;
-              max-width: 400px;
+            
+            .container {
+              max-width: 100%;
               margin: 0 auto;
+              background: white;
+              border-radius: 15px;
+              box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+              overflow: hidden;
             }
-            .botones {
+            
+            .header {
+              background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+              color: white;
+              padding: 25px 20px;
+              text-align: center;
+              border-bottom: 3px solid #3730a3;
+            }
+            
+            .header h1 {
+              font-size: 24px;
+              margin-bottom: 10px;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 10px;
+            }
+            
+            .header p {
+              opacity: 0.9;
+              font-size: 14px;
+            }
+            
+            .content {
+              padding: 25px;
+            }
+            
+            .instructions {
+              background: #f0f9ff;
+              border: 2px solid #0ea5e9;
+              border-radius: 10px;
+              padding: 20px;
+              margin-bottom: 25px;
+            }
+            
+            .instructions h3 {
+              color: #0369a1;
+              margin-bottom: 15px;
+              display: flex;
+              align-items: center;
+              gap: 10px;
+            }
+            
+            .instructions ol {
+              padding-left: 20px;
+              color: #475569;
+            }
+            
+            .instructions li {
+              margin-bottom: 10px;
+              line-height: 1.5;
+            }
+            
+            .ticket-content {
+              background: #f8fafc;
+              border: 2px solid #e2e8f0;
+              border-radius: 10px;
+              padding: 20px;
+              margin: 20px 0;
+              font-family: 'Courier New', monospace;
+              font-size: 12px;
+              line-height: 1.4;
+              white-space: pre;
+              overflow-x: auto;
+              max-height: 400px;
+              overflow-y: auto;
+              border-left: 4px solid #4f46e5;
+            }
+            
+            .buttons {
+              display: flex;
+              gap: 12px;
+              margin-top: 25px;
+              flex-wrap: wrap;
+              justify-content: center;
+            }
+            
+            .btn {
+              padding: 14px 28px;
+              border: none;
+              border-radius: 8px;
+              cursor: pointer;
+              font-weight: 600;
+              font-size: 15px;
+              transition: all 0.3s ease;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              gap: 10px;
+              min-width: 180px;
+              box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            }
+            
+            .btn:hover {
+              transform: translateY(-2px);
+              box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+            }
+            
+            .btn:active {
+              transform: translateY(0);
+            }
+            
+            .btn-copy {
+              background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+              color: white;
+            }
+            
+            .btn-copy:hover {
+              background: linear-gradient(135deg, #059669 0%, #047857 100%);
+            }
+            
+            .btn-print {
+              background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+              color: white;
+            }
+            
+            .btn-print:hover {
+              background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+            }
+            
+            .btn-close {
+              background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+              color: white;
+            }
+            
+            .btn-close:hover {
+              background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            }
+            
+            .btn-rawbt {
+              background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+              color: white;
+            }
+            
+            .btn-rawbt:hover {
+              background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+            }
+            
+            .icon {
+              width: 20px;
+              height: 20px;
+              stroke-width: 2;
+            }
+            
+            .device-info {
+              background: #fef3c7;
+              border: 2px solid #f59e0b;
+              border-radius: 10px;
+              padding: 15px;
               margin-top: 20px;
               text-align: center;
+              color: #92400e;
+              font-weight: 500;
             }
-            button {
-              padding: 10px 20px;
-              margin: 0 10px;
-              cursor: pointer;
+            
+            @media (max-width: 600px) {
+              body {
+                padding: 10px;
+              }
+              
+              .header {
+                padding: 20px 15px;
+              }
+              
+              .header h1 {
+                font-size: 20px;
+              }
+              
+              .content {
+                padding: 20px 15px;
+              }
+              
+              .btn {
+                width: 100%;
+                min-width: auto;
+              }
+              
+              .buttons {
+                flex-direction: column;
+              }
             }
           </style>
         </head>
         <body>
-          <div class="contenido">
-            ${contenido.replace(/\n/g, '<br>').replace(/ /g, '&nbsp;')}
+          <div class="container">
+            <div class="header">
+              <h1>📄 Contenido del Ticket PEKEPLAY</h1>
+              <p>Listo para imprimir en impresora térmica</p>
+            </div>
+            
+            <div class="content">
+              <div class="instructions">
+                <h3>📋 Instrucciones para Android:</h3>
+                <ol>
+                  <li><strong>Opción recomendada:</strong> Haz clic en "Abrir en rawbt" si tienes la app instalada</li>
+                  <li><strong>Opción alternativa:</strong> Copia el contenido y pégalo en tu app de impresión térmica</li>
+                  <li><strong>Para imprimir:</strong> Asegúrate de que tu impresora Bluetooth esté emparejada</li>
+                  <li><strong>Configuración:</strong> Usa fuente "Courier New" tamaño 8-10pt</li>
+                </ol>
+              </div>
+              
+              <div class="device-info">
+                📱 Dispositivo: Android - Método: Bluetooth (rawbt)
+              </div>
+              
+              <h3 style="color: #374151; margin: 20px 0 10px 0; font-size: 18px;">
+                Contenido del Ticket:
+              </h3>
+              
+              <div class="ticket-content" id="ticketContent">
+                ${contenido.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>').replace(/ /g, '&nbsp;')}
+              </div>
+              
+              <div class="buttons">
+                <button class="btn btn-rawbt" onclick="abrirRawbt()">
+                  <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  Abrir en rawbt
+                </button>
+                
+                <button class="btn btn-copy" onclick="copiarContenido()">
+                  <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  Copiar Contenido
+                </button>
+                
+                <button class="btn btn-print" onclick="window.print()">
+                  <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                  </svg>
+                  Imprimir Página
+                </button>
+                
+                <button class="btn btn-close" onclick="window.close()">
+                  <svg class="icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Cerrar Ventana
+                </button>
+              </div>
+            </div>
           </div>
-          <div class="botones">
-            <button onclick="window.print()">🖨️ Imprimir</button>
-            <button onclick="window.close()">Cerrar</button>
-          </div>
+          
+          <script>
+            const contenidoTicket = \`${contenido.replace(/`/g, '\\`')}\`
+            
+            function abrirRawbt() {
+              const encoded = encodeURIComponent(contenidoTicket)
+              window.location.href = 'rawbt:' + encoded
+            }
+            
+            function copiarContenido() {
+              navigator.clipboard.writeText(contenidoTicket)
+                .then(() => {
+                  alert('✅ Contenido copiado al portapapeles')
+                })
+                .catch(err => {
+                  console.error('Error al copiar:', err)
+                  alert('❌ Error al copiar: ' + err.message)
+                  
+                  // Fallback para navegadores antiguos
+                  const textarea = document.createElement('textarea')
+                  textarea.value = contenidoTicket
+                  document.body.appendChild(textarea)
+                  textarea.select()
+                  document.execCommand('copy')
+                  document.body.removeChild(textarea)
+                  alert('✅ Contenido copiado (método alternativo)')
+                })
+            }
+            
+            // Auto-copiar al cargar (opcional)
+            // setTimeout(copiarContenido, 1000)
+            
+            // Configurar impresión térmica
+            window.addEventListener('beforeprint', () => {
+              document.querySelector('.ticket-content').style.fontSize = '9pt'
+            })
+            
+            window.addEventListener('afterprint', () => {
+              document.querySelector('.ticket-content').style.fontSize = '12px'
+            })
+          </script>
         </body>
       </html>
-    `);
-    ventanaImpresion.document.close();
-  };
+    `)
+    ventana.document.close()
+  }
 
   // ==============================================
-  // FUNCIONES EXISTENTES
+  // FUNCIONES DE MODALES (MANTENER IGUAL)
   // ==============================================
 
-  // Funciones para abrir modales
   const abrirModalNueva = () => {
     setNuevaVenta({
       producto_id: '',
@@ -419,7 +591,6 @@ ${centrarTexto("--- CORTE AUTOMÁTICO ---")}
     setModalEliminarAbierto(true)
   }
 
-  // Función para cerrar todos los modales
   const cerrarModales = () => {
     setModalNuevaAbierto(false)
     setModalEditarAbierto(false)
@@ -427,34 +598,24 @@ ${centrarTexto("--- CORTE AUTOMÁTICO ---")}
     setVentaSeleccionada(null)
   }
 
-  // Función para manejar nueva venta
   const handleVentaRegistrada = async (ventaData) => {
-    console.log('Datos de venta a guardar:', ventaData)
-    
     try {
       const { data, error } = await supabase
         .from('ventas')
         .insert([ventaData])
         .select()
       
-      console.log('Respuesta Supabase:', { data, error })
-      
-      if (error) {
-        console.error('Error detallado:', error)
-        throw error
-      }
+      if (error) throw error
       
       alert('✅ Venta registrada correctamente')
       cerrarModales()
       cargarDatos()
     } catch (error) {
-      console.error('Error completo:', error)
+      console.error('Error:', error)
       alert(`❌ Error: ${error.message}`)
-      throw error
     }
   }
 
-  // Función para manejar venta editada
   const handleVentaEditada = async (datosActualizados) => {
     try {
       const { error } = await supabase
@@ -468,13 +629,11 @@ ${centrarTexto("--- CORTE AUTOMÁTICO ---")}
       cerrarModales()
       cargarDatos()
     } catch (error) {
-      console.error('Error actualizando venta:', error)
+      console.error('Error:', error)
       alert(`❌ Error: ${error.message}`)
-      throw error
     }
   }
 
-  // Función para manejar venta eliminada
   const handleVentaEliminada = async () => {
     try {
       const { error } = await supabase
@@ -488,53 +647,24 @@ ${centrarTexto("--- CORTE AUTOMÁTICO ---")}
       cerrarModales()
       cargarDatos()
     } catch (error) {
-      console.error('Error eliminando venta:', error)
+      console.error('Error:', error)
       alert(`❌ Error: ${error.message}`)
-      throw error
     }
   }
 
-  // Calcular estadísticas
-  const totalVentas = ventas.reduce((sum, venta) => sum + venta.total, 0)
-  const totalUnidades = ventas.reduce((sum, venta) => sum + venta.cantidad, 0)
-  const ventasEfectivo = ventas.filter(v => v.metodo_pago === 'efectivo' || v.metodo_pago === 'mixto')
-    .reduce((sum, venta) => sum + (venta.efectivo || 0), 0)
-  const ventasTarjeta = ventas.filter(v => v.metodo_pago === 'tarjeta' || v.metodo_pago === 'mixto')
-    .reduce((sum, venta) => sum + (venta.tarjeta || 0), 0)
-  const ventasTransferencia = ventas.filter(v => v.metodo_pago === 'transferencia' || v.metodo_pago === 'mixto')
-    .reduce((sum, venta) => sum + (venta.transferencia || 0), 0)
+  // ==============================================
+  // RENDERIZADO
+  // ==============================================
 
   return (
     <div className="ventas-container">
       <div className="ventas-header">
         <div className="ventas-titulo-container">
           <h1 className="ventas-titulo">Ventas</h1>
-          <p className="ventas-subtitulo">Registro de ventas de productos</p>
+          <p className="ventas-subtitulo">PEKEPLAY - Gestión de Ventas</p>
         </div>
         
         <div className="ventas-botones-header">
-          {/* Botón para imprimir resumen del día */}
-          <button
-            onClick={imprimirResumenDia}
-            disabled={imprimiendo || ventas.length === 0}
-            className="boton-imprimir-resumen"
-          >
-            {imprimiendo ? (
-              <>
-                <span className="spinner-mini"></span>
-                Imprimiendo...
-              </>
-            ) : (
-              <>
-                <svg className="boton-imprimir-icono" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                    d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                </svg>
-                Imprimir Resumen
-              </>
-            )}
-          </button>
-          
           <button
             onClick={abrirModalNueva}
             className="boton-agregar-venta"
@@ -568,92 +698,58 @@ ${centrarTexto("--- CORTE AUTOMÁTICO ---")}
         </div>
       )}
 
-      {/* Indicador de modo de impresión */}
+      {/* Indicador Android */}
       <div className="modo-impresion-indicator">
-        <span className={`modo-badge ${/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 'modo-bluetooth' : 'modo-usb'}`}>
-          {/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? '📱 Bluetooth (rawbt)' : '💻 USB/Cable'}
+        <span className="modo-badge modo-bluetooth">
+          📱 Android - rawbt
         </span>
         {imprimiendo && (
           <span className="imprimiendo-badge">
-            ⚡ Imprimiendo...
+            ⚡ Enviando a impresora...
           </span>
         )}
       </div>
 
+      {/* Tabla de ventas */}
       <TablaVentas
         ventas={ventas}
         loading={loading}
         onEditar={abrirModalEditar}
         onEliminar={abrirModalEliminar}
-        onImprimir={imprimirVenta}
+        onImprimir={imprimirTicket}  {/* Cambiado a imprimirTicket */}
         imprimiendo={imprimiendo}
       />
 
-      {/* Resumen de ventas */}
-      {!loading && ventas.length > 0 && (
-        <div className="resumen-ventas">
-          <div className="resumen-card">
-            <h3 className="resumen-titulo">Resumen de Ventas</h3>
-            <div className="resumen-stats">
-              <div className="stat-item">
-                <span className="stat-label">Total Ventas:</span>
-                <span className="stat-value">${totalVentas.toFixed(2)}</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-label">Unidades Vendidas:</span>
-                <span className="stat-value">{totalUnidades} unidades</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-label">Transacciones:</span>
-                <span className="stat-value">{ventas.length} registros</span>
-              </div>
-            </div>
-            
-            <div className="separador"></div>
-            
-            <h4 className="resumen-subtitulo">Distribución por Método de Pago:</h4>
-            <div className="resumen-stats-metodos">
-              <div className="stat-metodo-item">
-                <span className="stat-metodo-label">💰 Efectivo:</span>
-                <span className="stat-metodo-valor">${ventasEfectivo.toFixed(2)}</span>
-              </div>
-              <div className="stat-metodo-item">
-                <span className="stat-metodo-label">💳 Tarjeta:</span>
-                <span className="stat-metodo-valor">${ventasTarjeta.toFixed(2)}</span>
-              </div>
-              <div className="stat-metodo-item">
-                <span className="stat-metodo-label">🏦 Transferencia:</span>
-                <span className="stat-metodo-valor">${ventasTransferencia.toFixed(2)}</span>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Modales */}
+      {modalNuevaAbierto && (
+        <ModalNuevaVenta
+          isOpen={modalNuevaAbierto}
+          onClose={cerrarModales}
+          onSave={handleVentaRegistrada}
+          productos={productos}
+          ventaData={nuevaVenta}
+          setVentaData={setNuevaVenta}
+        />
       )}
 
-      {/* Modales */}
-      <ModalNuevaVenta
-        isOpen={modalNuevaAbierto}
-        onClose={cerrarModales}
-        onSave={handleVentaRegistrada}
-        productos={productos}
-        ventaData={nuevaVenta}
-        setVentaData={setNuevaVenta}
-      />
+      {modalEditarAbierto && ventaSeleccionada && (
+        <ModalEditarVenta
+          isOpen={modalEditarAbierto}
+          onClose={cerrarModales}
+          onSave={handleVentaEditada}
+          venta={ventaSeleccionada}
+          productos={productos}
+        />
+      )}
 
-      <ModalEditarVenta
-        isOpen={modalEditarAbierto}
-        onClose={cerrarModales}
-        onSave={handleVentaEditada}
-        venta={ventaSeleccionada}
-        productos={productos}
-      />
-
-      <ModalEliminarVenta
-        isOpen={modalEliminarAbierto}
-        onClose={cerrarModales}
-        onConfirm={handleVentaEliminada}
-        venta={ventaSeleccionada}
-      />
+      {modalEliminarAbierto && ventaSeleccionada && (
+        <ModalEliminarVenta
+          isOpen={modalEliminarAbierto}
+          onClose={cerrarModales}
+          onConfirm={handleVentaEliminada}
+          venta={ventaSeleccionada}
+        />
+      )}
     </div>
   )
 }

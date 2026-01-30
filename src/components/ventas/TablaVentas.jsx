@@ -3,11 +3,12 @@ import './TablaVentas.css'
 
 const TablaVentas = ({ ventas, loading, onEditar, onEliminar, onImprimir, imprimiendo }) => {
   
-  // Nueva función de formato que RESTA 6 horas
+  // Nueva función de formato que RESTA 6 horas (como en TablaInventario)
   const formatFechaNicaragua = (fechaISO) => {
     if (!fechaISO) return 'Fecha no disponible';
     
     const fechaUTC = new Date(fechaISO);
+    // RESTAR 6 horas para convertir UTC a Nicaragua (Juigalpa)
     const fechaNicaragua = new Date(fechaUTC.getTime() - (6 * 60 * 60 * 1000));
     
     const dia = fechaNicaragua.getDate().toString().padStart(2, '0');
