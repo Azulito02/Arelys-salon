@@ -1,14 +1,13 @@
 import React from 'react'
 import './TablaVentas.css'
 
-const TablaVentas = ({ ventas, loading, onEditar, onEliminar }) => {
+const TablaVentas = ({ ventas, loading, onEditar, onEliminar, onImprimir, imprimiendo }) => {
   
-  // Nueva función de formato que RESTA 6 horas (como en TablaInventario)
+  // Nueva función de formato que RESTA 6 horas
   const formatFechaNicaragua = (fechaISO) => {
     if (!fechaISO) return 'Fecha no disponible';
     
     const fechaUTC = new Date(fechaISO);
-    // RESTAR 6 horas para convertir UTC a Nicaragua (Juigalpa)
     const fechaNicaragua = new Date(fechaUTC.getTime() - (6 * 60 * 60 * 1000));
     
     const dia = fechaNicaragua.getDate().toString().padStart(2, '0');
@@ -23,24 +22,6 @@ const TablaVentas = ({ ventas, loading, onEditar, onEliminar }) => {
     horas = horas ? horas.toString().padStart(2, '0') : '12';
     
     return `${dia}/${mes}/${año}, ${horas}:${minutos} ${ampm}`;
-  };
-
-  // Función para debuggear (opcional, para verificar)
-  const debugFecha = (fechaISO, label) => {
-    if (!fechaISO) return 'N/A';
-    
-    const fecha = new Date(fechaISO);
-    console.log(`=== DEBUG VENTAS ${label} ===`);
-    console.log('Fecha ISO:', fechaISO);
-    console.log('Fecha objeto:', fecha);
-    console.log('UTC Hours:', fecha.getUTCHours(), 'UTC Minutes:', fecha.getUTCMinutes());
-    console.log('Local Hours:', fecha.getHours(), 'Local Minutes:', fecha.getMinutes());
-    
-    const fechaUTC = new Date(fechaISO);
-    const fechaNicaragua = new Date(fechaUTC.getTime() - (6 * 60 * 60 * 1000));
-    console.log('Hora Nicaragua (resta 6h):', fechaNicaragua.getHours() + ':' + fechaNicaragua.getMinutes());
-    
-    return formatFechaNicaragua(fechaISO);
   };
 
   // Función para mostrar el método de pago con iconos
@@ -107,14 +88,6 @@ const TablaVentas = ({ ventas, loading, onEditar, onEliminar }) => {
                 </tr>
               ) : (
                 ventas.map((venta) => {
-                  // Debug opcional para verificar las fechas
-                  if (process.env.NODE_ENV === 'development') {
-                    console.log('=== VENTA ===');
-                    console.log('ID:', venta.id);
-                    console.log('Fecha ISO:', venta.fecha);
-                    console.log('Fecha formateada:', formatFechaNicaragua(venta.fecha));
-                  }
-                  
                   return (
                     <tr key={venta.id} className="fila-venta">
                       <td className="celda-producto">
@@ -165,6 +138,24 @@ const TablaVentas = ({ ventas, loading, onEditar, onEliminar }) => {
                       </td>
                       <td className="celda-acciones">
                         <div className="acciones-container">
+                          {/* Botón de Imprimir */}
+                          <button
+                            onClick={() => onImprimir(venta)}
+                            disabled={imprimiendo}
+                            className="accion-btn accion-imprimir"
+                            title="Imprimir ticket"
+                          >
+                            {imprimiendo ? (
+                              <div className="spinner-mini-accion"></div>
+                            ) : (
+                              <svg className="accion-icono" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                                  d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                              </svg>
+                            )}
+                          </button>
+                          
+                          {/* Botón de Editar */}
                           <button
                             onClick={() => onEditar(venta)}
                             className="accion-btn accion-editar"
@@ -175,6 +166,8 @@ const TablaVentas = ({ ventas, loading, onEditar, onEliminar }) => {
                                 d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                             </svg>
                           </button>
+                          
+                          {/* Botón de Eliminar */}
                           <button
                             onClick={() => onEliminar(venta)}
                             className="accion-btn accion-eliminar"

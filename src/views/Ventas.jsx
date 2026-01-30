@@ -13,6 +13,7 @@ const Ventas = () => {
   const [productos, setProductos] = useState([])
   const [loading, setLoading] = useState(true)
   const [errorCarga, setErrorCarga] = useState('')
+  const [imprimiendo, setImprimiendo] = useState(false)
   
   // Estados para modales
   const [modalNuevaAbierto, setModalNuevaAbierto] = useState(false)
@@ -86,6 +87,316 @@ const Ventas = () => {
       setLoading(false)
     }
   }
+
+  // ==============================================
+  // FUNCIONES DE IMPRESIÓN CON rawbt
+  // ==============================================
+
+  // Formatear fecha para Nicaragua (resta 6 horas)
+  const formatFechaNicaragua = (fechaISO) => {
+    if (!fechaISO) return 'Fecha no disponible';
+    
+    const fechaUTC = new Date(fechaISO);
+    // RESTAR 6 horas para convertir UTC a Nicaragua (Juigalpa)
+    const fechaNicaragua = new Date(fechaUTC.getTime() - (6 * 60 * 60 * 1000));
+    
+    const dia = fechaNicaragua.getDate().toString().padStart(2, '0');
+    const mes = (fechaNicaragua.getMonth() + 1).toString().padStart(2, '0');
+    const año = fechaNicaragua.getFullYear();
+    
+    let horas = fechaNicaragua.getHours();
+    const minutos = fechaNicaragua.getMinutes().toString().padStart(2, '0');
+    const ampm = horas >= 12 ? 'p.m.' : 'a.m.';
+    
+    horas = horas % 12;
+    horas = horas ? horas.toString().padStart(2, '0') : '12';
+    
+    return `${dia}/${mes}/${año}, ${horas}:${minutos} ${ampm}`;
+  };
+
+  // Formatear fecha simple para tickets
+  const formatFechaTicket = (fechaISO) => {
+    if (!fechaISO) return '';
+    
+    const fechaUTC = new Date(fechaISO);
+    const fechaNicaragua = new Date(fechaUTC.getTime() - (6 * 60 * 60 * 1000));
+    
+    const dia = fechaNicaragua.getDate().toString().padStart(2, '0');
+    const mes = (fechaNicaragua.getMonth() + 1).toString().padStart(2, '0');
+    const año = fechaNicaragua.getFullYear().toString().slice(-2);
+    
+    let horas = fechaNicaragua.getHours();
+    const minutos = fechaNicaragua.getMinutes().toString().padStart(2, '0');
+    
+    horas = horas % 12;
+    horas = horas ? horas.toString().padStart(2, '0') : '12';
+    const ampm = fechaNicaragua.getHours() >= 12 ? 'PM' : 'AM';
+    
+    return `${dia}/${mes}/${año} ${horas}:${minutos} ${ampm}`;
+  };
+
+  // Función principal para imprimir una venta
+  const imprimirVenta = (venta) => {
+    try {
+      setImprimiendo(true);
+      
+      // Generar el contenido del ticket usando tu formato
+      const contenido = generarTicketVenta(venta);
+      
+      // Codificar para rawbt
+      const encoded = encodeURIComponent(contenido);
+      
+      // Abrir en rawbt (para Bluetooth) o imprimir directamente (para USB)
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      if (isMobile) {
+        // Modo móvil: usar rawbt para Bluetooth
+        window.location.href = `rawbt:${encoded}`;
+        console.log('Enviando a rawbt para impresión Bluetooth');
+      } else {
+        // Modo escritorio: intentar WebUSB o mostrar contenido
+        imprimirUSB(contenido);
+      }
+      
+      // Mostrar mensaje de éxito
+      setTimeout(() => {
+        alert('✅ Ticket enviado a la impresora');
+        setImprimiendo(false);
+      }, 1000);
+      
+    } catch (error) {
+      console.error('Error al imprimir:', error);
+      alert(`❌ Error al imprimir: ${error.message}`);
+      setImprimiendo(false);
+    }
+  };
+
+  // Función para imprimir resumen del día
+  const imprimirResumenDia = () => {
+    try {
+      setImprimiendo(true);
+      
+      // Filtrar ventas del día actual
+      const hoy = new Date();
+      hoy.setHours(0, 0, 0, 0);
+      
+      const ventasHoy = ventas.filter(venta => {
+        const fechaVenta = new Date(venta.fecha);
+        return fechaVenta >= hoy;
+      });
+      
+      if (ventasHoy.length === 0) {
+        alert('⚠️ No hay ventas hoy para imprimir resumen');
+        setImprimiendo(false);
+        return;
+      }
+      
+      // Generar contenido del resumen
+      const contenido = generarResumenDia(ventasHoy);
+      
+      // Codificar para rawbt
+      const encoded = encodeURIComponent(contenido);
+      
+      // Abrir en rawbt (para Bluetooth) o imprimir directamente (para USB)
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      if (isMobile) {
+        // Modo móvil: usar rawbt para Bluetooth
+        window.location.href = `rawbt:${encoded}`;
+        console.log('Enviando resumen a rawbt');
+      } else {
+        // Modo escritorio
+        imprimirUSB(contenido);
+      }
+      
+      // Mostrar mensaje de éxito
+      setTimeout(() => {
+        alert('✅ Resumen del día enviado a la impresora');
+        setImprimiendo(false);
+      }, 1000);
+      
+    } catch (error) {
+      console.error('Error al imprimir resumen:', error);
+      alert(`❌ Error al imprimir: ${error.message}`);
+      setImprimiendo(false);
+    }
+  };
+
+  // Generar ticket para una venta específica
+  const generarTicketVenta = (venta) => {
+    const nombreProducto = venta.productos?.nombre || 'Producto';
+    const fechaFormateada = formatFechaTicket(venta.fecha);
+    const totalVenta = venta.total?.toFixed(2) || '0.00';
+    
+    // Método de pago con detalles
+    let metodoPagoTexto = '';
+    if (venta.metodo_pago === 'efectivo') {
+      metodoPagoTexto = `EFECTIVO: $${venta.efectivo?.toFixed(2) || totalVenta}`;
+    } else if (venta.metodo_pago === 'tarjeta') {
+      metodoPagoTexto = `TARJETA: $${venta.tarjeta?.toFixed(2) || totalVenta}`;
+      if (venta.banco) metodoPagoTexto += ` (${venta.banco})`;
+    } else if (venta.metodo_pago === 'transferencia') {
+      metodoPagoTexto = `TRANSFERENCIA: $${venta.transferencia?.toFixed(2) || totalVenta}`;
+      if (venta.banco) metodoPagoTexto += ` (${venta.banco})`;
+    } else if (venta.metodo_pago === 'mixto') {
+      metodoPagoTexto = 'PAGO MIXTO:\n';
+      if (venta.efectivo > 0) metodoPagoTexto += `- Efectivo: $${venta.efectivo?.toFixed(2)}\n`;
+      if (venta.tarjeta > 0) metodoPagoTexto += `- Tarjeta: $${venta.tarjeta?.toFixed(2)}\n`;
+      if (venta.transferencia > 0) metodoPagoTexto += `- Transferencia: $${venta.transferencia?.toFixed(2)}`;
+    } else {
+      metodoPagoTexto = 'NO ESPECIFICADO';
+    }
+    
+    // Generar el ticket con formato térmico
+    const ticket = `
+${centrarTexto("TIENDA EJEMPLO")}
+${centrarTexto("====================")}
+${centrarTexto("TICKET DE VENTA")}
+${centrarTexto("====================")}
+
+Fecha: ${fechaFormateada}
+Ticket #: ${venta.id || 'N/A'}
+--------------------------------
+PRODUCTO:
+${nombreProducto}
+--------------------------------
+Cantidad: ${venta.cantidad || 1} x $${venta.precio_unitario?.toFixed(2) || '0.00'}
+--------------------------------
+${alinearDerecha(`TOTAL: $${totalVenta}`)}
+--------------------------------
+METODO DE PAGO:
+${metodoPagoTexto}
+--------------------------------
+${centrarTexto("¡GRACIAS POR SU COMPRA!")}
+${centrarTexto("Tel: 1234-5678")}
+${centrarTexto("www.tienda.com")}
+
+${centrarTexto("--- CORTE AUTOMÁTICO ---")}
+`;
+    
+    return ticket;
+  };
+
+  // Generar resumen del día
+  const generarResumenDia = (ventasHoy) => {
+    // Calcular estadísticas
+    const totalVentas = ventasHoy.reduce((sum, v) => sum + v.total, 0);
+    const totalUnidades = ventasHoy.reduce((sum, v) => sum + v.cantidad, 0);
+    const totalEfectivo = ventasHoy
+      .filter(v => v.metodo_pago === 'efectivo' || v.metodo_pago === 'mixto')
+      .reduce((sum, v) => sum + (v.efectivo || 0), 0);
+    const totalTarjeta = ventasHoy
+      .filter(v => v.metodo_pago === 'tarjeta' || v.metodo_pago === 'mixto')
+      .reduce((sum, v) => sum + (v.tarjeta || 0), 0);
+    const totalTransferencia = ventasHoy
+      .filter(v => v.metodo_pago === 'transferencia' || v.metodo_pago === 'mixto')
+      .reduce((sum, v) => sum + (v.transferencia || 0), 0);
+    
+    const fechaActual = new Date();
+    const fechaFormateada = formatFechaTicket(fechaActual.toISOString());
+    
+    const resumen = `
+${centrarTexto("RESUMEN DEL DÍA")}
+${centrarTexto("====================")}
+Fecha: ${fechaFormateada}
+Total Transacciones: ${ventasHoy.length}
+--------------------------------
+ESTADÍSTICAS:
+Total Ventas: $${totalVentas.toFixed(2)}
+Total Unidades: ${totalUnidades}
+--------------------------------
+DISTRIBUCIÓN POR PAGO:
+Efectivo: $${totalEfectivo.toFixed(2)}
+Tarjeta: $${totalTarjeta.toFixed(2)}
+Transferencia: $${totalTransferencia.toFixed(2)}
+--------------------------------
+LISTA DE VENTAS:
+${ventasHoy.map((v, i) => 
+  `${i + 1}. ${v.productos?.nombre || 'Producto'} - $${v.total.toFixed(2)}`
+).join('\n')}
+--------------------------------
+${centrarTexto("FIN DEL RESUMEN")}
+${centrarTexto(`Generado: ${new Date().toLocaleTimeString()}`)}
+
+${centrarTexto("--- CORTE AUTOMÁTICO ---")}
+`;
+    
+    return resumen;
+  };
+
+  // Función auxiliar para centrar texto (40 caracteres de ancho)
+  const centrarTexto = (texto) => {
+    const ancho = 40;
+    const espacios = Math.max(0, Math.floor((ancho - texto.length) / 2));
+    return ' '.repeat(espacios) + texto;
+  };
+
+  // Función auxiliar para alinear a la derecha
+  const alinearDerecha = (texto) => {
+    const ancho = 40;
+    const espacios = Math.max(0, ancho - texto.length);
+    return ' '.repeat(espacios) + texto;
+  };
+
+  // Función para imprimir por USB (computadora)
+  const imprimirUSB = (contenido) => {
+    // Para computadoras, podemos usar WebUSB o mostrar el contenido
+    console.log('Contenido para imprimir:', contenido);
+    
+    // Opción 1: Intentar WebUSB
+    if (navigator.usb) {
+      console.log('WebUSB disponible, intentando conectar...');
+      // Aquí iría la lógica de WebUSB
+    }
+    
+    // Opción 2: Mostrar en una ventana para copiar/pegar
+    const ventanaImpresion = window.open('', '_blank');
+    ventanaImpresion.document.write(`
+      <html>
+        <head>
+          <title>Contenido para Imprimir</title>
+          <style>
+            body {
+              font-family: 'Courier New', monospace;
+              white-space: pre;
+              padding: 20px;
+              background: #f5f5f5;
+            }
+            .contenido {
+              background: white;
+              padding: 20px;
+              border: 1px solid #ddd;
+              max-width: 400px;
+              margin: 0 auto;
+            }
+            .botones {
+              margin-top: 20px;
+              text-align: center;
+            }
+            button {
+              padding: 10px 20px;
+              margin: 0 10px;
+              cursor: pointer;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="contenido">
+            ${contenido.replace(/\n/g, '<br>').replace(/ /g, '&nbsp;')}
+          </div>
+          <div class="botones">
+            <button onclick="window.print()">🖨️ Imprimir</button>
+            <button onclick="window.close()">Cerrar</button>
+          </div>
+        </body>
+      </html>
+    `);
+    ventanaImpresion.document.close();
+  };
+
+  // ==============================================
+  // FUNCIONES EXISTENTES
+  // ==============================================
 
   // Funciones para abrir modales
   const abrirModalNueva = () => {
@@ -200,27 +511,52 @@ const Ventas = () => {
           <h1 className="ventas-titulo">Ventas</h1>
           <p className="ventas-subtitulo">Registro de ventas de productos</p>
         </div>
-        <button
-          onClick={abrirModalNueva}
-          className="boton-agregar-venta"
-        >
-          <svg 
-            className="boton-agregar-icono" 
-            fill="none" 
-            stroke="currentColor" 
-            viewBox="0 0 24 24"
-            width="20"
-            height="20"
+        
+        <div className="ventas-botones-header">
+          {/* Botón para imprimir resumen del día */}
+          <button
+            onClick={imprimirResumenDia}
+            disabled={imprimiendo || ventas.length === 0}
+            className="boton-imprimir-resumen"
           >
-            <path 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-              strokeWidth={2.5} 
-              d="M12 4v16m8-8H4" 
-            />
-          </svg>
-          Nueva Venta
-        </button>
+            {imprimiendo ? (
+              <>
+                <span className="spinner-mini"></span>
+                Imprimiendo...
+              </>
+            ) : (
+              <>
+                <svg className="boton-imprimir-icono" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                    d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                </svg>
+                Imprimir Resumen
+              </>
+            )}
+          </button>
+          
+          <button
+            onClick={abrirModalNueva}
+            className="boton-agregar-venta"
+          >
+            <svg 
+              className="boton-agregar-icono" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+              width="20"
+              height="20"
+            >
+              <path 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                strokeWidth={2.5} 
+                d="M12 4v16m8-8H4" 
+              />
+            </svg>
+            Nueva Venta
+          </button>
+        </div>
       </div>
 
       {errorCarga && (
@@ -232,11 +568,25 @@ const Ventas = () => {
         </div>
       )}
 
+      {/* Indicador de modo de impresión */}
+      <div className="modo-impresion-indicator">
+        <span className={`modo-badge ${/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 'modo-bluetooth' : 'modo-usb'}`}>
+          {/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? '📱 Bluetooth (rawbt)' : '💻 USB/Cable'}
+        </span>
+        {imprimiendo && (
+          <span className="imprimiendo-badge">
+            ⚡ Imprimiendo...
+          </span>
+        )}
+      </div>
+
       <TablaVentas
         ventas={ventas}
         loading={loading}
         onEditar={abrirModalEditar}
         onEliminar={abrirModalEliminar}
+        onImprimir={imprimirVenta}
+        imprimiendo={imprimiendo}
       />
 
       {/* Resumen de ventas */}
