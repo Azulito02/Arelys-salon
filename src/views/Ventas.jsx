@@ -1,4 +1,4 @@
-// Ventas.jsx - VERSIÓN CORREGIDA CON SALTOS DE LÍNEA
+// Ventas.jsx - VERSIÓN CORREGIDA PARA TU BASE DE DATOS
 import { useState, useEffect } from 'react'
 import { supabase } from '../database/supabase'
 import TablaVentas from '../components/ventas/TablaVentas'
@@ -34,6 +34,10 @@ const Ventas = () => {
     cargarDatos()
   }, [])
 
+  // ==============================================
+  // CARGAR DATOS - VERSIÓN CORREGIDA
+  // ==============================================
+
   const cargarDatos = async () => {
     try {
       setLoading(true)
@@ -48,21 +52,14 @@ const Ventas = () => {
       if (errorProductos) throw errorProductos
       setProductos(productosData || [])
       
-      // Cargar ventas con detalles
+      // Cargar ventas CON productos (tu estructura)
       const { data: ventasData, error: errorVentas } = await supabase
         .from('ventas')
         .select(`
           *,
-          clientes (*),
-          detalles_venta (
-            *,
-            productos (*),
-            sesiones_juegos (
-              juegos (*)
-            )
-          )
+          productos (*)
         `)
-        .order('fecha_hora', { ascending: false })
+        .order('fecha', { ascending: false })  // Cambié fecha_hora por fecha
       
       if (errorVentas) throw errorVentas
       setVentas(ventasData || [])
@@ -76,7 +73,7 @@ const Ventas = () => {
   }
 
   // ==============================================
-  // FUNCIÓN DE IMPRESIÓN CORREGIDA
+  // FUNCIÓN DE IMPRESIÓN - VERSIÓN CORREGIDA
   // ==============================================
 
   const imprimirTicket = (venta) => {
@@ -91,14 +88,11 @@ const Ventas = () => {
         return
       }
       
-      // Generar el contenido del ticket CON SALTOS DE LÍNEA
+      // Generar el contenido del ticket
       const contenido = generarContenidoTicket(venta)
       
-      // AGREGAR COMANDOS ESPECIALES PARA IMPRESORA TÉRMICA
-      const contenidoConComandos = agregarComandosImpresora(contenido)
-      
       // Codificar y enviar a rawbt
-      const encoded = encodeURIComponent(contenidoConComandos)
+      const encoded = encodeURIComponent(contenido)
       window.location.href = `rawbt:${encoded}`
       
       // Fallback si rawbt no está instalado
@@ -121,38 +115,16 @@ const Ventas = () => {
   }
 
   // ==============================================
-  // AGREGAR COMANDOS DE IMPRESORA TÉRMICA
-  // ==============================================
-
-  const agregarComandosImpresora = (contenido) => {
-    // Comandos ESC/POS para impresoras térmicas
-    const comandos = [
-      '\x1B\x40', // Inicializar impresora
-      '\x1B\x61\x01', // Centrar texto
-      '\x1B\x21\x00', // Tamaño de fuente normal
-      '\n\n', // Espacios al inicio
-      contenido,
-      '\n\n\n\n\n', // Espacios antes del corte
-      '\x1D\x56\x41', // Corte parcial
-      '\x1B\x64\x03', // Avanzar 3 líneas
-    ]
-    
-    return comandos.join('')
-  }
-
-  // ==============================================
-  // GENERAR CONTENIDO DEL TICKET CORREGIDO
+  // GENERAR CONTENIDO DEL TICKET - VERSIÓN CORREGIDA
   // ==============================================
 
   const generarContenidoTicket = (venta) => {
-    // 1. Nombre del cliente
-    const nombreMostrar = venta.nombre_venta?.trim() || 
-      `${venta.clientes?.nombre_cliente || ""} ${venta.clientes?.apellido_cliente || ""}`.trim() || 
-      "Cliente Genérico"
+    // 1. Nombre del cliente (EN TU SISTEMA NO HAY CLIENTES)
+    const nombreMostrar = "Cliente de Mostrador"  // Default ya que no hay tabla clientes
 
-    // 2. Fecha formateada
-    const fecha = venta.fecha_hora 
-      ? new Date(venta.fecha_hora).toLocaleString("es-NI", { 
+    // 2. Fecha formateada (usar fecha en lugar de fecha_hora)
+    const fecha = venta.fecha 
+      ? new Date(venta.fecha).toLocaleString("es-NI", { 
           year: "2-digit", 
           month: "2-digit", 
           day: "2-digit", 
@@ -161,109 +133,89 @@ const Ventas = () => {
         })
       : ""
 
-    // 3. Detalles de la venta
-    const detalle = venta.detalles_venta || venta.detalles || venta.detalle || []
+    // 3. Información del producto
+    const nombreProducto = venta.productos?.nombre || "Producto"
+    const cantidad = venta.cantidad || 0
+    const precioUnitario = Number(venta.precio_unitario || 0).toFixed(2)
+    const totalVenta = Number(venta.total || 0)
+
+    // 4. Detalle del ticket
+    let detalleTexto = "DETALLE DE VENTA:\n"
+    detalleTexto += "=".repeat(32) + "\n"
+    detalleTexto += `${nombreProducto}\n`
+    detalleTexto += `Cantidad: ${cantidad} x C$${precioUnitario}\n`
+    detalleTexto += "=".repeat(32) + "\n"
+
+    // 5. Cálculos financieros
+    const iva = totalVenta * 0.15 // 15% de IVA
+    const subtotal = totalVenta - iva
+    const numeroVenta = venta.id || "-"
     
-    // Iniciar texto de detalles CON SALTOS DE LÍNEA EXPLÍCITOS
-    let detalleTexto = "DETALLES DE VENTA:\n"
-    detalleTexto += "Cant.  Precio  Subtotal\n"
-    detalleTexto += "========================\n\n"
-
-    detalle.forEach((item, index) => {
-      // Productos
-      if (item.id_producto) {
-        const nombreProducto = item.productos?.nombre_producto || item.nombre_producto || "Producto"
-        const cantidad = item.cantidad || 0
-        const precio = Number(item.precio_unitario || item.precio_unitaria || 0).toFixed(2)
-        const subtotal = Number(item.total_linea || 0).toFixed(2)
-        
-        // AGREGAR SALTOS DE LÍNEA EXPLÍCITOS
-        detalleTexto += `${nombreProducto}\n`
-        detalleTexto += `${cantidad.toString().padStart(4)}   C$${precio.padStart(6)}   C$${subtotal.padStart(8)}\n\n`
-      }
-
-      // Juegos/Sesiones
-      if (item.id_sesion) {
-        const nombreJuego = item.sesiones_juegos?.juegos?.nombre_juego || item.nombre_juego || "Juego"
-        const minutos = item.cantidad || "-"
-        const monto = item.sesiones_juegos?.monto_cobrado || item.monto_cobrado || item.precio_unitario || 0
-        
-        detalleTexto += `${nombreJuego}\n`
-        detalleTexto += `Min: ${minutos}   Monto: C$${Number(monto).toFixed(2)}\n\n`
-      }
-    })
-
-    if (detalle.length === 0) {
-      detalleTexto += "NO HAY DETALLES REGISTRADOS\n\n"
+    // Método de pago según tu estructura
+    let metodoPago = venta.metodo_pago || "No especificado"
+    if (venta.metodo_pago && venta.efectivo > 0 && venta.tarjeta > 0 && venta.transferencia > 0) {
+      metodoPago = "Mixto"
+    } else if (venta.efectivo > 0) {
+      metodoPago = "Efectivo"
+    } else if (venta.tarjeta > 0) {
+      metodoPago = "Tarjeta"
+    } else if (venta.transferencia > 0) {
+      metodoPago = "Transferencia"
     }
 
-    // 4. Cálculos financieros
-    const totalVenta = Number(venta.total || 0)
-    const iva = totalVenta * 0.15
-    const subtotal = totalVenta - iva
-    const numeroVenta = venta.id_venta || venta.id || "-"
-    const metodoPago = venta.metodo_pago || venta.método_pago || "No especificado"
-    const estado = venta.estado ? "REGISTRADA" : "ANULADA"
-
-    // 5. Construir ticket completo CON FORMATO CORRECTO
+    // 6. Construir ticket completo
     const anchoLinea = 40
-    
     const centrar = (texto) => {
       const espacios = Math.max(0, Math.floor((anchoLinea - texto.length) / 2))
-      return ' '.repeat(espacios) + texto + '\n'
+      return ' '.repeat(espacios) + texto
     }
 
     const alinearDerecha = (texto, etiqueta) => {
       const espacio = anchoLinea - etiqueta.length - texto.length
-      return etiqueta + ' '.repeat(Math.max(1, espacio)) + texto + '\n'
+      return etiqueta + ' '.repeat(Math.max(1, espacio)) + texto
     }
 
-    // CONSTRUIR TICKET CON SALTOS DE LÍNEA EXPLÍCITOS
-    let ticket = ''
-    
-    ticket += centrar("PEKEPLAY")
-    ticket += centrar("=".repeat(20))
-    ticket += centrar("TICKET DE VENTA")
-    ticket += centrar("=".repeat(20))
-    ticket += '\n'
-    
-    ticket += centrar(`#${numeroVenta}`)
-    ticket += centrar(fecha)
-    ticket += '\n'
-    
-    ticket += `CLIENTE: ${nombreMostrar}\n`
-    ticket += "-".repeat(anchoLinea) + '\n'
-    ticket += '\n'
-    
-    ticket += detalleTexto
-    ticket += "=".repeat(anchoLinea) + '\n'
-    ticket += '\n'
-    
-    ticket += alinearDerecha(`C$${subtotal.toFixed(2)}`, "SUBTOTAL:")
-    ticket += alinearDerecha(`C$${iva.toFixed(2)}`, "IVA 15%:")
-    ticket += alinearDerecha(`C$${totalVenta.toFixed(2)}`, "TOTAL:")
-    ticket += '\n'
-    
-    ticket += "-".repeat(anchoLinea) + '\n'
-    ticket += `MÉTODO: ${metodoPago.toUpperCase()}\n`
-    ticket += `ESTADO: ${estado}\n`
-    ticket += "-".repeat(anchoLinea) + '\n'
-    ticket += '\n'
-    
-    ticket += centrar("¡GRACIAS POR SU COMPRA!")
-    ticket += centrar("Tel: 1234-5678")
-    ticket += centrar("www.pekeplay.com")
-    ticket += '\n'
-    
-    ticket += centrar("=".repeat(20))
-    ticket += centrar("CORTE AUTOMÁTICO")
-    ticket += centrar("=".repeat(20))
+    const ticket = `
+${centrar("ARELY Z SALON")}
+${centrar("=".repeat(20))}
+${centrar("TICKET DE VENTA")}
+${centrar("=".repeat(20))}
 
-    return ticket
+${centrar(`#${numeroVenta}`)}
+${centrar(fecha)}
+
+CLIENTE: ${nombreMostrar}
+${"-".repeat(anchoLinea)}
+
+${detalleTexto}
+${alinearDerecha(`C$${subtotal.toFixed(2)}`, "SUBTOTAL:")}
+${alinearDerecha(`C$${iva.toFixed(2)}`, "IVA 15%:")}
+${alinearDerecha(`C$${totalVenta.toFixed(2)}`, "TOTAL:")}
+
+${"-".repeat(anchoLinea)}
+PRODUCTO: ${nombreProducto}
+CANTIDAD: ${cantidad}
+PRECIO: C$${precioUnitario}
+${"-".repeat(anchoLinea)}
+
+MÉTODO PAGO: ${metodoPago.toUpperCase()}
+${venta.banco ? `BANCO: ${venta.banco}` : ""}
+${"-".repeat(anchoLinea)}
+
+${centrar("¡GRACIAS POR SU COMPRA!")}
+${centrar("Tel: 1234-5678")}
+${centrar("arelyz-salon.com")}
+
+${centrar("=".repeat(20))}
+${centrar("CORTE AUTOMÁTICO")}
+${centrar("=".repeat(20))}
+`
+
+    return ticket.trim()
   }
 
   // ==============================================
-  // FALLBACK PARA COPIAR CONTENIDO
+  // FALLBACK PARA COPIAR CONTENIDO (MANTENER IGUAL)
   // ==============================================
 
   const mostrarContenidoParaCopiar = (contenido) => {
@@ -271,7 +223,7 @@ const Ventas = () => {
     ventana.document.write(`
       <html>
         <head>
-          <title>Contenido del Ticket - PEKEPLAY</title>
+          <title>Contenido del Ticket - ARELY Z SALON</title>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <style>
@@ -482,7 +434,7 @@ const Ventas = () => {
         <body>
           <div class="container">
             <div class="header">
-              <h1>📄 Contenido del Ticket PEKEPLAY</h1>
+              <h1>📄 Contenido del Ticket ARELY Z SALON</h1>
               <p>Listo para imprimir en impresora térmica</p>
             </div>
             
@@ -572,6 +524,15 @@ const Ventas = () => {
                   alert('✅ Contenido copiado (método alternativo)')
                 })
             }
+            
+            // Configurar impresión térmica
+            window.addEventListener('beforeprint', () => {
+              document.querySelector('.ticket-content').style.fontSize = '9pt'
+            })
+            
+            window.addEventListener('afterprint', () => {
+              document.querySelector('.ticket-content').style.fontSize = '12px'
+            })
           </script>
         </body>
       </html>
@@ -580,7 +541,7 @@ const Ventas = () => {
   }
 
   // ==============================================
-  // FUNCIONES DE MODALES
+  // FUNCIONES DE MODALES (MANTENER IGUAL)
   // ==============================================
 
   const abrirModalNueva = () => {
@@ -665,7 +626,7 @@ const Ventas = () => {
   }
 
   // ==============================================
-  // RENDERIZADO
+  // RENDERIZADO - VERSIÓN CORREGIDA
   // ==============================================
 
   return (
@@ -673,7 +634,7 @@ const Ventas = () => {
       <div className="ventas-header">
         <div className="ventas-titulo-container">
           <h1 className="ventas-titulo">Ventas</h1>
-          <p className="ventas-subtitulo">PEKEPLAY - Gestión de Ventas</p>
+          <p className="ventas-subtitulo">ARELY Z SALON - Gestión de Ventas</p>
         </div>
         
         <div className="ventas-botones-header">
