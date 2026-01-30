@@ -1,4 +1,4 @@
-// Ventas.jsx - VERSIÓN ANDROID BLUETOOTH
+// Ventas.jsx - VERSIÓN CORREGIDA CON SALTOS DE LÍNEA
 import { useState, useEffect } from 'react'
 import { supabase } from '../database/supabase'
 import TablaVentas from '../components/ventas/TablaVentas'
@@ -34,10 +34,6 @@ const Ventas = () => {
     cargarDatos()
   }, [])
 
-  // ==============================================
-  // CARGAR DATOS
-  // ==============================================
-
   const cargarDatos = async () => {
     try {
       setLoading(true)
@@ -52,7 +48,7 @@ const Ventas = () => {
       if (errorProductos) throw errorProductos
       setProductos(productosData || [])
       
-      // Cargar ventas con detalles (ajusta según tu estructura)
+      // Cargar ventas con detalles
       const { data: ventasData, error: errorVentas } = await supabase
         .from('ventas')
         .select(`
@@ -80,7 +76,7 @@ const Ventas = () => {
   }
 
   // ==============================================
-  // FUNCIÓN DE IMPRESIÓN PARA ANDROID (rawbt)
+  // FUNCIÓN DE IMPRESIÓN CORREGIDA
   // ==============================================
 
   const imprimirTicket = (venta) => {
@@ -95,11 +91,14 @@ const Ventas = () => {
         return
       }
       
-      // Generar el contenido del ticket
+      // Generar el contenido del ticket CON SALTOS DE LÍNEA
       const contenido = generarContenidoTicket(venta)
       
+      // AGREGAR COMANDOS ESPECIALES PARA IMPRESORA TÉRMICA
+      const contenidoConComandos = agregarComandosImpresora(contenido)
+      
       // Codificar y enviar a rawbt
-      const encoded = encodeURIComponent(contenido)
+      const encoded = encodeURIComponent(contenidoConComandos)
       window.location.href = `rawbt:${encoded}`
       
       // Fallback si rawbt no está instalado
@@ -122,7 +121,27 @@ const Ventas = () => {
   }
 
   // ==============================================
-  // GENERAR CONTENIDO DEL TICKET (ADAPTADO)
+  // AGREGAR COMANDOS DE IMPRESORA TÉRMICA
+  // ==============================================
+
+  const agregarComandosImpresora = (contenido) => {
+    // Comandos ESC/POS para impresoras térmicas
+    const comandos = [
+      '\x1B\x40', // Inicializar impresora
+      '\x1B\x61\x01', // Centrar texto
+      '\x1B\x21\x00', // Tamaño de fuente normal
+      '\n\n', // Espacios al inicio
+      contenido,
+      '\n\n\n\n\n', // Espacios antes del corte
+      '\x1D\x56\x41', // Corte parcial
+      '\x1B\x64\x03', // Avanzar 3 líneas
+    ]
+    
+    return comandos.join('')
+  }
+
+  // ==============================================
+  // GENERAR CONTENIDO DEL TICKET CORREGIDO
   // ==============================================
 
   const generarContenidoTicket = (venta) => {
@@ -145,8 +164,10 @@ const Ventas = () => {
     // 3. Detalles de la venta
     const detalle = venta.detalles_venta || venta.detalles || venta.detalle || []
     
-    let detalleTexto = "DETALLES DE VENTA:\nCant.  Precio  Subtotal\n"
-    detalleTexto += "=".repeat(32) + "\n"
+    // Iniciar texto de detalles CON SALTOS DE LÍNEA EXPLÍCITOS
+    let detalleTexto = "DETALLES DE VENTA:\n"
+    detalleTexto += "Cant.  Precio  Subtotal\n"
+    detalleTexto += "========================\n\n"
 
     detalle.forEach((item, index) => {
       // Productos
@@ -156,10 +177,9 @@ const Ventas = () => {
         const precio = Number(item.precio_unitario || item.precio_unitaria || 0).toFixed(2)
         const subtotal = Number(item.total_linea || 0).toFixed(2)
         
-        // Formato: Producto (alineado a la izquierda)
+        // AGREGAR SALTOS DE LÍNEA EXPLÍCITOS
         detalleTexto += `${nombreProducto}\n`
-        // Formato: Cantidad (derecha) Precio (derecha) Subtotal (derecha)
-        detalleTexto += `${cantidad.toString().padStart(4)}   C$${precio.padStart(6)}   C$${subtotal.padStart(8)}\n`
+        detalleTexto += `${cantidad.toString().padStart(4)}   C$${precio.padStart(6)}   C$${subtotal.padStart(8)}\n\n`
       }
 
       // Juegos/Sesiones
@@ -169,73 +189,77 @@ const Ventas = () => {
         const monto = item.sesiones_juegos?.monto_cobrado || item.monto_cobrado || item.precio_unitario || 0
         
         detalleTexto += `${nombreJuego}\n`
-        detalleTexto += `Min: ${minutos}   Monto: C$${Number(monto).toFixed(2)}\n`
-      }
-      
-      // Separador entre items
-      if (index < detalle.length - 1) {
-        detalleTexto += "-".repeat(32) + "\n"
+        detalleTexto += `Min: ${minutos}   Monto: C$${Number(monto).toFixed(2)}\n\n`
       }
     })
 
     if (detalle.length === 0) {
-      detalleTexto += "NO HAY DETALLES REGISTRADOS\n"
+      detalleTexto += "NO HAY DETALLES REGISTRADOS\n\n"
     }
 
     // 4. Cálculos financieros
     const totalVenta = Number(venta.total || 0)
-    const iva = totalVenta * 0.15 // 15% de IVA (ajusta según tu país)
+    const iva = totalVenta * 0.15
     const subtotal = totalVenta - iva
     const numeroVenta = venta.id_venta || venta.id || "-"
     const metodoPago = venta.metodo_pago || venta.método_pago || "No especificado"
     const estado = venta.estado ? "REGISTRADA" : "ANULADA"
 
-    // 5. Construir ticket completo
+    // 5. Construir ticket completo CON FORMATO CORRECTO
     const anchoLinea = 40
+    
     const centrar = (texto) => {
       const espacios = Math.max(0, Math.floor((anchoLinea - texto.length) / 2))
-      return ' '.repeat(espacios) + texto
+      return ' '.repeat(espacios) + texto + '\n'
     }
 
     const alinearDerecha = (texto, etiqueta) => {
       const espacio = anchoLinea - etiqueta.length - texto.length
-      return etiqueta + ' '.repeat(Math.max(1, espacio)) + texto
+      return etiqueta + ' '.repeat(Math.max(1, espacio)) + texto + '\n'
     }
 
-    const ticket = `
-${centrar("PEKEPLAY")}
-${centrar("=".repeat(20))}
-${centrar("TICKET DE VENTA")}
-${centrar("=".repeat(20))}
+    // CONSTRUIR TICKET CON SALTOS DE LÍNEA EXPLÍCITOS
+    let ticket = ''
+    
+    ticket += centrar("PEKEPLAY")
+    ticket += centrar("=".repeat(20))
+    ticket += centrar("TICKET DE VENTA")
+    ticket += centrar("=".repeat(20))
+    ticket += '\n'
+    
+    ticket += centrar(`#${numeroVenta}`)
+    ticket += centrar(fecha)
+    ticket += '\n'
+    
+    ticket += `CLIENTE: ${nombreMostrar}\n`
+    ticket += "-".repeat(anchoLinea) + '\n'
+    ticket += '\n'
+    
+    ticket += detalleTexto
+    ticket += "=".repeat(anchoLinea) + '\n'
+    ticket += '\n'
+    
+    ticket += alinearDerecha(`C$${subtotal.toFixed(2)}`, "SUBTOTAL:")
+    ticket += alinearDerecha(`C$${iva.toFixed(2)}`, "IVA 15%:")
+    ticket += alinearDerecha(`C$${totalVenta.toFixed(2)}`, "TOTAL:")
+    ticket += '\n'
+    
+    ticket += "-".repeat(anchoLinea) + '\n'
+    ticket += `MÉTODO: ${metodoPago.toUpperCase()}\n`
+    ticket += `ESTADO: ${estado}\n`
+    ticket += "-".repeat(anchoLinea) + '\n'
+    ticket += '\n'
+    
+    ticket += centrar("¡GRACIAS POR SU COMPRA!")
+    ticket += centrar("Tel: 1234-5678")
+    ticket += centrar("www.pekeplay.com")
+    ticket += '\n'
+    
+    ticket += centrar("=".repeat(20))
+    ticket += centrar("CORTE AUTOMÁTICO")
+    ticket += centrar("=".repeat(20))
 
-${centrar(`#${numeroVenta}`)}
-${centrar(fecha)}
-
-CLIENTE: ${nombreMostrar}
-${"-".repeat(anchoLinea)}
-
-${detalleTexto}
-${"=".repeat(anchoLinea)}
-
-${alinearDerecha(`C$${subtotal.toFixed(2)}`, "SUBTOTAL:")}
-${alinearDerecha(`C$${iva.toFixed(2)}`, "IVA 15%:")}
-${alinearDerecha(`C$${totalVenta.toFixed(2)}`, "TOTAL:")}
-
-${"-".repeat(anchoLinea)}
-MÉTODO: ${metodoPago.toUpperCase()}
-ESTADO: ${estado}
-${"-".repeat(anchoLinea)}
-
-${centrar("¡GRACIAS POR SU COMPRA!")}
-${centrar("Tel: 1234-5678")}
-${centrar("www.pekeplay.com")}
-
-${centrar("=".repeat(20))}
-${centrar("CORTE AUTOMÁTICO")}
-${centrar("=".repeat(20))}
-`
-
-    return ticket.trim()
+    return ticket
   }
 
   // ==============================================
@@ -548,18 +572,6 @@ ${centrar("=".repeat(20))}
                   alert('✅ Contenido copiado (método alternativo)')
                 })
             }
-            
-            // Auto-copiar al cargar (opcional)
-            // setTimeout(copiarContenido, 1000)
-            
-            // Configurar impresión térmica
-            window.addEventListener('beforeprint', () => {
-              document.querySelector('.ticket-content').style.fontSize = '9pt'
-            })
-            
-            window.addEventListener('afterprint', () => {
-              document.querySelector('.ticket-content').style.fontSize = '12px'
-            })
           </script>
         </body>
       </html>
@@ -568,7 +580,7 @@ ${centrar("=".repeat(20))}
   }
 
   // ==============================================
-  // FUNCIONES DE MODALES (MANTENER IGUAL)
+  // FUNCIONES DE MODALES
   // ==============================================
 
   const abrirModalNueva = () => {
@@ -716,7 +728,7 @@ ${centrar("=".repeat(20))}
         loading={loading}
         onEditar={abrirModalEditar}
         onEliminar={abrirModalEliminar}
-        onImprimir={imprimirTicket}  {/* Cambiado a imprimirTicket */}
+        onImprimir={imprimirTicket}
         imprimiendo={imprimiendo}
       />
 
