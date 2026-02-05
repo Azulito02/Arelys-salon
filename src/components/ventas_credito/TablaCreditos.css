@@ -1,6 +1,7 @@
 /* src/components/ventas_credito/TablaCreditos.css */
 .tabla-creditos-container {
   margin-top: 24px;
+  width: 100%;
 }
 
 .tabla-creditos-card {
@@ -9,6 +10,14 @@
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
   border: 1px solid #e5e7eb;
+  width: 100%;
+}
+
+/* Contenedor scrollable para desktop */
+.tabla-scroll-container {
+  overflow-x: auto;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
 }
 
 .tabla-creditos {
@@ -236,30 +245,23 @@
   font-weight: 500;
 }
 
-/* Responsive */
-@media (max-width: 1200px) {
-  .tabla-creditos-container {
-    overflow-x: auto;
-  }
-}
-
 /* Scroll personalizado */
-.tabla-creditos-card::-webkit-scrollbar {
+.tabla-scroll-container::-webkit-scrollbar {
   width: 6px;
   height: 6px;
 }
 
-.tabla-creditos-card::-webkit-scrollbar-track {
+.tabla-scroll-container::-webkit-scrollbar-track {
   background: #f1f5f9;
   border-radius: 3px;
 }
 
-.tabla-creditos-card::-webkit-scrollbar-thumb {
+.tabla-scroll-container::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 3px;
 }
 
-.tabla-creditos-card::-webkit-scrollbar-thumb:hover {
+.tabla-scroll-container::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
 
@@ -319,9 +321,6 @@
 .saldo-total-pendiente {
   color: #dc2626;
 }
-
-
-/* Añadir al final del archivo CSS existente */
 
 /* Buscador */
 .buscador-creditos {
@@ -468,16 +467,341 @@
   font-size: 13px;
 }
 
-/* Responsive para el buscador */
+/* ============ ESTILOS MÓVIL ============ */
 @media (max-width: 768px) {
-  .buscador-input {
-    font-size: 16px; /* Mejora experiencia móvil */
+  .tabla-creditos-container {
+    margin-top: 16px;
   }
   
-  .productos-resumen {
-    max-width: 200px;
+  .tabla-creditos-card {
+    border-radius: 8px;
+    box-shadow: none;
+    border: 1px solid #e5e7eb;
+  }
+  
+  /* Ocultar tabla desktop en móvil */
+  .tabla-scroll-container {
+    display: none;
+  }
+  
+  /* Mostrar vista móvil */
+  .tabla-mobile-view {
+    display: block;
+    padding: 16px;
+  }
+  
+  /* Buscador móvil */
+  .buscador-mobile {
+    display: block;
+    margin-bottom: 16px;
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 10;
+    padding: 8px 0;
+  }
+  
+  .buscador-mobile-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  
+  .buscador-mobile-icono {
+    position: absolute;
+    left: 14px;
+    width: 20px;
+    height: 20px;
+    color: #94a3b8;
+  }
+  
+  .buscador-mobile-input {
+    width: 100%;
+    padding: 12px 40px 12px 44px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 16px;
+    color: #1e293b;
+    background-color: #f8fafc;
+  }
+  
+  .buscador-mobile-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    background-color: white;
+  }
+  
+  .buscador-mobile-limpiar {
+    position: absolute;
+    right: 14px;
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 18px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  /* Tarjetas móviles */
+  .credito-card {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+  }
+  
+  .credito-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  
+  .credito-cliente {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 4px;
+  }
+  
+  .credito-producto {
+    font-size: 14px;
+    color: #64748b;
+    line-height: 1.4;
+  }
+  
+  .credito-estado-mobile {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  
+  .credito-estado-mobile.activo {
+    background-color: #d1fae5;
+    color: #065f46;
+  }
+  
+  .credito-estado-mobile.vencido {
+    background-color: #fee2e2;
+    color: #991b1b;
+  }
+  
+  .credito-estado-mobile.por-vencer {
+    background-color: #fef3c7;
+    color: #92400e;
+  }
+  
+  /* Grid de detalles en móvil */
+  .credito-details-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  
+  .credito-detail-item {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .credito-detail-label {
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 4px;
+    font-weight: 500;
+  }
+  
+  .credito-detail-value {
+    font-size: 14px;
+    color: #1e293b;
+    font-weight: 500;
+    word-break: break-word;
+  }
+  
+  .credito-detail-value.total {
+    color: #059669;
+    font-weight: 600;
+  }
+  
+  .credito-detail-value.saldo {
+    color: #dc2626;
+    font-weight: 600;
+  }
+  
+  /* Fechas específicas en móvil */
+  .credito-fechas-mobile {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin: 12px 0;
+    padding: 12px;
+    background-color: #f8fafc;
+    border-radius: 8px;
+  }
+  
+  .fecha-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+  }
+  
+  .fecha-label {
+    font-size: 13px;
+    color: #64748b;
+    font-weight: 500;
+  }
+  
+  .fecha-valor {
+    font-size: 13px;
+    color: #1e293b;
+    font-weight: 600;
+    font-family: 'SF Mono', 'Monaco', monospace;
+  }
+  
+  /* Acciones en móvil */
+  .credito-actions-mobile {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    padding-top: 16px;
+    border-top: 1px solid #f1f5f9;
+  }
+  
+  .action-btn-mobile {
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+  }
+  
+  .action-btn-mobile.editar {
+    background-color: #dbeafe;
+    color: #1d4ed8;
+  }
+  
+  .action-btn-mobile.eliminar {
+    background-color: #fee2e2;
+    color: #dc2626;
+  }
+  
+  /* Sin resultados móvil */
+  .sin-resultados-mobile {
+    text-align: center;
+    padding: 48px 20px;
+    color: #64748b;
+  }
+  
+  .sin-resultados-mobile .spinner {
+    margin-bottom: 20px;
+  }
+  
+  /* Resumen móvil */
+  .resumen-mobile {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background-color: #f8fafc;
+    border-top: 1px solid #e5e7eb;
+    font-size: 14px;
+  }
+  
+  .resumen-mobile-item {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .resumen-mobile-label {
+    font-size: 12px;
+    color: #64748b;
+  }
+  
+  .resumen-mobile-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1e293b;
+  }
+  
+  /* Ocultar buscador desktop en móvil */
+  .buscador-creditos {
+    display: none;
+  }
+  
+  /* Ajustes para texto expandido */
+  .texto-expandir {
+    font-size: 12px;
   }
 }
 
+/* Mostrar tabla desktop en pantallas grandes */
+@media (min-width: 769px) {
+  .tabla-mobile-view,
+  .buscador-mobile,
+  .resumen-mobile {
+    display: none;
+  }
+  
+  .tabla-scroll-container {
+    display: block;
+  }
+  
+  .buscador-creditos {
+    display: block;
+  }
+}
 
+/* Para tablets */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .tabla-creditos {
+    min-width: 900px;
+  }
+  
+  .tabla-creditos th,
+  .tabla-creditos td {
+    padding: 14px 16px;
+    font-size: 13px;
+  }
+  
+  .tabla-creditos .columna-cliente {
+    min-width: 150px;
+  }
+  
+  .tabla-creditos .columna-producto {
+    min-width: 180px;
+  }
+}
 
+/* Clases utilitarias */
+.desktop-only {
+  display: block;
+}
+
+.mobile-only {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .desktop-only {
+    display: none !important;
+  }
+  
+  .mobile-only {
+    display: block;
+  }
+}

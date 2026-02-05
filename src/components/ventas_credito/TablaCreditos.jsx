@@ -1,3 +1,4 @@
+// src/components/ventas_credito/TablaCreditos.jsx
 import React, { useState, useEffect } from 'react'
 import './TablaCreditos.css'
 
@@ -110,9 +111,189 @@ const TablaCreditos = ({ creditos, loading, onEditar, onEliminar, getEstadoCredi
     return `${dia}/${mes}/${año}`;
   };
 
+  // Formatear fecha corta para móvil (solo fecha sin hora)
+  const formatFechaCorta = (fechaISO) => {
+    if (!fechaISO) return 'Sin fecha';
+    
+    const fechaUTC = new Date(fechaISO);
+    const fechaNicaragua = new Date(fechaUTC.getTime() - (6 * 60 * 60 * 1000));
+    
+    const dia = fechaNicaragua.getDate().toString().padStart(2, '0');
+    const mes = (fechaNicaragua.getMonth() + 1).toString().padStart(2, '0');
+    const año = fechaNicaragua.getFullYear();
+    
+    return `${dia}/${mes}/${año}`;
+  };
+
+  // Renderizar créditos para vista móvil
+  const renderCreditosMobile = () => {
+    if (loading) {
+      return (
+        <div className="sin-resultados-mobile">
+          <div className="spinner"></div>
+          <p>Cargando créditos...</p>
+        </div>
+      );
+    }
+
+    // Para móvil, mostrar todos los créditos individualmente (sin agrupar)
+    const creditosParaMostrar = busqueda.trim() 
+      ? creditosConSaldo.filter(credito => 
+          credito.nombre_cliente?.toLowerCase().includes(busqueda.toLowerCase()) ||
+          credito.productos?.nombre?.toLowerCase().includes(busqueda.toLowerCase())
+        )
+      : creditosConSaldo;
+
+    if (creditosParaMostrar.length === 0) {
+      return (
+        <div className="sin-resultados-mobile">
+          <p>{busqueda ? 'No se encontraron créditos' : 'No hay créditos registrados'}</p>
+        </div>
+      );
+    }
+
+    return creditosParaMostrar.map((credito) => {
+      const estado = getEstadoCredito(credito);
+      
+      return (
+        <div key={credito.id} className="credito-card">
+          <div className="credito-card-header">
+            <div style={{ flex: 1 }}>
+              <div className="credito-cliente">{credito.nombre_cliente}</div>
+              <div className="credito-producto">
+                {credito.productos?.nombre || 'Producto no encontrado'}
+                {credito.productos?.codigo && (
+                  <span style={{ fontSize: '12px', color: '#64748b', marginLeft: '8px' }}>
+                    (Código: {credito.productos.codigo})
+                  </span>
+                )}
+              </div>
+            </div>
+            <span className={`credito-estado-mobile ${estado.clase.replace('estado-', '')}`}>
+              {estado.texto}
+            </span>
+          </div>
+          
+          <div className="credito-details-grid">
+            <div className="credito-detail-item">
+              <span className="credito-detail-label">Cantidad</span>
+              <span className="credito-detail-value">
+                {credito.cantidad} unidades
+              </span>
+            </div>
+            
+            <div className="credito-detail-item">
+              <span className="credito-detail-label">Precio Unit.</span>
+              <span className="credito-detail-value">
+                ${parseFloat(credito.precio_unitario).toFixed(2)}
+              </span>
+            </div>
+            
+            <div className="credito-detail-item">
+              <span className="credito-detail-label">Total</span>
+              <span className="credito-detail-value total">
+                ${parseFloat(credito.total).toFixed(2)}
+              </span>
+            </div>
+            
+            <div className="credito-detail-item">
+              <span className="credito-detail-label">Saldo Pendiente</span>
+              <span className="credito-detail-value saldo">
+                ${credito.saldo_pendiente.toFixed(2)}
+              </span>
+            </div>
+          </div>
+          
+          {/* Fechas claramente separadas */}
+          <div className="credito-fechas-mobile">
+            <div className="fecha-item">
+              <span className="fecha-label">Registro:</span>
+              <span className="fecha-valor">
+                {formatFechaCorta(credito.fecha)}
+              </span>
+            </div>
+            <div className="fecha-item">
+              <span className="fecha-label">Vence:</span>
+              <span className="fecha-valor">
+                {formatSoloFecha(credito.fecha_fin)}
+              </span>
+            </div>
+          </div>
+          
+          <div className="credito-actions-mobile">
+            <button
+              onClick={() => onEditar(credito)}
+              className="action-btn-mobile editar"
+            >
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              Editar
+            </button>
+            <button
+              onClick={() => onEliminar(credito)}
+              className="action-btn-mobile eliminar"
+            >
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Eliminar
+            </button>
+          </div>
+        </div>
+      );
+    });
+  };
+
+  // Calcular resumen para móvil
+  const calcularResumenMobile = () => {
+    const creditosParaResumen = busqueda.trim() 
+      ? creditosConSaldo.filter(credito => 
+          credito.nombre_cliente?.toLowerCase().includes(busqueda.toLowerCase()) ||
+          credito.productos?.nombre?.toLowerCase().includes(busqueda.toLowerCase())
+        )
+      : creditosConSaldo;
+
+    const totalCreditos = creditosParaResumen.length;
+    const totalMonto = creditosParaResumen.reduce((sum, credito) => sum + parseFloat(credito.total), 0);
+    const totalSaldo = creditosParaResumen.reduce((sum, credito) => sum + (credito.saldo_pendiente || 0), 0);
+    const totalClientes = [...new Set(creditosParaResumen.map(c => c.nombre_cliente))].length;
+
+    return { totalCreditos, totalMonto, totalSaldo, totalClientes };
+  };
+
+  const resumenMobile = calcularResumenMobile();
+
   return (
     <div className="tabla-creditos-container">
-      {/* Buscador */}
+      {/* BUSCADOR PARA MÓVIL */}
+      <div className="buscador-mobile">
+        <div className="buscador-mobile-container">
+          <svg className="buscador-mobile-icono" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Buscar cliente o producto..."
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            className="buscador-mobile-input"
+          />
+          {busqueda && (
+            <button 
+              onClick={() => setBusqueda('')}
+              className="buscador-mobile-limpiar"
+              title="Limpiar búsqueda"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* BUSCADOR PARA DESKTOP */}
       <div className="buscador-creditos">
         <div className="buscador-input-container">
           <svg className="buscador-icono" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -149,7 +330,8 @@ const TablaCreditos = ({ creditos, loading, onEditar, onEliminar, getEstadoCredi
       </div>
 
       <div className="tabla-creditos-card">
-        <div className="overflow-x-auto">
+        {/* VISTA DESKTOP/TABLET */}
+        <div className="tabla-scroll-container desktop-only">
           <table className="tabla-creditos">
             <thead>
               <tr>
@@ -314,9 +496,14 @@ const TablaCreditos = ({ creditos, loading, onEditar, onEliminar, getEstadoCredi
           </table>
         </div>
         
-        {/* Resumen */}
+        {/* VISTA MÓVIL */}
+        <div className="tabla-mobile-view mobile-only">
+          {renderCreditosMobile()}
+        </div>
+        
+        {/* RESUMEN DESKTOP */}
         {!loading && clientesFiltrados.length > 0 && (
-          <div className="resumen-creditos">
+          <div className="resumen-creditos desktop-only">
             <div className="resumen-item">
               <span>Clientes:</span>
               <strong>{clientesFiltrados.length}</strong>
@@ -338,6 +525,22 @@ const TablaCreditos = ({ creditos, loading, onEditar, onEliminar, getEstadoCredi
               <strong className="saldo-total-pendiente">
                 ${clientesFiltrados.reduce((sum, [_, datos]) => sum + datos.saldoGeneral, 0).toFixed(2)}
               </strong>
+            </div>
+          </div>
+        )}
+        
+        {/* RESUMEN MÓVIL */}
+        {!loading && resumenMobile.totalCreditos > 0 && (
+          <div className="resumen-mobile mobile-only">
+            <div className="resumen-mobile-item">
+              <span className="resumen-mobile-label">Créditos</span>
+              <span className="resumen-mobile-value">{resumenMobile.totalCreditos}</span>
+            </div>
+            <div className="resumen-mobile-item">
+              <span className="resumen-mobile-label">Saldo Pendiente</span>
+              <span className="resumen-mobile-value saldo-total-pendiente">
+                ${resumenMobile.totalSaldo.toFixed(2)}
+              </span>
             </div>
           </div>
         )}

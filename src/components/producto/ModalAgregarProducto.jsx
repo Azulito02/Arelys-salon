@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import './ModalAgregarProducto.css'
 
-const ModalAgregarProducto = ({ isOpen, onClose, onSave }) => {
-  // Categorías predefinidas para el salón de belleza
+const ModalAgregarProductos = ({ isOpen, onClose, onSave }) => {
   const categoriasDisponibles = [
+    'General',
     'Shampoo',
     'Acondicionador',
     'Tratamiento',
@@ -15,35 +15,18 @@ const ModalAgregarProducto = ({ isOpen, onClose, onSave }) => {
     'Espuma',
     'Aceite',
     'Kit',
-    'Otro',
-    'General'
+    'Otro'
   ]
 
   const [nuevoProducto, setNuevoProducto] = useState({
     nombre: '',
+    categoria: 'General',
     descripcion: '',
-    precio: '',
-    categoria: 'General'
+    precio: ''
   })
   const [error, setError] = useState('')
 
-  const resetForm = () => {
-    setNuevoProducto({
-      nombre: '',
-      descripcion: '',
-      precio: '',
-      categoria: 'General'
-    })
-    setError('')
-  }
-
-  const handleClose = () => {
-    resetForm()
-    onClose()
-  }
-
   const handleSubmit = () => {
-    // Validaciones
     if (!nuevoProducto.nombre.trim()) {
       setError('El nombre del producto es obligatorio')
       return
@@ -54,59 +37,65 @@ const ModalAgregarProducto = ({ isOpen, onClose, onSave }) => {
       return
     }
     
-    // Preparar datos para guardar
     const productoData = {
       nombre: nuevoProducto.nombre.trim(),
-      descripcion: nuevoProducto.descripcion.trim() || null,
+      descripcion: nuevoProducto.descripcion.trim() || '',
       precio: parseFloat(nuevoProducto.precio),
       categoria: nuevoProducto.categoria
     }
     
     onSave(productoData)
-    resetForm()
+    setNuevoProducto({
+      nombre: '',
+      categoria: 'General',
+      descripcion: '',
+      precio: ''
+    })
+    setError('')
   }
 
   if (!isOpen) return null
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-contenedor">
-        <div className="modal-header">
-          <h3 className="modal-titulo">Agregar Nuevo Producto</h3>
-          <button onClick={handleClose} className="modal-cerrar">
-            ×
-          </button>
+    <div className="modal-agregar-overlay">
+      <div className="modal-agregar-contenedor">
+        <div className="modal-agregar-header">
+          <h2>Agregar Nuevo Producto</h2>
         </div>
         
-        <div className="modal-body">
+        <div className="modal-agregar-body">
           {error && (
             <div className="error-mensaje">
               {error}
             </div>
           )}
           
-          <div className="form-grupo">
-            <label className="form-label">
-              Nombre del Producto *
-            </label>
+          <div className="campo-formulario">
+            <div className="label-contenedor">
+              <label className="label-campo">
+                <strong>Nombre del Producto*</strong>
+              </label>
+            </div>
             <input
               type="text"
               value={nuevoProducto.nombre}
               onChange={(e) => setNuevoProducto({...nuevoProducto, nombre: e.target.value})}
-              className="form-input"
-              placeholder="Ej: Shampoo Kerastase"
+              className="input-campo"
+              placeholder="Ej: Keratina Profesional"
               autoFocus
             />
           </div>
           
-          <div className="form-grupo">
-            <label className="form-label">
-              Categoría
-            </label>
+          <div className="campo-formulario">
+            <div className="label-contenedor">
+              <label className="label-campo">
+                <strong>Categoría</strong>
+              </label>
+            </div>
             <select
               value={nuevoProducto.categoria}
               onChange={(e) => setNuevoProducto({...nuevoProducto, categoria: e.target.value})}
-              className="form-select"
+              className="select-campo"
             >
               {categoriasDisponibles.map((categoria) => (
                 <option key={categoria} value={categoria}>
@@ -116,48 +105,51 @@ const ModalAgregarProducto = ({ isOpen, onClose, onSave }) => {
             </select>
           </div>
           
-          <div className="form-grupo">
-            <label className="form-label">
-              Descripción
-            </label>
+          <div className="campo-formulario">
+            <div className="label-contenedor">
+              <label className="label-campo">
+                <strong>Descripción(opcional)</strong>
+              </label>
+            </div>
             <textarea
               value={nuevoProducto.descripcion}
               onChange={(e) => setNuevoProducto({...nuevoProducto, descripcion: e.target.value})}
-              className="form-textarea"
-              rows="3"
-              placeholder="Descripción detallada del producto..."
+              className="textarea-campo"
+              rows="4"
+              placeholder="Describe el producto: características, beneficios, uso..."
             />
           </div>
           
-          <div className="form-grupo">
-            <label className="form-label">
-              Precio ($) *
-            </label>
+          <div className="campo-formulario">
+            <div className="label-contenedor">
+              <label className="label-campo">
+                <strong>Precio ($)*</strong>
+              </label>
+            </div>
             <input
               type="number"
               step="0.01"
               min="0.01"
               value={nuevoProducto.precio}
               onChange={(e) => setNuevoProducto({...nuevoProducto, precio: e.target.value})}
-              className="form-input"
+              className="input-campo"
               placeholder="0.00"
             />
           </div>
         </div>
         
-        <div className="modal-footer">
+        <div className="modal-agregar-footer">
           <button
-            onClick={handleClose}
-            className="boton-secundario"
+            onClick={onClose}
+            className="boton-cancelar"
           >
             Cancelar
           </button>
           <button
             onClick={handleSubmit}
-            className="boton-principal"
+            className="boton-guardar"
           >
-            <span className="boton-icono">✓</span>
-            Guardar Producto
+            Guardar
           </button>
         </div>
       </div>
@@ -165,4 +157,4 @@ const ModalAgregarProducto = ({ isOpen, onClose, onSave }) => {
   )
 }
 
-export default ModalAgregarProducto
+export default ModalAgregarProductos

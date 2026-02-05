@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import './ModalEditarProducto.css'
 
 const ModalEditarProducto = ({ isOpen, onClose, onSave, producto }) => {
-  // Categorías predefinidas para el salón de belleza
   const categoriasDisponibles = [
+    'General',
     'Shampoo',
     'Acondicionador',
     'Tratamiento',
@@ -15,8 +15,7 @@ const ModalEditarProducto = ({ isOpen, onClose, onSave, producto }) => {
     'Espuma',
     'Aceite',
     'Kit',
-    'Otro',
-    'General'
+    'Otro'
   ]
 
   const [productoEditado, setProductoEditado] = useState({
@@ -42,7 +41,6 @@ const ModalEditarProducto = ({ isOpen, onClose, onSave, producto }) => {
   if (!isOpen || !producto) return null
 
   const handleSubmit = () => {
-    // Validaciones
     if (!productoEditado.nombre.trim()) {
       setError('El nombre del producto es obligatorio')
       return
@@ -53,7 +51,6 @@ const ModalEditarProducto = ({ isOpen, onClose, onSave, producto }) => {
       return
     }
     
-    // Preparar datos para guardar
     const productoData = {
       nombre: productoEditado.nombre.trim(),
       descripcion: productoEditado.descripcion.trim() || null,
@@ -65,16 +62,13 @@ const ModalEditarProducto = ({ isOpen, onClose, onSave, producto }) => {
   }
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-contenedor">
-        <div className="modal-header">
-          <h3 className="modal-titulo">Editar Producto</h3>
-          <button onClick={onClose} className="modal-cerrar">
-            ×
-          </button>
+    <div className="modal-editar-overlay">
+      <div className="modal-editar-contenedor">
+        <div className="modal-editar-header">
+          <h2>Editar Producto</h2>
         </div>
         
-        <div className="modal-body">
+        <div className="modal-editar-body">
           {error && (
             <div className="error-mensaje">
               {error}
@@ -82,32 +76,42 @@ const ModalEditarProducto = ({ isOpen, onClose, onSave, producto }) => {
           )}
           
           <div className="info-producto">
-            <span className="info-label">ID:</span>
-            <span className="info-valor">{producto.id.substring(0, 8)}...</span>
+            <div className="label-contenedor">
+              <label className="label-campo">
+                <strong>ID del Producto:</strong>
+              </label>
+            </div>
+            <div className="info-valor">
+              {producto.id.substring(0, 8)}...
+            </div>
           </div>
           
-          <div className="form-grupo">
-            <label className="form-label">
-              Nombre del Producto *
-            </label>
+          <div className="campo-formulario">
+            <div className="label-contenedor">
+              <label className="label-campo">
+                <strong>Nombre del Producto:</strong>
+              </label>
+            </div>
             <input
               type="text"
               value={productoEditado.nombre}
               onChange={(e) => setProductoEditado({...productoEditado, nombre: e.target.value})}
-              className="form-input"
-              placeholder="Nombre del producto"
+              className="input-campo"
+              placeholder="Ej: Keratina Profesional"
               autoFocus
             />
           </div>
           
-          <div className="form-grupo">
-            <label className="form-label">
-              Categoría
-            </label>
+          <div className="campo-formulario">
+            <div className="label-contenedor">
+              <label className="label-campo">
+                <strong>Categoría:</strong>
+              </label>
+            </div>
             <select
               value={productoEditado.categoria}
               onChange={(e) => setProductoEditado({...productoEditado, categoria: e.target.value})}
-              className="form-select"
+              className="select-campo"
             >
               {categoriasDisponibles.map((categoria) => (
                 <option key={categoria} value={categoria}>
@@ -117,47 +121,50 @@ const ModalEditarProducto = ({ isOpen, onClose, onSave, producto }) => {
             </select>
           </div>
           
-          <div className="form-grupo">
-            <label className="form-label">
-              Descripción
-            </label>
+          <div className="campo-formulario">
+            <div className="label-contenedor">
+              <label className="label-campo">
+                <strong>Descripción:</strong>
+              </label>
+            </div>
             <textarea
               value={productoEditado.descripcion}
               onChange={(e) => setProductoEditado({...productoEditado, descripcion: e.target.value})}
-              className="form-textarea"
+              className="textarea-campo"
               rows="3"
-              placeholder="Descripción del producto..."
+              placeholder="Describe el producto: características, beneficios, uso..."
             />
           </div>
           
-          <div className="form-grupo">
-            <label className="form-label">
-              Precio ($) *
-            </label>
+          <div className="campo-formulario">
+            <div className="label-contenedor">
+              <label className="label-campo">
+                <strong>Precio ($):</strong>
+              </label>
+            </div>
             <input
               type="number"
               step="0.01"
               min="0.01"
               value={productoEditado.precio}
               onChange={(e) => setProductoEditado({...productoEditado, precio: e.target.value})}
-              className="form-input"
+              className="input-campo"
               placeholder="0.00"
             />
           </div>
         </div>
         
-        <div className="modal-footer">
+        <div className="modal-editar-footer">
           <button
             onClick={onClose}
-            className="boton-secundario"
+            className="boton-cancelar"
           >
             Cancelar
           </button>
           <button
             onClick={handleSubmit}
-            className="boton-principal"
+            className="boton-guardar"
           >
-            <span className="boton-icono">💾</span>
             Actualizar Producto
           </button>
         </div>
