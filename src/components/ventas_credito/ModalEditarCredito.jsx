@@ -13,9 +13,12 @@ const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, produc
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [abonos, setAbonos] = useState([])
+  const [totalAbonado, setTotalAbonado] = useState(0)
 
   useEffect(() => {
     if (credito && isOpen) {
+      // Cargar datos del crédito
       setFormData({
         producto_id: credito.producto_id,
         cantidad: credito.cantidad,
@@ -24,8 +27,31 @@ const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, produc
         fecha_inicio: credito.fecha_inicio,
         fecha_fin: credito.fecha_fin
       })
+      
+      // Cargar abonos de este crédito
+      cargarAbonosCredito(credito.id)
     }
   }, [credito, isOpen])
+
+  // Cargar abonos del crédito
+  const cargarAbonosCredito = async (creditoId) => {
+    try {
+      const { data, error } = await supabase
+        .from('abonos_credito')
+        .select('*')
+        .eq('venta_credito_id', creditoId)
+      
+      if (error) throw error
+      
+      setAbonos(data || [])
+      
+      // Calcular total abonado
+      const total = (data || []).reduce((sum, abono) => sum + parseFloat(abono.monto), 0)
+      setTotalAbonado(total)
+    } catch (err) {
+      console.error('Error cargando abonos:', err)
+    }
+  }
 
   if (!isOpen || !credito) return null
 
@@ -73,28 +99,65 @@ const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, produc
     setError('')
 
     try {
-      const total = calcularTotal()
+      const totalNuevo = calcularTotal()
+      const totalAnterior = parseFloat(credito.total) || 0
       
-      // CORREGIDO: Removí fecha_edicion ya que no existe en la tabla
+      // Calcular el nuevo saldo pendiente
+      // Saldo pendiente = Total nuevo - Total ya abonado
+      const nuevoSaldoPendiente = totalNuevo - totalAbonado
+      
+      // Determinar el nuevo estado
+      let nuevoEstado = 'activo'
+      if (nuevoSaldoPendiente <= 0) {
+        nuevoEstado = 'pagado'
+      } else if (new Date(formData.fecha_fin) < new Date()) {
+        nuevoEstado = 'vencido'
+      }
+
       const creditoData = {
         producto_id: formData.producto_id,
         cantidad: parseInt(formData.cantidad),
         precio_unitario: parseFloat(formData.precio_unitario),
-        total: total,
+        total: totalNuevo,
         nombre_cliente: formData.nombre_cliente.trim(),
         fecha_inicio: formData.fecha_inicio,
-        fecha_fin: formData.fecha_fin
-        // fecha_edicion: new Date().toISOString() // <-- Esta línea causaba el error
+        fecha_fin: formData.fecha_fin,
+        saldo_pendiente: nuevoSaldoPendiente > 0 ? nuevoSaldoPendiente : 0,
+        estado: nuevoEstado
       }
 
+      console.log('Actualizando crédito con datos:', creditoData)
+      
       const { error: supabaseError } = await supabase
         .from('ventas_credito')
         .update(creditoData)
         .eq('id', credito.id)
       
       if (supabaseError) throw supabaseError
-      
+
+      // Si hay diferencia en el total, actualizar también facturados
+      if (Math.abs(totalNuevo - totalAnterior) > 0.01) {
+        try {
+          const { error: facturaError } = await supabase
+            .from('facturados')
+            .update({
+              total: totalNuevo,
+              cantidad: parseInt(formData.cantidad),
+              precio_unitario: parseFloat(formData.precio_unitario)
+            })
+            .eq('producto_id', credito.producto_id)
+            .eq('tipo_venta', 'credito')
+            .gte('fecha', credito.fecha)
+            .lte('fecha', new Date().toISOString())
+          
+          if (facturaError) console.log('No se pudo actualizar facturados:', facturaError)
+        } catch (err) {
+          console.log('Error actualizando facturados:', err)
+        }
+      }
+
       onCreditoEditado()
+      onClose()
     } catch (err) {
       console.error('Error editando crédito:', err)
       setError('Error al actualizar el crédito. Por favor intenta de nuevo.')
@@ -106,6 +169,8 @@ const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, produc
   const productoSeleccionado = productos.find(p => p.id === formData.producto_id)
   const totalAnterior = credito ? parseFloat(credito.total) : 0
   const totalNuevo = calcularTotal()
+  const diferencia = totalNuevo - totalAnterior
+  const nuevoSaldoPendiente = totalNuevo - totalAbonado
 
   return (
     <div className="modal-overlay">
@@ -144,6 +209,20 @@ const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, produc
                 <span className="info-label-actual">Total anterior:</span>
                 <span className="info-valor-actual">${totalAnterior.toFixed(2)}</span>
               </div>
+              <div className="info-item-actual">
+                <span className="info-label-actual">Total abonado:</span>
+                <span className="info-valor-actual">${totalAbonado.toFixed(2)}</span>
+              </div>
+              <div className="info-item-actual">
+                <span className="info-label-actual">Saldo pendiente:</span>
+                <span className="info-valor-actual">${(credito.saldo_pendiente || 0).toFixed(2)}</span>
+              </div>
+              <div className="info-item-actual">
+                <span className="info-label-actual">Estado actual:</span>
+                <span className={`info-valor-actual ${credito.estado === 'pagado' ? 'text-green-600' : credito.estado === 'vencido' ? 'text-red-600' : 'text-orange-600'}`}>
+                  {credito.estado?.toUpperCase() || 'ACTIVO'}
+                </span>
+              </div>
             </div>
             
             <div className="form-grupo">
@@ -173,7 +252,7 @@ const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, produc
                 <option value="">Selecciona un producto</option>
                 {productos.map((producto) => (
                   <option key={producto.id} value={producto.id}>
-                    {producto.nombre} - ${producto.precio}
+                    {producto.nombre} - ${producto.precio?.toFixed(2) || '0.00'}
                   </option>
                 ))}
               </select>
@@ -184,7 +263,7 @@ const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, produc
                 <div className="producto-detalles-actualizado">
                   <div className="detalle-item-actualizado">
                     <span>Precio unitario:</span>
-                    <strong>${productoSeleccionado.precio}</strong>
+                    <strong>${productoSeleccionado.precio?.toFixed(2) || '0.00'}</strong>
                   </div>
                   <div className="detalle-item-actualizado">
                     <span>Categoría:</span>
@@ -266,9 +345,20 @@ const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, produc
                   <span className="resumen-valor">${totalNuevo.toFixed(2)}</span>
                 </div>
                 <div className="resumen-item resumen-diferencia">
-                  <span className="resumen-label">Diferencia:</span>
-                  <span className={`resumen-valor ${totalNuevo > totalAnterior ? 'diferencia-positiva' : totalNuevo < totalAnterior ? 'diferencia-negativa' : ''}`}>
-                    ${(totalNuevo - totalAnterior).toFixed(2)}
+                  <span className="resumen-label">Diferencia en total:</span>
+                  <span className={`resumen-valor ${diferencia > 0 ? 'diferencia-positiva' : diferencia < 0 ? 'diferencia-negativa' : ''}`}>
+                    ${diferencia.toFixed(2)}
+                  </span>
+                </div>
+                <div className="resumen-item">
+                  <span className="resumen-label">Total abonado:</span>
+                  <span className="resumen-valor">${totalAbonado.toFixed(2)}</span>
+                </div>
+                <div className="resumen-item">
+                  <span className="resumen-label">Nuevo saldo pendiente:</span>
+                  <span className={`resumen-valor ${nuevoSaldoPendiente > 0 ? 'diferencia-negativa' : 'diferencia-positiva'}`}>
+                    ${nuevoSaldoPendiente > 0 ? nuevoSaldoPendiente.toFixed(2) : '0.00'}
+                    {nuevoSaldoPendiente <= 0 && ' (¡Pagado!)'}
                   </span>
                 </div>
                 <div className="resumen-item resumen-total">
@@ -277,8 +367,34 @@ const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, produc
                     ${totalNuevo.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
+                <div className="resumen-item">
+                  <span className="resumen-label">Nuevo estado:</span>
+                  <span className={`resumen-valor ${nuevoSaldoPendiente <= 0 ? 'diferencia-positiva' : new Date(formData.fecha_fin) < new Date() ? 'diferencia-negativa' : ''}`}>
+                    {nuevoSaldoPendiente <= 0 ? 'PAGADO' : new Date(formData.fecha_fin) < new Date() ? 'VENCIDO' : 'ACTIVO'}
+                  </span>
+                </div>
               </div>
             </div>
+            
+            {/* Advertencia si hay abonos registrados */}
+            {abonos.length > 0 && (
+              <div className="advertencia-abonos">
+                <div className="advertencia-icono">⚠</div>
+                <div className="advertencia-contenido">
+                  <strong>Importante:</strong> Este crédito tiene {abonos.length} abono(s) registrado(s) por un total de ${totalAbonado.toFixed(2)}.
+                  {diferencia > 0 && (
+                    <div className="advertencia-detalle">
+                      El saldo pendiente aumentará de ${(credito.saldo_pendiente || 0).toFixed(2)} a ${nuevoSaldoPendiente.toFixed(2)}.
+                    </div>
+                  )}
+                  {diferencia < 0 && (
+                    <div className="advertencia-detalle">
+                      El saldo pendiente disminuirá de ${(credito.saldo_pendiente || 0).toFixed(2)} a ${nuevoSaldoPendiente > 0 ? nuevoSaldoPendiente.toFixed(2) : '0.00'}.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
           
           <div className="modal-footer-editar-credito">

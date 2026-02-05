@@ -557,3 +557,104 @@
     max-height: calc(95vh - 140px);
   }
 }
+
+
+/* Advertencia de abonos */
+.advertencia-abonos {
+  background-color: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1rem;
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-start;
+  animation: slideIn 0.3s ease;
+}
+
+.advertencia-icono {
+  font-size: 1.5rem;
+  color: #d97706;
+  flex-shrink: 0;
+  margin-top: 0.125rem;
+}
+
+.advertencia-contenido {
+  flex: 1;
+}
+
+.advertencia-contenido strong {
+  color: #92400e;
+  font-size: 0.9rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.advertencia-detalle {
+  font-size: 0.85rem;
+  color: #92400e;
+  background-color: rgba(251, 191, 36, 0.1);
+  padding: 0.5rem;
+  border-radius: 4px;
+  margin-top: 0.5rem;
+}
+
+/* Mejoras para la información del crédito */
+.info-credito-actual .info-valor-actual.text-green-600 {
+  color: #059669;
+  font-weight: 700;
+}
+
+.info-credito-actual .info-valor-actual.text-red-600 {
+  color: #dc2626;
+  font-weight: 700;
+}
+
+.info-credito-actual .info-valor-actual.text-orange-600 {
+  color: #ea580c;
+  font-weight: 700;
+}
+
+/* Mejoras para los estados en el resumen */
+.resumen-valor.diferencia-positiva {
+  color: #059669;
+  font-weight: 600;
+}
+
+.resumen-valor.diferencia-negativa {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+/* Animación de entrada */
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Estilo para inputs deshabilitados */
+.form-input:disabled,
+.form-select:disabled {
+  background-color: #f9fafb;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+/* Mejoras responsivas */
+@media (max-width: 640px) {
+  .advertencia-abonos {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .advertencia-icono {
+    margin-bottom: 0.5rem;
+  }
+}

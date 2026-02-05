@@ -172,7 +172,6 @@ const generarContenidoTicket = (venta) => {
 
 CLIENTE: Cliente de Mostrador
 -----------------------------------------
-
 PRODUCTO: ${nombreProducto}
 CANTIDAD: ${cantidad}
 PRECIO:   C$${precioUnitario}

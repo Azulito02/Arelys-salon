@@ -293,14 +293,6 @@ const Inicio = () => {
         </div>
       </div>
       
-      {/* Nota sobre las ventas del turno */}
-      <div className="nota-ventas-turno">
-        <p className="nota-texto">
-          💡 <strong>Nota:</strong> "Ventas del Turno" muestra solo las ventas y abonos que 
-          <strong> aún no se han procesado en un arqueo</strong>. 
-          Después de hacer el arqueo, se reiniciará a C$0.00.
-        </p>
-      </div>
     </div>
   )
 }

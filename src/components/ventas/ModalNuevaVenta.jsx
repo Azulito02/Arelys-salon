@@ -11,6 +11,7 @@ const ModalNuevaVenta = ({
 }) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [vuelto, setVuelto] = useState(0)
 
   // Métodos de pago y bancos disponibles
   const metodosPago = [
@@ -52,40 +53,102 @@ const ModalNuevaVenta = ({
       setTransferencia(0)
       setBancoTarjeta('')
       setBancoTransferencia('')
+      setVuelto(0)
+      
+      // Calcular total inicial basado en datos de venta
+      const totalInicial = ventaData.cantidad * ventaData.precio_unitario
+      setEfectivo(totalInicial)
     }
   }, [isOpen])
 
-  // Calcular total
+  // Calcular total y vuelto
   const total = ventaData.cantidad * ventaData.precio_unitario
   const totalPagos = efectivo + tarjeta + transferencia
+  const diferencia = totalPagos - total
+
+  // Calcular vuelto automáticamente
+  useEffect(() => {
+    if (diferencia > 0) {
+      setVuelto(diferencia)
+    } else {
+      setVuelto(0)
+    }
+  }, [diferencia])
 
   // Manejar cambios en método de pago
   useEffect(() => {
     if (metodoPago === 'efectivo') {
       // Si cambia a efectivo, mover todo el monto a efectivo
-      setEfectivo(totalPagos)
+      setEfectivo(total)
       setTarjeta(0)
       setTransferencia(0)
       setBanco('')
     } else if (metodoPago === 'tarjeta') {
       // Si cambia a tarjeta, mover todo el monto a tarjeta
       setEfectivo(0)
-      setTarjeta(totalPagos)
+      setTarjeta(total)
       setTransferencia(0)
       setBanco('')
     } else if (metodoPago === 'transferencia') {
       // Si cambia a transferencia, mover todo el monto a transferencia
       setEfectivo(0)
       setTarjeta(0)
-      setTransferencia(totalPagos)
+      setTransferencia(total)
       setBanco('')
+    } else if (metodoPago === 'mixto') {
+      // Si cambia a mixto, distribuir el total en efectivo
+      setEfectivo(total)
+      setTarjeta(0)
+      setTransferencia(0)
+      setBancoTarjeta('')
+      setBancoTransferencia('')
     }
-  }, [metodoPago])
+  }, [metodoPago, total])
+
+  // Actualizar montos cuando cambia el total
+  useEffect(() => {
+    if (metodoPago === 'efectivo') {
+      setEfectivo(total)
+    } else if (metodoPago === 'tarjeta') {
+      setTarjeta(total)
+    } else if (metodoPago === 'transferencia') {
+      setTransferencia(total)
+    } else if (metodoPago === 'mixto') {
+      // Mantener la distribución proporcional
+      const proporcionEfectivo = totalPagos > 0 ? efectivo / totalPagos : 1
+      setEfectivo(total * proporcionEfectivo)
+    }
+  }, [total])
 
   if (!isOpen) return null
 
   // Obtener producto seleccionado
   const productoSeleccionado = productos.find(p => p.id === ventaData.producto_id)
+
+  // Función para Pago Completo (exacto)
+  const handlePagoCompleto = () => {
+    if (metodoPago === 'efectivo') {
+      setEfectivo(total)
+    } else if (metodoPago === 'tarjeta') {
+      setTarjeta(total)
+    } else if (metodoPago === 'transferencia') {
+      setTransferencia(total)
+    } else if (metodoPago === 'mixto') {
+      // Para mixto, poner todo en efectivo como default
+      setEfectivo(total)
+      setTarjeta(0)
+      setTransferencia(0)
+    }
+  }
+
+  // Función para Pago Excedente (ejemplo: pagar con 1000 para 500)
+  const handlePagoConVuelto = (montoRedondo) => {
+    if (metodoPago === 'efectivo') {
+      // Ejemplo: si total es 470, pagar con 500
+      const montoAPagar = Math.ceil(total / montoRedondo) * montoRedondo
+      setEfectivo(montoAPagar)
+    }
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -111,9 +174,9 @@ const ModalNuevaVenta = ({
       return
     }
 
-    // Validar que los montos coincidan con el total
-    if (Math.abs(totalPagos - total) > 0.01) {
-      setError(`El total de pagos ($${totalPagos.toFixed(2)}) no coincide con el total de la venta ($${total.toFixed(2)})`)
+    // Validar que NO se pague menos del total (solo permitir igual o mayor)
+    if (totalPagos < total) {
+      setError(`El pago ($${totalPagos.toFixed(2)}) es menor al total ($${total.toFixed(2)})`)
       return
     }
 
@@ -152,7 +215,8 @@ const ModalNuevaVenta = ({
         metodo_pago: metodoPago,
         efectivo: parseFloat(efectivo),
         tarjeta: parseFloat(tarjeta),
-        transferencia: parseFloat(transferencia)
+        transferencia: parseFloat(transferencia),
+        vuelto: vuelto > 0 ? parseFloat(vuelto) : 0
       }
 
       // Agregar banco según el método de pago
@@ -183,6 +247,7 @@ const ModalNuevaVenta = ({
       setTransferencia(0)
       setBancoTarjeta('')
       setBancoTransferencia('')
+      setVuelto(0)
     } catch (error) {
       setError('Error al registrar la venta: ' + error.message)
       console.error('Error al registrar:', error)
@@ -308,26 +373,107 @@ const ModalNuevaVenta = ({
               </div>
             </div>
             
-            <div className="form-grupo">
-              <label className="form-label">
-                Precio Unitario **
-              </label>
-              <div className="input-group-precio">
-                <span className="precio-simbolo">$</span>
-                <input
-                  type="number"
-                  min="0.01"
-                  step="0.01"
-                  value={ventaData.precio_unitario}
-                  onChange={(e) => {
-                    const value = parseFloat(e.target.value) || 0
-                    setVentaData({...ventaData, precio_unitario: Math.max(0.01, value)})
-                    setError('')
-                  }}
-                  className="form-input-precio"
-                  disabled={loading}
-                  required
-                />
+            {/* SECCIÓN DE TOTAL CON BOTÓN PAGO COMPLETO Y VUELTO */}
+            <div className="total-section">
+              <div className="total-container">
+                <div className="total-info">
+                  <div className="total-label-container">
+                    <span className="total-label">TOTAL VENTA:</span>
+                    <div className="total-calculation">
+                      {ventaData.cantidad} x ${ventaData.precio_unitario.toFixed(2)}
+                    </div>
+                  </div>
+                  <div className="total-amount-container">
+                    <span className="total-amount">${total.toFixed(2)}</span>
+                    <div className="pago-buttons-container">
+                      <button 
+                        type="button" 
+                        onClick={handlePagoCompleto}
+                        className="btn-pago-completo"
+                        title="Establecer el monto exacto del total"
+                      >
+                        Pago Exacto
+                      </button>
+                      {metodoPago === 'efectivo' && (
+                        <div className="pago-con-vuelto-buttons">
+
+                          <button 
+                            type="button" 
+                            onClick={() => handlePagoConVuelto(10)}
+                            className="btn-pago-vuelto"
+                            title="Pagar con $10"
+                          >
+                            Con $10
+                          </button>
+
+
+
+                          <button 
+                            type="button" 
+                            onClick={() => handlePagoConVuelto(50)}
+                            className="btn-pago-vuelto"
+                            title="Pagar con $50"
+                          >
+                            Con $50
+                          </button>
+
+                          <button 
+                            type="button" 
+                            onClick={() => handlePagoConVuelto(100)}
+                            className="btn-pago-vuelto"
+                            title="Pagar con $100"
+                          >
+                            Con $100
+                          </button>
+
+
+                          <button 
+                            type="button" 
+                            onClick={() => handlePagoConVuelto(200)}
+                            className="btn-pago-vuelto"
+                            title="Pagar con $200"
+                          >
+                            Con $200
+                          </button>
+
+
+                          <button 
+                            type="button" 
+                            onClick={() => handlePagoConVuelto(500)}
+                            className="btn-pago-vuelto"
+                            title="Pagar con $500"
+                          >
+                            Con $500
+                          </button>
+
+                          <button 
+                            type="button" 
+                            onClick={() => handlePagoConVuelto(1000)}
+                            className="btn-pago-vuelto"
+                            title="Pagar con $1000"
+                          >
+                            Con $1000
+                          </button>
+
+
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Información de Vuelto */}
+                {vuelto > 0 && (
+                  <div className="vuelto-section">
+                    <div className="vuelto-info">
+                      <span className="vuelto-label">VUELTO:</span>
+                      <span className="vuelto-amount">${vuelto.toFixed(2)}</span>
+                    </div>
+                    <div className="vuelto-detalle">
+                      Se pagó ${totalPagos.toFixed(2)} - Total ${total.toFixed(2)}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -359,7 +505,8 @@ const ModalNuevaVenta = ({
             {metodoPago !== 'mixto' && (
               <div className="form-grupo">
                 <label className="form-label">
-                  Monto a Pagar **
+                  Monto Recibido **
+                  {metodoPago === 'efectivo' && <span className="hint-text"> (puede ser mayor al total)</span>}
                 </label>
                 <div className="input-group-precio">
                   <span className="precio-simbolo">$</span>
@@ -376,6 +523,12 @@ const ModalNuevaVenta = ({
                     disabled={loading}
                   />
                 </div>
+                {metodoPago === 'efectivo' && vuelto > 0 && (
+                  <div className="vuelto-mini">
+                    <span className="vuelto-mini-label">Vuelto a dar: </span>
+                    <span className="vuelto-mini-amount">${vuelto.toFixed(2)}</span>
+                  </div>
+                )}
               </div>
             )}
 
@@ -530,13 +683,41 @@ const ModalNuevaVenta = ({
                     <span className="resumen-mixto-label">Total pagos:</span>
                     <span className="resumen-mixto-valor">${totalPagos.toFixed(2)}</span>
                   </div>
-                  <div className={`resumen-mixto-item ${Math.abs(total - totalPagos) < 0.01 ? 'resumen-correcto' : 'resumen-error'}`}>
-                    <span className="resumen-mixto-label">Diferencia:</span>
-                    <span className="resumen-mixto-valor">${(total - totalPagos).toFixed(2)}</span>
-                  </div>
+                  {diferencia > 0 && (
+                    <div className="resumen-mixto-item resumen-vuelto">
+                      <span className="resumen-mixto-label">Vuelto:</span>
+                      <span className="resumen-mixto-valor">${diferencia.toFixed(2)}</span>
+                    </div>
+                  )}
+                  {diferencia < 0 && (
+                    <div className="resumen-mixto-item resumen-error">
+                      <span className="resumen-mixto-label">Falta:</span>
+                      <span className="resumen-mixto-valor">${Math.abs(diferencia).toFixed(2)}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
+
+            {/* Validación de pago */}
+            <div className={`validacion-total ${diferencia >= 0 ? 'validacion-ok' : 'validacion-error'}`}>
+              {diferencia === 0 ? (
+                <div className="validacion-mensaje validacion-ok">
+                  <span className="validacion-icono">✓</span>
+                  Pago exacto
+                </div>
+              ) : diferencia > 0 ? (
+                <div className="validacion-mensaje validacion-vuelto">
+                  <span className="validacion-icono">🔄</span>
+                  Pago completo. Vuelto: ${vuelto.toFixed(2)}
+                </div>
+              ) : (
+                <div className="validacion-mensaje validacion-error">
+                  <span className="validacion-icono">⚠</span>
+                  Pago insuficiente. Faltan: ${Math.abs(diferencia).toFixed(2)}
+                </div>
+              )}
+            </div>
 
             {/* Separador visual */}
             <div className="separador-modal"></div>
@@ -563,6 +744,14 @@ const ModalNuevaVenta = ({
                     <span className="resumen-label">Total:</span>
                     <span className="resumen-valor-total">${total.toFixed(2)}</span>
                   </div>
+                  
+                  {vuelto > 0 && (
+                    <div className="resumen-item resumen-vuelto">
+                      <span className="resumen-label">Vuelto:</span>
+                      <span className="resumen-valor">${vuelto.toFixed(2)}</span>
+                    </div>
+                  )}
+                  
                   <div className="resumen-item">
                     <span className="resumen-label">Método de pago:</span>
                     <span className="resumen-valor">
@@ -611,7 +800,7 @@ const ModalNuevaVenta = ({
                     </>
                   ) : (
                     <div className="resumen-item">
-                      <span className="resumen-label">Monto:</span>
+                      <span className="resumen-label">Monto recibido:</span>
                       <span className="resumen-valor">
                         ${totalPagos.toFixed(2)}
                         {metodoPago === 'tarjeta' && banco && ` (${banco})`}
@@ -650,7 +839,7 @@ const ModalNuevaVenta = ({
             <button
               type="submit"
               className="btn-primario-venta"
-              disabled={loading || !ventaData.producto_id || totalPagos <= 0 || Math.abs(total - totalPagos) > 0.01}
+              disabled={loading || !ventaData.producto_id || totalPagos < total}
             >
               {loading ? (
                 <>

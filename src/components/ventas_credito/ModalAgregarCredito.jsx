@@ -1,108 +1,268 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { supabase } from '../../database/supabase'
 import './ModalAgregarCredito.css'
 
 const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) => {
   const [formData, setFormData] = useState({
-    producto_id: '',
-    cantidad: 1,
-    precio_unitario: '',
-    nombre_cliente: '',
+    cliente_nombre: '',
     fecha_inicio: new Date().toISOString().split('T')[0],
     fecha_fin: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   })
+  
+  const [productosSeleccionados, setProductosSeleccionados] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [clientes, setClientes] = useState([])
+  const [mostrarNuevoCliente, setMostrarNuevoCliente] = useState(false)
+  const [nuevoCliente, setNuevoCliente] = useState({ nombre: '', telefono: '', email: '' })
 
-  if (!isOpen) return null
+  // Cargar clientes al abrir el modal
+  useEffect(() => {
+    if (isOpen) {
+      cargarClientes()
+      resetForm()
+    }
+  }, [isOpen])
 
-  const calcularTotal = () => {
-    const cantidad = parseInt(formData.cantidad) || 0
-    const precio = parseFloat(formData.precio_unitario) || 0
-    return cantidad * precio
-  }
-
-  const handleProductoChange = (productoId) => {
-    const producto = productos.find(p => p.id === productoId)
-    if (producto) {
-      setFormData({
-        ...formData,
-        producto_id: productoId,
-        precio_unitario: producto.precio
-      })
-    } else {
-      setFormData({
-        ...formData,
-        producto_id: productoId,
-        precio_unitario: ''
-      })
+  const cargarClientes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('clientes')
+        .select('*')
+        .eq('activo', true)
+        .order('nombre')
+      
+      if (error) throw error
+      setClientes(data || [])
+    } catch (err) {
+      console.error('Error cargando clientes:', err)
+      // Si no existe la tabla clientes, usar nombres de ventas_credito
+      const { data: ventasData } = await supabase
+        .from('ventas_credito')
+        .select('nombre_cliente')
+        .not('nombre_cliente', 'is', null)
+        .order('nombre_cliente')
+      
+      if (ventasData) {
+        const nombresUnicos = [...new Set(ventasData.map(v => v.nombre_cliente))]
+        setClientes(nombresUnicos.map(nombre => ({ id: nombre, nombre })))
+      }
     }
   }
 
-  const handleCantidadChange = (nuevaCantidad) => {
-    if (nuevaCantidad >= 1) {
-      setFormData({
-        ...formData,
-        cantidad: nuevaCantidad
-      })
-    }
-  }
-
-const handleSubmit = async (e) => {
-  e.preventDefault()
-  
-  if (!formData.producto_id || formData.cantidad < 1 || !formData.nombre_cliente.trim() || !formData.fecha_fin) {
-    setError('Por favor completa todos los campos obligatorios')
-    return
-  }
-
-  setLoading(true)
-  setError('')
-
-  try {
-    const total = calcularTotal()
-    
-    const creditoData = {
-      producto_id: formData.producto_id,
-      cantidad: parseInt(formData.cantidad),
-      precio_unitario: parseFloat(formData.precio_unitario),
-      total: total,
-      nombre_cliente: formData.nombre_cliente.trim(),
-      fecha_inicio: formData.fecha_inicio,
-      fecha_fin: formData.fecha_fin,
-      saldo_pendiente: total // ← ¡ESTO ES IMPORTANTE!
-    }
-
-    console.log('Creando crédito con datos:', creditoData)
-    
-    const { error: supabaseError, data } = await supabase
-      .from('ventas_credito')
-      .insert([creditoData])
-      .select() // Para obtener el crédito creado
-    
-    if (supabaseError) throw supabaseError
-    
-    console.log('Crédito creado exitosamente:', data)
-    
-    // Reset form
+  const resetForm = () => {
     setFormData({
-      producto_id: '',
-      cantidad: 1,
-      precio_unitario: '',
-      nombre_cliente: '',
+      cliente_nombre: '',
       fecha_inicio: new Date().toISOString().split('T')[0],
       fecha_fin: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
     })
-    
-    onCreditoAgregado()
-  } catch (err) {
-    console.error('Error agregando crédito:', err)
-    setError('Error al registrar el crédito. Por favor intenta de nuevo.')
-  } finally {
-    setLoading(false)
+    setProductosSeleccionados([])
+    setNuevoCliente({ nombre: '', telefono: '', email: '' })
+    setMostrarNuevoCliente(false)
+    setError('')
   }
-}
-  const productoSeleccionado = productos.find(p => p.id === formData.producto_id)
+
+  // Agregar producto a la lista
+  const agregarProducto = () => {
+    setProductosSeleccionados([
+      ...productosSeleccionados,
+      { id: Date.now(), producto_id: '', cantidad: 1, precio_unitario: 0 }
+    ])
+  }
+
+  // Eliminar producto de la lista
+  const eliminarProducto = (index) => {
+    const nuevosProductos = [...productosSeleccionados]
+    nuevosProductos.splice(index, 1)
+    setProductosSeleccionados(nuevosProductos)
+  }
+
+  // Actualizar producto en la lista
+  const actualizarProducto = (index, campo, valor) => {
+    const nuevosProductos = [...productosSeleccionados]
+    
+    if (campo === 'producto_id') {
+      const producto = productos.find(p => p.id === valor)
+      nuevosProductos[index] = {
+        ...nuevosProductos[index],
+        producto_id: valor,
+        precio_unitario: producto?.precio || 0,
+        producto_nombre: producto?.nombre
+      }
+    } else if (campo === 'cantidad') {
+      nuevosProductos[index] = {
+        ...nuevosProductos[index],
+        cantidad: Math.max(1, parseInt(valor) || 1)
+      }
+    } else if (campo === 'precio_unitario') {
+      nuevosProductos[index] = {
+        ...nuevosProductos[index],
+        precio_unitario: parseFloat(valor) || 0
+      }
+    }
+    
+    setProductosSeleccionados(nuevosProductos)
+  }
+
+  // Calcular totales
+  const calcularTotalProducto = (producto) => {
+    return producto.cantidad * producto.precio_unitario
+  }
+
+  const calcularTotalGeneral = () => {
+    return productosSeleccionados.reduce((total, producto) => {
+      return total + calcularTotalProducto(producto)
+    }, 0)
+  }
+
+  // Registrar nuevo cliente
+  const registrarNuevoCliente = async () => {
+    if (!nuevoCliente.nombre.trim()) {
+      setError('El nombre del cliente es obligatorio')
+      return null
+    }
+
+    try {
+      // Verificar si ya existe en clientes
+      const clienteExistente = clientes.find(c => 
+        typeof c === 'object' ? c.nombre === nuevoCliente.nombre.trim() : c === nuevoCliente.nombre.trim()
+      )
+      
+      if (clienteExistente) {
+        // Si ya existe, usar el existente
+        const clienteId = typeof clienteExistente === 'object' ? clienteExistente.id : clienteExistente
+        setFormData({ ...formData, cliente_nombre: clienteId })
+        setMostrarNuevoCliente(false)
+        return clienteId
+      }
+
+      // Intentar registrar en tabla clientes si existe
+      try {
+        const { data, error } = await supabase
+          .from('clientes')
+          .insert([{
+            nombre: nuevoCliente.nombre.trim(),
+            telefono: nuevoCliente.telefono || null,
+            email: nuevoCliente.email || null
+          }])
+          .select()
+        
+        if (!error && data && data[0]) {
+          setClientes([...clientes, data[0]])
+          setFormData({ ...formData, cliente_nombre: data[0].id })
+          setMostrarNuevoCliente(false)
+          return data[0].id
+        }
+      } catch (err) {
+        console.log('No se pudo registrar en tabla clientes, usando nombre directo')
+      }
+
+      // Si no existe tabla clientes, usar el nombre directamente
+      setFormData({ ...formData, cliente_nombre: nuevoCliente.nombre.trim() })
+      setMostrarNuevoCliente(false)
+      return nuevoCliente.nombre.trim()
+      
+    } catch (err) {
+      console.error('Error registrando cliente:', err)
+      setError('Error al registrar el cliente: ' + err.message)
+      return null
+    }
+  }
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    
+    // Validaciones
+    if (!formData.cliente_nombre) {
+      setError('Selecciona o registra un cliente')
+      return
+    }
+
+    if (productosSeleccionados.length === 0) {
+      setError('Agrega al menos un producto')
+      return
+    }
+
+    const totalGeneral = calcularTotalGeneral()
+    if (totalGeneral <= 0) {
+      setError('El total debe ser mayor a 0')
+      return
+    }
+
+    // Validar que todos los productos tengan producto_id
+    const productosInvalidos = productosSeleccionados.filter(p => !p.producto_id)
+    if (productosInvalidos.length > 0) {
+      setError('Todos los productos deben estar seleccionados')
+      return
+    }
+
+    setLoading(true)
+    setError('')
+
+    try {
+      let clienteNombre = formData.cliente_nombre
+      
+      // Si es un ID de cliente (UUID), obtener el nombre
+      if (clienteNombre.includes('-')) { // UUID tiene guiones
+        const cliente = clientes.find(c => c.id === clienteNombre)
+        if (cliente) {
+          clienteNombre = cliente.nombre
+        }
+      }
+
+      // Crear UNA venta a crédito por CADA producto (manteniendo compatibilidad)
+      const ventasCredito = productosSeleccionados.map(producto => ({
+        producto_id: producto.producto_id,
+        cantidad: producto.cantidad,
+        precio_unitario: producto.precio_unitario,
+        total: calcularTotalProducto(producto),
+        nombre_cliente: clienteNombre,
+        fecha_inicio: formData.fecha_inicio,
+        fecha_fin: formData.fecha_fin,
+        saldo_pendiente: calcularTotalProducto(producto), // Saldo inicial = total
+        estado: 'activo'
+      }))
+
+      console.log('Creando ventas a crédito:', ventasCredito)
+      
+      const { error: errorVentas } = await supabase
+        .from('ventas_credito')
+        .insert(ventasCredito)
+      
+      if (errorVentas) throw errorVentas
+
+      // También insertar en facturados si existe
+      try {
+        const facturas = ventasCredito.map(venta => ({
+          tipo_venta: 'credito',
+          producto_id: venta.producto_id,
+          cantidad: venta.cantidad,
+          precio_unitario: venta.precio_unitario,
+          total: venta.total,
+          metodo_pago: 'credito',
+          fecha: new Date().toISOString()
+        }))
+
+        await supabase
+          .from('facturados')
+          .insert(facturas)
+      } catch (err) {
+        console.log('No se pudo registrar en facturados:', err)
+      }
+
+      resetForm()
+      onCreditoAgregado()
+      onClose()
+      
+    } catch (err) {
+      console.error('Error agregando crédito:', err)
+      setError('Error al registrar el crédito: ' + err.message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (!isOpen) return null
 
   return (
     <div className="modal-overlay">
@@ -132,93 +292,181 @@ const handleSubmit = async (e) => {
               </div>
             )}
             
+            {/* Selección de Cliente */}
             <div className="form-grupo">
               <label className="form-label">
-                Nombre del Cliente *
+                Cliente *
               </label>
-              <input
-                type="text"
-                value={formData.nombre_cliente}
-                onChange={(e) => setFormData({...formData, nombre_cliente: e.target.value})}
-                className="form-input"
-                placeholder="Ej: María González"
-                disabled={loading}
-              />
-            </div>
-            
-            <div className="form-grupo">
-              <label className="form-label">
-                Producto *
-              </label>
-              <select
-                value={formData.producto_id}
-                onChange={(e) => handleProductoChange(e.target.value)}
-                className="form-select"
-                disabled={loading}
-              >
-                <option value="">Selecciona un producto</option>
-                {productos.map((producto) => (
-                  <option key={producto.id} value={producto.id}>
-                    {producto.nombre} - ${producto.precio}
-                  </option>
-                ))}
-              </select>
-            </div>
-            
-            {/* Información del producto seleccionado */}
-            {productoSeleccionado && (
-              <div className="producto-info-actualizado">
-                <div className="producto-detalles-actualizado">
-                  <div className="detalle-item-actualizado">
-                    <span>Precio unitario:</span>
-                    <strong>${productoSeleccionado.precio}</strong>
-                  </div>
-                  <div className="detalle-item-actualizado">
-                    <span>Categoría:</span>
-                    <strong>{productoSeleccionado.categoria || 'Sin categoría'}</strong>
-                  </div>
-                  {productoSeleccionado.codigo && (
-                    <div className="detalle-item-actualizado">
-                      <span>Código:</span>
-                      <strong>{productoSeleccionado.codigo}</strong>
-                    </div>
-                  )}
+              {!mostrarNuevoCliente ? (
+                <div className="cliente-seleccion-container">
+                  <select
+                    value={formData.cliente_nombre}
+                    onChange={(e) => setFormData({...formData, cliente_nombre: e.target.value})}
+                    className="form-select"
+                    disabled={loading}
+                  >
+                    <option value="">Selecciona un cliente</option>
+                    {clientes.map((cliente) => {
+                      const clienteId = typeof cliente === 'object' ? cliente.id : cliente
+                      const clienteNombre = typeof cliente === 'object' ? cliente.nombre : cliente
+                      return (
+                        <option key={clienteId} value={clienteId}>
+                          {clienteNombre}
+                        </option>
+                      )
+                    })}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={() => setMostrarNuevoCliente(true)}
+                    className="btn-nuevo-cliente"
+                  >
+                    + Nuevo Cliente
+                  </button>
                 </div>
-              </div>
-            )}
-            
-            <div className="form-grupo">
-              <label className="form-label">
-                Cantidad *
-              </label>
-              <div className="input-group-cantidad">
-                <button
-                  type="button"
-                  onClick={() => handleCantidadChange(formData.cantidad - 1)}
-                  className="cantidad-btn"
-                  disabled={loading || formData.cantidad <= 1}
-                >
-                  -
-                </button>
-                <input
-                  type="number"
-                  min="1"
-                  value={formData.cantidad}
-                  onChange={(e) => handleCantidadChange(parseInt(e.target.value) || 1)}
-                  className="form-input-cantidad"
-                  disabled={loading}
-                />
-                <button
-                  type="button"
-                  onClick={() => handleCantidadChange(formData.cantidad + 1)}
-                  className="cantidad-btn"
-                  disabled={loading}
-                >
-                  +
-                </button>
-              </div>
+              ) : (
+                <div className="nuevo-cliente-form">
+                  <input
+                    type="text"
+                    value={nuevoCliente.nombre}
+                    onChange={(e) => setNuevoCliente({...nuevoCliente, nombre: e.target.value})}
+                    className="form-input"
+                    placeholder="Nombre completo *"
+                    disabled={loading}
+                    required
+                  />
+                  <input
+                    type="text"
+                    value={nuevoCliente.telefono}
+                    onChange={(e) => setNuevoCliente({...nuevoCliente, telefono: e.target.value})}
+                    className="form-input"
+                    placeholder="Teléfono (opcional)"
+                    disabled={loading}
+                  />
+                  <input
+                    type="email"
+                    value={nuevoCliente.email}
+                    onChange={(e) => setNuevoCliente({...nuevoCliente, email: e.target.value})}
+                    className="form-input"
+                    placeholder="Email (opcional)"
+                    disabled={loading}
+                  />
+                  <div className="nuevo-cliente-botones">
+                    <button
+                      type="button"
+                      onClick={() => setMostrarNuevoCliente(false)}
+                      className="btn-cancelar-cliente"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={registrarNuevoCliente}
+                      className="btn-guardar-cliente"
+                      disabled={!nuevoCliente.nombre.trim()}
+                    >
+                      Guardar Cliente
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
             
+            {/* Lista de Productos */}
+            <div className="productos-container">
+              <div className="productos-header">
+                <h4 className="productos-titulo">Productos</h4>
+                <button
+                  type="button"
+                  onClick={agregarProducto}
+                  className="btn-agregar-producto"
+                  disabled={loading}
+                >
+                  + Agregar Producto
+                </button>
+              </div>
+              
+              {productosSeleccionados.length === 0 ? (
+                <div className="sin-productos">
+                  <p>No hay productos agregados</p>
+                </div>
+              ) : (
+                <div className="lista-productos">
+                  {productosSeleccionados.map((producto, index) => {
+                    const productoInfo = productos.find(p => p.id === producto.producto_id)
+                    return (
+                      <div key={producto.id} className="producto-item">
+                        <div className="producto-header">
+                          <span className="producto-numero">#{index + 1}</span>
+                          <button
+                            type="button"
+                            onClick={() => eliminarProducto(index)}
+                            className="btn-eliminar-producto"
+                            disabled={loading}
+                          >
+                            ×
+                          </button>
+                        </div>
+                        
+                        <div className="producto-form">
+                          <select
+                            value={producto.producto_id}
+                            onChange={(e) => actualizarProducto(index, 'producto_id', e.target.value)}
+                            className="form-select"
+                            disabled={loading}
+                            required
+                          >
+                            <option value="">Selecciona un producto</option>
+                            {productos.map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {p.nombre} - ${p.precio?.toFixed(2) || '0.00'}
+                                {p.categoria && ` (${p.categoria})`}
+                              </option>
+                            ))}
+                          </select>
+                          
+                          <div className="producto-cantidad-precio">
+                            <div>
+                              <label>Cantidad</label>
+                              <input
+                                type="number"
+                                min="1"
+                                value={producto.cantidad}
+                                onChange={(e) => actualizarProducto(index, 'cantidad', e.target.value)}
+                                className="form-input"
+                                disabled={loading}
+                                required
+                              />
+                            </div>
+                            <div>
+                              <label>Precio Unit.</label>
+                              <input
+                                type="number"
+                                min="0.01"
+                                step="0.01"
+                                value={producto.precio_unitario}
+                                onChange={(e) => actualizarProducto(index, 'precio_unitario', e.target.value)}
+                                className="form-input"
+                                disabled={loading}
+                                required
+                              />
+                            </div>
+                            <div className="producto-subtotal">
+                              <label>Subtotal</label>
+                              <div className="subtotal-valor">
+                                ${calcularTotalProducto(producto).toFixed(2)}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+            
+            {/* Fechas */}
             <div className="form-grid-credito">
               <div className="form-grupo">
                 <label className="form-label">
@@ -243,6 +491,7 @@ const handleSubmit = async (e) => {
                   onChange={(e) => setFormData({...formData, fecha_fin: e.target.value})}
                   className="form-input"
                   disabled={loading}
+                  required
                 />
               </div>
             </div>
@@ -252,31 +501,39 @@ const handleSubmit = async (e) => {
               <h4 className="resumen-credito-titulo">Resumen del Crédito</h4>
               <div className="resumen-detalles">
                 <div className="resumen-item">
-                  <span className="resumen-label">Producto:</span>
+                  <span className="resumen-label">Cliente:</span>
                   <span className="resumen-valor">
-                    {productoSeleccionado?.nombre || 'No seleccionado'}
+                    {(() => {
+                      const cliente = clientes.find(c => {
+                        const clienteId = typeof c === 'object' ? c.id : c
+                        return clienteId === formData.cliente_nombre
+                      })
+                      return cliente ? (typeof cliente === 'object' ? cliente.nombre : cliente) : 'No seleccionado'
+                    })()}
                   </span>
                 </div>
                 <div className="resumen-item">
-                  <span className="resumen-label">Cantidad:</span>
-                  <span className="resumen-valor">{formData.cantidad} unidades</span>
+                  <span className="resumen-label">Productos:</span>
+                  <span className="resumen-valor">
+                    {productosSeleccionados.length} productos
+                  </span>
                 </div>
                 <div className="resumen-item">
-                  <span className="resumen-label">Precio unitario:</span>
+                  <span className="resumen-label">Total unidades:</span>
                   <span className="resumen-valor">
-                    ${parseFloat(formData.precio_unitario || 0).toFixed(2)}
+                    {productosSeleccionados.reduce((sum, p) => sum + p.cantidad, 0)} unidades
+                  </span>
+                </div>
+                <div className="resumen-item resumen-total">
+                  <span className="resumen-label">Total a Crédito:</span>
+                  <span className="resumen-valor-total">
+                    ${calcularTotalGeneral().toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="resumen-item">
                   <span className="resumen-label">Periodo:</span>
                   <span className="resumen-valor">
                     {formData.fecha_inicio} al {formData.fecha_fin}
-                  </span>
-                </div>
-                <div className="resumen-item resumen-total">
-                  <span className="resumen-label">Total a Crédito:</span>
-                  <span className="resumen-valor-total">
-                    ${calcularTotal().toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
@@ -295,7 +552,7 @@ const handleSubmit = async (e) => {
             <button
               type="submit"
               className="btn-primario-credito"
-              disabled={loading}
+              disabled={loading || productosSeleccionados.length === 0 || !formData.cliente_nombre}
             >
               {loading ? (
                 <>
