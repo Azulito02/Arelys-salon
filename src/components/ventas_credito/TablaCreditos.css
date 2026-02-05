@@ -805,3 +805,93 @@
     display: block;
   }
 }
+
+
+/* Añade al final de TablaCreditos.css */
+
+/* Ajustes para pantallas muy pequeñas (iPhone SE/5) */
+@media (max-width: 375px) {
+  .credito-details-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .credito-fechas-mobile {
+    padding: 8px;
+  }
+  
+  .credito-actions-mobile {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .action-btn-mobile {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .resumen-mobile {
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .resumen-mobile-item {
+    width: 100%;
+  }
+  
+  .credito-cliente {
+    font-size: 15px;
+  }
+  
+  .credito-producto {
+    font-size: 13px;
+  }
+}
+
+/* Para pantallas entre 376px y 480px */
+@media (min-width: 376px) and (max-width: 480px) {
+  .credito-details-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .credito-card {
+    padding: 14px;
+  }
+  
+  .credito-cliente {
+    font-size: 16px;
+  }
+  
+  .credito-producto {
+    font-size: 14px;
+  }
+}
+
+/* Mejoras para tablets */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .tabla-scroll-container {
+    overflow-x: auto;
+    margin: 0 -12px;
+    padding: 0 12px;
+  }
+  
+  .tabla-creditos {
+    min-width: 900px;
+  }
+  
+  .tabla-creditos th,
+  .tabla-creditos td {
+    padding: 14px 16px;
+    font-size: 13px;
+  }
+  
+  .tabla-creditos .columna-cliente {
+    min-width: 150px;
+  }
+  
+  .tabla-creditos .columna-producto {
+    min-width: 180px;
+  }
+}

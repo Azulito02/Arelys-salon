@@ -55,57 +55,58 @@ const Creditos = () => {
   }
 
   const cargarDatos = async () => {
-  try {
-    setLoading(true)
-    
-    // Cargar productos
-    const { data: productosData, error: errorProductos } = await supabase
-      .from('productos')
-      .select('*')
-      .order('nombre')
-    
-    if (errorProductos) throw errorProductos
-    setProductos(productosData || [])
-    
-    // Cargar ventas a crédito - SOLO necesitamos datos básicos
-    const { data: creditosData, error: errorCreditos } = await supabase
-      .from('ventas_credito')
-      .select(`
-        *,
-        productos (*)
-      `)
-      .order('fecha', { ascending: false })
-    
-    if (errorCreditos) throw errorCreditos
-    
-    // Procesar créditos - usar saldo_pendiente DIRECTAMENTE de la DB
-    const creditosProcesados = (creditosData || []).map(credito => {
-      const total = parseFloat(credito.total) || 0
-      const precio_unitario = parseFloat(credito.precio_unitario) || 0
-      const saldo_pendiente = parseFloat(credito.saldo_pendiente) || 0
+    try {
+      setLoading(true)
       
-      // Calcular total abonado como diferencia
-      const total_abonado = Math.max(0, total - saldo_pendiente)
+      // Cargar productos
+      const { data: productosData, error: errorProductos } = await supabase
+        .from('productos')
+        .select('*')
+        .order('nombre')
       
-      return {
-        ...credito,
-        total,
-        precio_unitario,
-        saldo_pendiente, // USAR DIRECTAMENTE de la DB
-        total_abonado,
-        completado: saldo_pendiente === 0
-      }
-    })
-    
-    setCreditos(creditosProcesados)
-    
-  } catch (error) {
-    console.error('Error cargando créditos:', error)
-    alert('Error al cargar datos')
-  } finally {
-    setLoading(false)
+      if (errorProductos) throw errorProductos
+      setProductos(productosData || [])
+      
+      // Cargar ventas a crédito
+      const { data: creditosData, error: errorCreditos } = await supabase
+        .from('ventas_credito')
+        .select(`
+          *,
+          productos (*)
+        `)
+        .order('fecha', { ascending: false })
+      
+      if (errorCreditos) throw errorCreditos
+      
+      // Procesar créditos
+      const creditosProcesados = (creditosData || []).map(credito => {
+        const total = parseFloat(credito.total) || 0
+        const precio_unitario = parseFloat(credito.precio_unitario) || 0
+        const saldo_pendiente = parseFloat(credito.saldo_pendiente) || 0
+        
+        // Calcular total abonado como diferencia
+        const total_abonado = Math.max(0, total - saldo_pendiente)
+        
+        return {
+          ...credito,
+          total,
+          precio_unitario,
+          saldo_pendiente,
+          total_abonado,
+          completado: saldo_pendiente === 0
+        }
+      })
+      
+      setCreditos(creditosProcesados)
+      
+    } catch (error) {
+      console.error('Error cargando créditos:', error)
+      alert('Error al cargar datos')
+    } finally {
+      setLoading(false)
+    }
   }
-}
+
   // Funciones para abrir modales
   const handleAgregarCredito = () => {
     setShowAgregarModal(true)
@@ -252,7 +253,6 @@ const Creditos = () => {
       
       // Intentar usar la tabla de archivo si existe
       try {
-        // Primero intentar insertar en tabla de archivo
         const creditosParaArchivar = creditosCompletados.map(({ 
           abonos_credito, 
           productos, 
@@ -282,7 +282,6 @@ const Creditos = () => {
       const idsCompletados = creditosCompletados.map(c => c.id)
       
       if (idsCompletados.length > 0) {
-        // Usar ROW para eliminación masiva más eficiente
         const { error: errorEliminar } = await supabase
           .from('ventas_credito')
           .delete()
@@ -327,25 +326,28 @@ const Creditos = () => {
 
   return (
     <div className="creditos-container">
-      {/* Encabezado */}
+      {/* Header responsive */}
       <div className="creditos-header">
-        <div>
+        <div className="creditos-titulo-container">
           <h1 className="creditos-titulo">Ventas a Crédito</h1>
           <p className="creditos-subtitulo">Registro y seguimiento de créditos</p>
         </div>
-        <button
-          onClick={handleAgregarCredito}
-          className="btn-agregar-credito"
-          disabled={loading || archivando}
-        >
-          <svg className="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-          </svg>
-          Nuevo Crédito
-        </button>
+        
+        <div className="creditos-botones-header">
+          <button
+            onClick={handleAgregarCredito}
+            className="btn-agregar-credito"
+            disabled={loading || archivando}
+          >
+            <svg className="btn-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Nuevo Crédito
+          </button>
+        </div>
       </div>
 
-      {/* Controles de filtro */}
+      {/* Controles de filtro responsive */}
       <div className="filtros-creditos">
         <div className="filtros-botones">
           <button
@@ -353,21 +355,27 @@ const Creditos = () => {
             onClick={() => handleCambiarFiltro('pendientes')}
             disabled={loading || archivando}
           >
-            Pendientes ({resumen.creditosPendientes})
+            <span className="filtro-btn-text">
+              Pendientes <span className="filtro-btn-badge">{resumen.creditosPendientes}</span>
+            </span>
           </button>
           <button
             className={`filtro-btn ${filtroMostrar === 'completados' ? 'active' : ''}`}
             onClick={() => handleCambiarFiltro('completados')}
             disabled={loading || archivando}
           >
-            Completados ({resumen.creditosCompletados})
+            <span className="filtro-btn-text">
+              Completados <span className="filtro-btn-badge">{resumen.creditosCompletados}</span>
+            </span>
           </button>
           <button
             className={`filtro-btn ${filtroMostrar === 'todos' ? 'active' : ''}`}
             onClick={() => handleCambiarFiltro('todos')}
             disabled={loading || archivando}
           >
-            Todos ({resumen.totalCreditos})
+            <span className="filtro-btn-text">
+              Todos <span className="filtro-btn-badge">{resumen.totalCreditos}</span>
+            </span>
           </button>
         </div>
         
@@ -389,18 +397,20 @@ const Creditos = () => {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
                     d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
                 </svg>
-                Eliminar Completados ({resumen.creditosCompletados})
+                <span className="btn-archivar-text">
+                  Eliminar Completados <span className="btn-archivar-badge">{resumen.creditosCompletados}</span>
+                </span>
               </>
             )}
           </button>
         )}
       </div>
 
-      {/* Tarjetas de resumen */}
+      {/* Tarjetas de resumen responsive */}
       <div className="resumen-creditos-grid">
         <div className="resumen-card credito-card">
           <div className="resumen-card-content">
-            <span className="resumen-card-label">Total Créditos</span>
+            <span className="resumen-card-label">TOTALES CRÉDITOS</span>
             <strong className="resumen-card-value">{resumen.totalCreditos}</strong>
             <div className="resumen-card-sub">
               <span className="resumen-sub-pendientes">{resumen.creditosPendientes} pendientes</span>
@@ -417,7 +427,7 @@ const Creditos = () => {
         
         <div className="resumen-card monto-card">
           <div className="resumen-card-content">
-            <span className="resumen-card-label">Monto Total</span>
+            <span className="resumen-card-label">MONTO TOTAL</span>
             <strong className="resumen-card-value">
               ${resumen.totalMonto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
             </strong>
@@ -432,7 +442,7 @@ const Creditos = () => {
         
         <div className="resumen-card saldo-card">
           <div className="resumen-card-content">
-            <span className="resumen-card-label">Saldo Pendiente</span>
+            <span className="resumen-card-label">SALDO PENDIENTE</span>
             <strong className="resumen-card-value saldo-pendiente-total">
               ${resumen.totalSaldoPendiente.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
             </strong>
@@ -441,19 +451,6 @@ const Creditos = () => {
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
                 d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-        </div>
-        
-        <div className="resumen-card vencidos-card">
-          <div className="resumen-card-content">
-            <span className="resumen-card-label">Créditos Vencidos</span>
-            <strong className="resumen-card-value">{resumen.creditosVencidos}</strong>
-          </div>
-          <div className="resumen-card-icon">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
         </div>
