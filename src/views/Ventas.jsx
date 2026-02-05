@@ -167,8 +167,6 @@ const generarContenidoTicket = (venta) => {
   const precioUnitario = Number(venta.precio_unitario || 0).toFixed(2);
   const totalVenta = Number(venta.total || 0).toFixed(2);
 
-  // Número de venta
-  const numeroVenta = venta.id ? venta.id.substring(0, 8).toUpperCase() : "00000000";
   
   // Método de pago
   let metodoPago = venta.metodo_pago || "efectivo";
@@ -210,7 +208,7 @@ const generarContenidoTicket = (venta) => {
 
   // Información del negocio
   const telefonoNegocio = "7715-4242";
-  const direccionNegocio = "Juigalpa, Chontales";
+  const direccionNegocio = "En frente de la miel de los pajaritos";
   const nombreNegocio = "ARELY Z SALON";
 
   // Formatear montos para alineación
@@ -225,7 +223,6 @@ Tel: ${telefonoNegocio}
 -----------------------------------------
         TICKET DE VENTA
 -----------------------------------------
-        #${numeroVenta}
         ${fecha}
 
 CLIENTE: Cliente de Mostrador
