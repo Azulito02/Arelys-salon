@@ -115,7 +115,7 @@ const Ventas = () => {
   }
 
 // ==============================================
-// GENERAR CONTENIDO DEL TICKET - VERSIÓN CORREGIDA SIN CORTE AUTOMATICO
+// GENERAR CONTENIDO DEL TICKET - VERSIÓN CON ORDEN CORREGIDO
 // ==============================================
 
 const generarContenidoTicket = (venta) => {
@@ -167,6 +167,8 @@ const generarContenidoTicket = (venta) => {
   const precioUnitario = Number(venta.precio_unitario || 0).toFixed(2);
   const totalVenta = Number(venta.total || 0).toFixed(2);
 
+  // Número de venta
+  const numeroVenta = venta.id ? venta.id.substring(0, 8).toUpperCase() : "00000000";
   
   // Método de pago
   let metodoPago = venta.metodo_pago || "efectivo";
@@ -211,45 +213,40 @@ const generarContenidoTicket = (venta) => {
   const direccionNegocio = "En frente de la miel de los pajaritos";
   const nombreNegocio = "ARELY Z SALON";
 
-  // Formatear montos para alineación
-  const totalFormateado = `C$${parseFloat(totalVenta).toFixed(2)}`;
-  const recibidoFormateado = `C$${parseFloat(montoRecibido).toFixed(2)}`;
-  const vueltoFormateado = `C$${parseFloat(vuelto).toFixed(2)}`;
-
-  // Construir el ticket - VERSIÓN CORREGIDA (sin CORTE AUTOMATICO al inicio)
-  const ticket = `${nombreNegocio}
+  // Construir el ticket con ORDEN CORRECTO
+  const ticket = `
+${nombreNegocio}
 ${direccionNegocio}
 Tel: ${telefonoNegocio}
 -----------------------------------------
         TICKET DE VENTA
 -----------------------------------------
-        ${fecha}
+#${numeroVenta}
+${fecha}
 
 CLIENTE: Cliente de Mostrador
 -----------------------------------------
 PRODUCTO: ${nombreProducto.toUpperCase()}
 ${categoriaProducto ? `CATEGORIA: ${categoriaProducto.toUpperCase()}` : ''}
 CANTIDAD: ${cantidad}
-PRECIO:   C$${precioUnitario}
+PRECIO: C$${precioUnitario}
 -----------------------------------------
-
-TOTAL:      ${totalFormateado.padStart(14)}
-RECIBIDO:   ${recibidoFormateado.padStart(14)}
-VUELTO:     ${vueltoFormateado.padStart(14)}
+TOTAL:    C$${parseFloat(totalVenta).toFixed(2)}
+RECIBIDO:    C$${parseFloat(montoRecibido).toFixed(2)}
+VUELTO:    C$${parseFloat(vuelto).toFixed(2)}
 -----------------------------------------
 METODO PAGO: ${metodoPagoTexto}
 ${metodoPago === 'mixto' ? `
 DESGLOSE PAGO:
-EFECTIVO:    C$${montoEfectivo.toFixed(2).padStart(10)}
-TARJETA:     C$${montoTarjeta.toFixed(2).padStart(10)}
-TRANSFERENC: C$${montoTransferencia.toFixed(2).padStart(10)}
+EFECTIVO:    C$${montoEfectivo.toFixed(2)}
+TARJETA:     C$${montoTarjeta.toFixed(2)}
+TRANSFERENC: C$${montoTransferencia.toFixed(2)}
 ` : ''}
 ${bancoInfo ? bancoInfo + '\n' : ''}
 -----------------------------------------
-   ¡GRACIAS POR SU COMPRA!
-   Vuelva pronto
-
-=========================================`;
+¡GRACIAS POR SU COMPRA!
+Vuelva pronto
+`;
 
   return ticket.trim();
 };
