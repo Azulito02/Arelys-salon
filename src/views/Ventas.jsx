@@ -214,13 +214,10 @@ const generarContenidoTicket = (venta) => {
   const nombreNegocio = "ARELY Z SALON";
 
   // Construir el ticket con ORDEN CORRECTO
-    const ticket = `
-¡GRACIAS POR SU COMPRA!
-Vuelva pronto
-
-ARELY Z SALON
-En frente de la miel de los pajaritos
-Tel: 7715-4242
+  const ticket = `[C]
+${nombreNegocio}
+${direccionNegocio}
+Tel: ${telefonoNegocio}
 -----------------------------------------
         TICKET DE VENTA
 -----------------------------------------
@@ -247,7 +244,9 @@ TRANSFERENC: C$${montoTransferencia.toFixed(2)}
 ` : ''}
 ${bancoInfo ? bancoInfo + '\n' : ''}
 -----------------------------------------
-`;
+¡GRACIAS POR SU COMPRA!
+Vuelva pronto
+[C]`;
 
   return ticket.trim();
 };
