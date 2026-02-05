@@ -114,15 +114,14 @@ const Ventas = () => {
     }
   }
 
-  // ==============================================
-// GENERAR CONTENIDO DEL TICKET - CON EL MISMO FORMATO DE FECHA
+// ==============================================
+// GENERAR CONTENIDO DEL TICKET - COMPLETO CON TELÉFONO Y DIRECCIÓN
 // ==============================================
 
 const generarContenidoTicket = (venta) => {
-  // 1. Función de formato IDÉNTICA a la de TablaVentas.js
+  // Función de formato EXACTA a TablaVentas.js
   const formatFechaNicaragua = (fechaISO) => {
     if (!fechaISO) {
-      // Si no hay fecha, usar la fecha actual
       const fechaActual = new Date();
       const fechaUTC = new Date(fechaActual.getTime());
       const fechaNicaragua = new Date(fechaUTC.getTime() - (6 * 60 * 60 * 1000));
@@ -142,7 +141,6 @@ const generarContenidoTicket = (venta) => {
     }
     
     const fechaUTC = new Date(fechaISO);
-    // RESTAR 6 horas para convertir UTC a Nicaragua (Juigalpa)
     const fechaNicaragua = new Date(fechaUTC.getTime() - (6 * 60 * 60 * 1000));
     
     const dia = fechaNicaragua.getDate().toString().padStart(2, '0');
@@ -159,56 +157,78 @@ const generarContenidoTicket = (venta) => {
     return `${dia}/${mes}/${año}, ${horas}:${minutos} ${ampm}`;
   };
 
-  // 2. Información básica - USANDO LA MISMA FUNCIÓN
+  // Información básica
   const fecha = formatFechaNicaragua(venta.fecha);
 
-  // 3. Información del producto
+  // Información del producto
   const nombreProducto = venta.productos?.nombre || "Producto sin nombre";
   const categoriaProducto = venta.productos?.categoria || "";
-  const cantidad = venta.cantidad || 0;
+  const cantidad = venta.cantidad || 1;
   const precioUnitario = Number(venta.precio_unitario || 0).toFixed(2);
-  const totalVenta = Number(venta.total || 0);
+  const totalVenta = Number(venta.total || 0).toFixed(2);
 
-  // 4. Cálculos
-  const iva = totalVenta * 0.15; // 15% de IVA
-  const subtotal = totalVenta - iva;
+  // Número de venta
   const numeroVenta = venta.id ? venta.id.substring(0, 8).toUpperCase() : "00000000";
   
-  // 5. Método de pago
+  // Método de pago
   let metodoPago = venta.metodo_pago || "efectivo";
+  let metodoPagoTexto = "";
   let bancoInfo = "";
   let montoEfectivo = 0;
   let montoTarjeta = 0;
   let montoTransferencia = 0;
+  let montoRecibido = 0;
+  let vuelto = venta.vuelto || 0;
   
-  if (venta.metodo_pago === "mixto") {
-    metodoPago = "Mixto";
+  // Determinar montos según método de pago
+  if (metodoPago === "mixto") {
+    metodoPagoTexto = "MIXTO";
     montoEfectivo = venta.efectivo || 0;
     montoTarjeta = venta.tarjeta || 0;
     montoTransferencia = venta.transferencia || 0;
+    montoRecibido = montoEfectivo + montoTarjeta + montoTransferencia;
     bancoInfo = venta.banco ? `BANCO: ${venta.banco.toUpperCase()}` : "";
-  } else if (venta.metodo_pago === "tarjeta") {
-    metodoPago = "Tarjeta";
-    montoTarjeta = venta.tarjeta || totalVenta;
+  } 
+  else if (metodoPago === "tarjeta") {
+    metodoPagoTexto = "TARJETA";
+    montoTarjeta = venta.tarjeta || parseFloat(totalVenta);
+    montoRecibido = montoTarjeta;
     bancoInfo = venta.banco ? `BANCO: ${venta.banco.toUpperCase()}` : "";
-  } else if (venta.metodo_pago === "transferencia") {
-    metodoPago = "Transferencia";
-    montoTransferencia = venta.transferencia || totalVenta;
+  } 
+  else if (metodoPago === "transferencia") {
+    metodoPagoTexto = "TRANSFERENCIA";
+    montoTransferencia = venta.transferencia || parseFloat(totalVenta);
+    montoRecibido = montoTransferencia;
     bancoInfo = venta.banco ? `BANCO: ${venta.banco.toUpperCase()}` : "";
-  } else {
+  } 
+  else {
     // efectivo
-    metodoPago = "Efectivo";
-    montoEfectivo = venta.efectivo || totalVenta;
+    metodoPagoTexto = "EFECTIVO";
+    montoEfectivo = venta.efectivo || parseFloat(totalVenta);
+    montoRecibido = montoEfectivo;
   }
 
-  // 6. Construir el ticket con formato mejorado
-  const ticket = `
-        ARELYZ SALON
-=========================================
-         TICKET DE VENTA
-=========================================
-          #${numeroVenta}
-          ${fecha}
+  // Información del negocio (puedes cambiar estos datos)
+  const telefonoNegocio = "7715-4242";
+  const direccionNegocio = "Juigalpa, Chontales";
+  const nombreNegocio = "ARELY Z SALON";
+
+  // Formatear montos para alineación
+  const totalFormateado = `C$${parseFloat(totalVenta).toFixed(2)}`;
+  const recibidoFormateado = `C$${parseFloat(montoRecibido).toFixed(2)}`;
+  const vueltoFormateado = `C$${parseFloat(vuelto).toFixed(2)}`;
+
+  // Construir el ticket COMPLETO CON TELÉFONO Y DIRECCIÓN
+  const ticket = `CORTE AUTOMATICO
+
+${nombreNegocio}
+${direccionNegocio}
+Tel: ${telefonoNegocio}
+-----------------------------------------
+        TICKET DE VENTA
+-----------------------------------------
+        #${numeroVenta}
+        ${fecha}
 
 CLIENTE: Cliente de Mostrador
 -----------------------------------------
@@ -217,30 +237,28 @@ ${categoriaProducto ? `CATEGORIA: ${categoriaProducto.toUpperCase()}` : ''}
 CANTIDAD: ${cantidad}
 PRECIO:   C$${precioUnitario}
 -----------------------------------------
-TOTAL:         C$${totalVenta.toFixed(2).padStart(10)}
+
+TOTAL:      ${totalFormateado.padStart(14)}
+RECIBIDO:   ${recibidoFormateado.padStart(14)}
+VUELTO:     ${vueltoFormateado.padStart(14)}
 -----------------------------------------
-MÉTODO PAGO: ${metodoPago.toUpperCase()}
-
-${metodoPago === 'Mixto' ? `
-DESGLOSE:
-EFECTIVO:    C$${montoEfectivo.toFixed(2)}
-TARJETA:     C$${montoTarjeta.toFixed(2)}
-TRANSFERENC: C$${montoTransferencia.toFixed(2)}
+METODO PAGO: ${metodoPagoTexto}
+${metodoPago === 'mixto' ? `
+DESGLOSE PAGO:
+EFECTIVO:    C$${montoEfectivo.toFixed(2).padStart(10)}
+TARJETA:     C$${montoTarjeta.toFixed(2).padStart(10)}
+TRANSFERENC: C$${montoTransferencia.toFixed(2).padStart(10)}
 ` : ''}
-
-${bancoInfo}
+${bancoInfo ? bancoInfo + '\n' : ''}
 -----------------------------------------
    ¡GRACIAS POR SU COMPRA!
-   Tel: 1234-5678
-   
+   Vuelva pronto
 
-=========================================
-         CORTE AUTOMÁTICO
-=========================================
-`;
+=========================================`;
 
   return ticket.trim();
 };
+
   // ==============================================
   // FALLBACK PARA COPIAR CONTENIDO (MANTENER IGUAL)
   // ==============================================
