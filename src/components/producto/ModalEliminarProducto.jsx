@@ -1,14 +1,54 @@
-import './ModalEliminarProducto.css'
+import React, { useState, useEffect } from 'react'
+import './ModalEliminarProducto.css' // <-- Asegúrate de importar este CSS
 
 const ModalEliminarProducto = ({ isOpen, onClose, onConfirm, producto }) => {
+  const [isDeleting, setIsDeleting] = useState(false)
+  
+  useEffect(() => {
+    if (!isOpen) {
+      setIsDeleting(false)
+    }
+  }, [isOpen])
+
   if (!isOpen || !producto) return null
 
+  const handleConfirm = async () => {
+    setIsDeleting(true)
+    try {
+      await onConfirm()
+      // El cierre lo maneja el componente padre
+    } catch (error) {
+      console.error('Error al eliminar producto:', error)
+      alert('Error al eliminar el producto')
+      setIsDeleting(false)
+    }
+  }
+
+  const handleClose = (e) => {
+    e.stopPropagation()
+    if (!isDeleting) {
+      onClose()
+    }
+  }
+
+  const handleOverlayClick = (e) => {
+    if (e.target === e.currentTarget && !isDeleting) {
+      onClose()
+    }
+  }
+
   return (
-    <div className="modal-overlay">
-      <div className="modal-contenedor modal-eliminar">
+    <div className="modal-overlay" onClick={handleOverlayClick}>
+      <div className="modal-contenedor" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <h3 className="modal-titulo">Eliminar Producto</h3>
-          <button onClick={onClose} className="modal-cerrar">
+          <button 
+            onClick={handleClose}
+            className="modal-cerrar"
+            disabled={isDeleting}
+            type="button"
+            aria-label="Cerrar modal"
+          >
             ×
           </button>
         </div>
@@ -45,7 +85,7 @@ const ModalEliminarProducto = ({ isOpen, onClose, onConfirm, producto }) => {
             <div className="info-item">
               <span className="info-label">Precio:</span>
               <span className="info-valor precio">
-                ${parseFloat(producto.precio).toLocaleString('es-MX', { 
+                C${parseFloat(producto.precio || 0).toLocaleString('es-MX', { 
                   minimumFractionDigits: 2 
                 })}
               </span>
@@ -59,17 +99,30 @@ const ModalEliminarProducto = ({ isOpen, onClose, onConfirm, producto }) => {
         
         <div className="modal-footer">
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="boton-secundario"
+            disabled={isDeleting}
+            type="button"
           >
             Cancelar
           </button>
           <button
-            onClick={onConfirm}
+            onClick={handleConfirm}
             className="boton-peligro"
+            disabled={isDeleting}
+            type="button"
           >
-            <span className="boton-icono">🗑️</span>
-            Sí, eliminar producto
+            {isDeleting ? (
+              <>
+                <span className="spinner"></span>
+                Eliminando...
+              </>
+            ) : (
+              <>
+                <span className="boton-icono">🗑️</span>
+                Sí, eliminar producto
+              </>
+            )}
           </button>
         </div>
       </div>

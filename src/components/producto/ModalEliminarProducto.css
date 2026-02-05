@@ -1,34 +1,120 @@
-.modal-eliminar {
-  max-width: 450px;
+/* ModalEliminarProducto.css - MISMO ESTILO QUE MODAL AGREGAR */
+
+/* Overlay del modal - IGUAL AL DE AGREGAR */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+  animation: fadeIn 0.2s ease;
 }
 
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* Contenedor principal - MISMAS DIMENSIONES */
+.modal-contenedor {
+  background: white;
+  border-radius: 12px;
+  width: 100%;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  overflow: hidden;
+}
+
+/* Header - MISMO ESTILO */
+.modal-header {
+  padding: 24px 24px 16px 24px;
+  border-bottom: 1px solid #e5e7eb;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-titulo {
+  font-size: 24px;
+  font-weight: 600;
+  color: #111827;
+  margin: 0;
+  text-align: left;
+  line-height: 1.3;
+}
+
+.modal-cerrar {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: #6b7280;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+}
+
+.modal-cerrar:hover {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+.modal-cerrar:active {
+  background-color: #e5e7eb;
+}
+
+/* Cuerpo del modal - MISMO PADDING */
+.modal-body {
+  padding: 24px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+/* Icono de advertencia */
 .advertencia-icono {
   text-align: center;
   font-size: 48px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+  color: #dc2626;
 }
 
+/* Título de advertencia */
 .advertencia-titulo {
   text-align: center;
   font-size: 18px;
   font-weight: 600;
-  color: #1e293b;
-  margin-bottom: 20px;
+  color: #111827;
+  margin-bottom: 24px;
+  line-height: 1.4;
 }
 
+/* Información del producto - ESTILO LIMPIO COMO INPUTS */
 .producto-info {
-  background: #f8fafc;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
-  padding: 16px;
-  margin-bottom: 20px;
-  border: 1px solid #e2e8f0;
+  padding: 20px;
+  margin-bottom: 24px;
 }
 
 .info-item {
   display: flex;
-  margin-bottom: 12px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .info-item:last-child {
@@ -38,16 +124,19 @@
 }
 
 .info-label {
-  flex: 0 0 100px;
+  flex: 0 0 120px;
   font-size: 14px;
-  font-weight: 600;
-  color: #64748b;
+  font-weight: 500;
+  color: #374151;
+  line-height: 1.5;
 }
 
 .info-valor {
   flex: 1;
   font-size: 14px;
-  color: #1e293b;
+  color: #111827;
+  font-weight: 400;
+  line-height: 1.5;
 }
 
 .info-valor.precio {
@@ -55,39 +144,223 @@
   color: #dc2626;
 }
 
+/* Mensaje de advertencia */
 .advertencia-mensaje {
   background: #fef2f2;
-  color: #dc2626;
-  padding: 12px 16px;
+  color: #991b1b;
+  padding: 16px;
   border-radius: 8px;
   font-size: 14px;
   font-weight: 500;
   border-left: 4px solid #dc2626;
+  text-align: center;
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+/* Footer - MISMO ESTILO EXACTO */
+.modal-footer {
+  padding: 20px 24px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  gap: 12px;
+  background: #f9fafb;
+}
+
+/* Botones - MISMOS QUE MODAL AGREGAR */
+.boton-secundario, .boton-peligro {
+  flex: 1;
+  padding: 12px 20px;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all 0.15s ease;
+  text-align: center;
+  min-height: 44px;
+}
+
+.boton-secundario {
+  background: white;
+  color: #374151;
+  border: 1px solid #d1d5db;
+}
+
+.boton-secundario:hover {
+  background: #f3f4f6;
+  border-color: #9ca3af;
+}
+
+.boton-secundario:active {
+  background: #e5e7eb;
 }
 
 .boton-peligro {
-  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  background: #dc2626;
   color: white;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  border: none;
-  transition: all 0.2s ease;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
 }
 
 .boton-peligro:hover {
-  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+  background: #b91c1c;
 }
 
-/* Ajustes para mostrar categoría en modal de eliminar */
-.info-item span:first-child {
-  min-width: 100px;
-  color: #6b7280;
+.boton-peligro:active {
+  background: #991b1b;
+}
+
+.boton-icono {
+  font-size: 18px;
+}
+
+/* Estado de deshabilitado */
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button:disabled:hover {
+  background: inherit;
+  transform: none;
+}
+
+/* Spinner */
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 8px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* =========================== */
+/* DISEÑO PARA MÓVIL (iPhone SE/8) - MISMO RESPONSIVE */
+/* =========================== */
+@media (max-width: 375px) {
+  .modal-overlay {
+    padding: 8px;
+    align-items: flex-start;
+    padding-top: 20px;
+  }
+  
+  .modal-contenedor {
+    max-height: 95vh;
+    border-radius: 8px;
+  }
+  
+  .modal-header {
+    padding: 20px 16px 12px 16px;
+  }
+  
+  .modal-titulo {
+    font-size: 20px;
+  }
+  
+  .modal-body {
+    padding: 16px;
+    overflow-y: auto;
+  }
+  
+  .advertencia-icono {
+    font-size: 40px;
+    margin-bottom: 12px;
+  }
+  
+  .advertencia-titulo {
+    font-size: 16px;
+    margin-bottom: 20px;
+  }
+  
+  .producto-info {
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+  
+  .info-item {
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+  }
+  
+  .info-label {
+    flex: none;
+    font-size: 13px;
+  }
+  
+  .info-valor {
+    font-size: 14px;
+  }
+  
+  .advertencia-mensaje {
+    padding: 12px;
+    font-size: 13px;
+  }
+  
+  .modal-footer {
+    padding: 16px;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .boton-secundario, .boton-peligro {
+    width: 100%;
+    min-height: 48px;
+    font-size: 15px;
+  }
+  
+  /* Ajuste específico para pantallas muy pequeñas */
+  @media (max-height: 667px) {
+    .modal-contenedor {
+      max-height: 85vh;
+    }
+    
+    .modal-body {
+      max-height: 60vh;
+    }
+  }
+}
+
+/* =========================== */
+/* DISEÑO PARA TABLETS - IGUAL */
+/* =========================== */
+@media (min-width: 376px) and (max-width: 768px) {
+  .modal-overlay {
+    padding: 20px;
+  }
+  
+  .modal-contenedor {
+    max-width: 90%;
+    max-height: 85vh;
+  }
+  
+  .modal-footer {
+    padding: 20px 24px;
+    gap: 16px;
+  }
+  
+  .boton-secundario, .boton-peligro {
+    padding: 14px 24px;
+  }
+}
+
+/* =========================== */
+/* DISEÑO PARA ESCRITORIO - IGUAL */
+/* =========================== */
+@media (min-width: 769px) {
+  .modal-contenedor {
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 
+                0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  }
 }
