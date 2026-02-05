@@ -214,7 +214,7 @@ const generarContenidoTicket = (venta) => {
   const nombreNegocio = "ARELY Z SALON";
 
   // Construir el ticket con ORDEN CORRECTO
-  const ticket = `[C]
+  const ticket = `
 ${nombreNegocio}
 ${direccionNegocio}
 Tel: ${telefonoNegocio}
@@ -231,22 +231,22 @@ ${categoriaProducto ? `CATEGORIA: ${categoriaProducto.toUpperCase()}` : ''}
 CANTIDAD: ${cantidad}
 PRECIO: C$${precioUnitario}
 -----------------------------------------
-TOTAL: C$${parseFloat(totalVenta).toFixed(2)}
-RECIBIDO: C$${parseFloat(montoRecibido).toFixed(2)}
-VUELTO: C$${parseFloat(vuelto).toFixed(2)}
+TOTAL:    C$${parseFloat(totalVenta).toFixed(2)}
+RECIBIDO:    C$${parseFloat(montoRecibido).toFixed(2)}
+VUELTO:    C$${parseFloat(vuelto).toFixed(2)}
 -----------------------------------------
 METODO PAGO: ${metodoPagoTexto}
 ${metodoPago === 'mixto' ? `
 DESGLOSE PAGO:
-EFECTIVO: C$${montoEfectivo.toFixed(2)}
-TARJETA: C$${montoTarjeta.toFixed(2)}
+EFECTIVO:    C$${montoEfectivo.toFixed(2)}
+TARJETA:     C$${montoTarjeta.toFixed(2)}
 TRANSFERENC: C$${montoTransferencia.toFixed(2)}
 ` : ''}
 ${bancoInfo ? bancoInfo + '\n' : ''}
 -----------------------------------------
 ¡GRACIAS POR SU COMPRA!
 Vuelva pronto
-[C]`;
+`;
 
   return ticket.trim();
 };
