@@ -217,8 +217,6 @@ ${categoriaProducto ? `CATEGORIA: ${categoriaProducto.toUpperCase()}` : ''}
 CANTIDAD: ${cantidad}
 PRECIO:   C$${precioUnitario}
 -----------------------------------------
-
-SUBTOTAL:      C$${subtotal.toFixed(2).padStart(10)}
 TOTAL:         C$${totalVenta.toFixed(2).padStart(10)}
 -----------------------------------------
 MÉTODO PAGO: ${metodoPago.toUpperCase()}
