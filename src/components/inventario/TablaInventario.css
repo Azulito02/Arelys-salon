@@ -13,7 +13,7 @@
   width: 100%;
 }
 
-/* Contenedor scrollable para desktop - ¡ESTO ES IMPORTANTE! */
+/* Contenedor scrollable para desktop */
 .tabla-scroll-container {
   overflow-x: auto;
   width: 100%;
@@ -263,6 +263,80 @@
   background: #94a3b8;
 }
 
+/* Buscador para inventario */
+.buscador-creditos {
+  margin-bottom: 20px;
+  background: white;
+  border-radius: 12px;
+  padding: 16px 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
+  border: 1px solid #e5e7eb;
+}
+
+.buscador-input-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.buscador-icono {
+  position: absolute;
+  left: 14px;
+  width: 20px;
+  height: 20px;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.buscador-input {
+  width: 100%;
+  padding: 12px 40px 12px 44px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1e293b;
+  background-color: #f8fafc;
+  transition: all 0.2s;
+}
+
+.buscador-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  background-color: white;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.buscador-limpiar {
+  position: absolute;
+  right: 14px;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.buscador-limpiar:hover {
+  color: #64748b;
+  background-color: #f1f5f9;
+}
+
+.buscador-info {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #64748b;
+  display: flex;
+  justify-content: space-between;
+}
+
 /* ============ ESTILOS PARA MÓVIL ============ */
 @media (max-width: 768px) {
   .tabla-inventario-container {
@@ -359,7 +433,7 @@
     font-weight: 600;
   }
   
-  /* Fechas en móvil */
+  /* Fechas en móvil - CON HORA */
   .inventario-fechas-mobile {
     display: flex;
     flex-direction: column;
@@ -373,7 +447,7 @@
   .inventario-fecha-item {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     padding: 4px 0;
   }
   
@@ -381,6 +455,7 @@
     font-size: 13px;
     color: #64748b;
     font-weight: 500;
+    min-width: 70px;
   }
   
   .inventario-fecha-valor {
@@ -388,6 +463,11 @@
     color: #1e293b;
     font-weight: 600;
     font-family: 'SF Mono', 'Monaco', monospace;
+    text-align: right;
+    line-height: 1.4;
+    flex: 1;
+    margin-left: 10px;
+    white-space: normal;
   }
   
   /* Acciones en móvil */
@@ -420,6 +500,61 @@
   .inventario-action-btn.eliminar {
     background-color: #fee2e2;
     color: #dc2626;
+  }
+  
+  /* Buscador móvil */
+  .buscador-mobile {
+    margin-bottom: 16px;
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 10;
+    padding: 8px 0;
+  }
+  
+  .buscador-mobile-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  
+  .buscador-mobile-icono {
+    position: absolute;
+    left: 14px;
+    width: 20px;
+    height: 20px;
+    color: #94a3b8;
+  }
+  
+  .buscador-mobile-input {
+    width: 100%;
+    padding: 12px 40px 12px 44px;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 16px;
+    color: #1e293b;
+    background-color: #f8fafc;
+  }
+  
+  .buscador-mobile-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    background-color: white;
+  }
+  
+  .buscador-mobile-limpiar {
+    position: absolute;
+    right: 14px;
+    background: none;
+    border: none;
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 18px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
   
   /* Sin resultados móvil */
@@ -463,21 +598,29 @@
   .resumen-inventario {
     display: none;
   }
+  
+  /* Ocultar buscador desktop en móvil */
+  .buscador-creditos {
+    display: none;
+  }
+  
+  .buscador-mobile {
+    display: block;
+  }
 }
 
 /* Mostrar tabla desktop en pantallas grandes */
 @media (min-width: 769px) {
   .tabla-mobile-view,
-  .resumen-mobile {
+  .resumen-mobile,
+  .buscador-mobile {
     display: none;
   }
   
-  .tabla-scroll-container {
+  .tabla-scroll-container,
+  .resumen-inventario,
+  .buscador-creditos {
     display: block;
-  }
-  
-  .resumen-inventario {
-    display: flex;
   }
 }
 
@@ -523,220 +666,43 @@
   }
 }
 
-
-
-/* Añadir al final del archivo TablaInventario.css */
-
-/* Buscador para inventario (similar a créditos) */
-.buscador-creditos {
-  margin-bottom: 20px;
-  background: white;
-  border-radius: 12px;
-  padding: 16px 20px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
-  border: 1px solid #e5e7eb;
-}
-
-.buscador-input-container {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.buscador-icono {
-  position: absolute;
-  left: 14px;
-  width: 20px;
-  height: 20px;
-  color: #94a3b8;
-  pointer-events: none;
-}
-
-.buscador-input {
-  width: 100%;
-  padding: 12px 40px 12px 44px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 14px;
-  color: #1e293b;
-  background-color: #f8fafc;
-  transition: all 0.2s;
-}
-
-.buscador-input:focus {
-  outline: none;
-  border-color: #3b82f6;
-  background-color: white;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-}
-
-.buscador-limpiar {
-  position: absolute;
-  right: 14px;
-  background: none;
-  border: none;
-  color: #94a3b8;
-  cursor: pointer;
-  font-size: 18px;
-  padding: 0;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  transition: all 0.2s;
-}
-
-.buscador-limpiar:hover {
-  color: #64748b;
-  background-color: #f1f5f9;
-}
-
-.buscador-info {
-  margin-top: 8px;
-  font-size: 13px;
-  color: #64748b;
-  display: flex;
-  justify-content: space-between;
-}
-
-/* Buscador móvil específico para inventario */
-.buscador-mobile {
-  margin-bottom: 16px;
-  position: sticky;
-  top: 0;
-  background: white;
-  z-index: 10;
-  padding: 8px 0;
-}
-
-.buscador-mobile-container {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.buscador-mobile-icono {
-  position: absolute;
-  left: 14px;
-  width: 20px;
-  height: 20px;
-  color: #94a3b8;
-}
-
-.buscador-mobile-input {
-  width: 100%;
-  padding: 12px 40px 12px 44px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 16px;
-  color: #1e293b;
-  background-color: #f8fafc;
-}
-
-.buscador-mobile-input:focus {
-  outline: none;
-  border-color: #3b82f6;
-  background-color: white;
-}
-
-.buscador-mobile-limpiar {
-  position: absolute;
-  right: 14px;
-  background: none;
-  border: none;
-  color: #94a3b8;
-  cursor: pointer;
-  font-size: 18px;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-/* Ocultar buscador desktop en móvil */
-@media (max-width: 768px) {
-  .buscador-creditos {
-    display: none;
-  }
-  
-  .buscador-mobile {
-    display: block;
-  }
-}
-
-/* Mostrar buscador desktop en pantallas grandes */
-@media (min-width: 769px) {
-  .buscador-mobile {
-    display: none;
-  }
-  
-  .buscador-creditos {
-    display: block;
-  }
-}
-
-
-/* Añadir al final del archivo TablaInventario.css para mejor visualización de fechas */
-
-/* Mejoras para las fechas en móvil */
-.inventario-fechas-mobile {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 12px 0;
-  padding: 12px;
-  background-color: #f8fafc;
-  border-radius: 8px;
-}
-
-.inventario-fecha-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 4px 0;
-}
-
-.inventario-fecha-label {
-  font-size: 13px;
-  color: #64748b;
-  font-weight: 500;
-  min-width: 70px;
-}
-
-.inventario-fecha-valor {
-  font-size: 13px;
-  color: #1e293b;
-  font-weight: 600;
-  font-family: 'SF Mono', 'Monaco', monospace;
-  text-align: right;
-  line-height: 1.4;
-  flex: 1;
-  margin-left: 10px;
-}
-
-/* Para que las fechas con hora no se rompan */
-.inventario-fecha-valor {
-  white-space: pre-line; /* Permite saltos de línea con \n */
-}
-
-/* Si prefieres todo en una línea en móvil (más compacto) */
-/* .inventario-fecha-valor {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-} */
-
-/* Ajustes para pantallas muy pequeñas */
+/* Ajustes para pantallas pequeñas en móvil */
 @media (max-width: 375px) {
-  .inventario-fecha-label {
-    font-size: 12px;
-    min-width: 60px;
+  .inventario-details-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
   }
   
-  .inventario-fecha-valor {
-    font-size: 12px;
+  .inventario-fechas-mobile {
+    padding: 8px;
+  }
+  
+  .inventario-actions-mobile {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .inventario-action-btn {
+    width: 100%;
+    justify-content: center;
+  }
+  
+  .resumen-mobile {
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+    text-align: center;
+  }
+  
+  .resumen-mobile-item {
+    width: 100%;
+  }
+  
+  .inventario-producto {
+    font-size: 15px;
+  }
+  
+  .inventario-codigo {
+    font-size: 13px;
   }
 }

@@ -4,66 +4,25 @@ import './TablaInventario.css'
 const TablaInventario = ({ inventario, loading, onEditar, onEliminar }) => {
   const [busqueda, setBusqueda] = useState('')
 
-  // Función para formatear fecha con hora de Nicaragua
+  // Función SIMPLE igual que TablaVentas
   const formatFechaNicaragua = (fechaISO) => {
-    if (!fechaISO) return 'Sin fecha';
+    if (!fechaISO) return 'Fecha no disponible';
     
-    const fechaUTC = new Date(fechaISO);
-    // RESTAR 6 horas para convertir UTC a Nicaragua
-    const fechaNicaragua = new Date(fechaUTC.getTime() - (6 * 60 * 60 * 1000));
+    const fecha = new Date(fechaISO);
     
-    const dia = fechaNicaragua.getDate().toString().padStart(2, '0');
-    const mes = (fechaNicaragua.getMonth() + 1).toString().padStart(2, '0');
-    const año = fechaNicaragua.getFullYear();
+    // Usar métodos locales directos
+    const dia = fecha.getDate().toString().padStart(2, '0');
+    const mes = (fecha.getMonth() + 1).toString().padStart(2, '0');
+    const año = fecha.getFullYear();
     
-    let horas = fechaNicaragua.getHours();
-    const minutos = fechaNicaragua.getMinutes().toString().padStart(2, '0');
+    let horas = fecha.getHours();  // getHours() local, no UTC
+    const minutos = fecha.getMinutes().toString().padStart(2, '0');
     const ampm = horas >= 12 ? 'p.m.' : 'a.m.';
     
     horas = horas % 12;
     horas = horas ? horas.toString().padStart(2, '0') : '12';
     
     return `${dia}/${mes}/${año}, ${horas}:${minutos} ${ampm}`;
-  };
-
-  // Función para formatear fecha para móvil (con hora) - Versión compacta
-  const formatFechaMobile = (fechaISO) => {
-    if (!fechaISO) return 'Sin fecha';
-    
-    const fechaUTC = new Date(fechaISO);
-    const fechaNicaragua = new Date(fechaUTC.getTime() - (6 * 60 * 60 * 1000));
-    
-    const dia = fechaNicaragua.getDate().toString().padStart(2, '0');
-    const mes = (fechaNicaragua.getMonth() + 1).toString().padStart(2, '0');
-    const año = fechaNicaragua.getFullYear();
-    
-    let horas = fechaNicaragua.getHours();
-    const minutos = fechaNicaragua.getMinutes().toString().padStart(2, '0');
-    const ampm = horas >= 12 ? 'p.m.' : 'a.m.';
-    
-    horas = horas % 12;
-    horas = horas ? horas.toString().padStart(2, '0') : '12';
-    
-    return `${dia}/${mes}/${año}\n${horas}:${minutos} ${ampm}`;
-  };
-
-  // Función para formatear solo fecha (sin hora) - para edición si no hay hora
-  const formatSoloFecha = (fechaStr) => {
-    if (!fechaStr) return 'No editado';
-    
-    try {
-      const fecha = new Date(fechaStr);
-      if (isNaN(fecha.getTime())) return 'Fecha inválida';
-      
-      const dia = fecha.getDate().toString().padStart(2, '0');
-      const mes = (fecha.getMonth() + 1).toString().padStart(2, '0');
-      const año = fecha.getFullYear();
-      
-      return `${dia}/${mes}/${año}`;
-    } catch (error) {
-      console.error('Error formateando fecha:', error);
-      return 'Error fecha';
-    }
   };
 
   // Filtrar por búsqueda
@@ -130,7 +89,7 @@ const TablaInventario = ({ inventario, loading, onEditar, onEliminar }) => {
             </div>
           </div>
           
-          {/* FECHAS CON HORA - IGUAL QUE DESKTOP */}
+          {/* FECHAS - MISMA FUNCIÓN PARA AMBAS */}
           <div className="inventario-fechas-mobile">
             <div className="inventario-fecha-item">
               <span className="inventario-fecha-label">Registro:</span>
@@ -138,14 +97,14 @@ const TablaInventario = ({ inventario, loading, onEditar, onEliminar }) => {
                 {formatFechaNicaragua(item.fecha)}
               </span>
             </div>
-            {item.fecha_edicion && (
-              <div className="inventario-fecha-item">
-                <span className="inventario-fecha-label">Editado:</span>
-                <span className="inventario-fecha-valor">
-                  {formatFechaNicaragua(item.fecha_edicion)}
-                </span>
-              </div>
-            )}
+            <div className="inventario-fecha-item">
+              <span className="inventario-fecha-label">Editado:</span>
+              <span className="inventario-fecha-valor">
+                {item.fecha_edicion 
+                  ? formatFechaNicaragua(item.fecha_edicion)
+                  : 'No editado'}
+              </span>
+            </div>
           </div>
           
           <div className="inventario-actions-mobile">
