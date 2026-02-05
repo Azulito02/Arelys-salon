@@ -115,53 +115,93 @@ const Ventas = () => {
   }
 
   // ==============================================
-// GENERAR CONTENIDO DEL TICKET - VERSIÓN CORREGIDA
+// GENERAR CONTENIDO DEL TICKET - CON EL MISMO FORMATO DE FECHA
 // ==============================================
 
 const generarContenidoTicket = (venta) => {
-  // 1. Información básica
-  const fecha = venta.fecha 
-    ? new Date(venta.fecha).toLocaleString("es-NI", { 
-        year: "2-digit", 
-        month: "2-digit", 
-        day: "2-digit", 
-        hour: "2-digit", 
-        minute: "2-digit" 
-      })
-    : new Date().toLocaleString("es-NI", {
-        year: "2-digit", 
-        month: "2-digit", 
-        day: "2-digit", 
-        hour: "2-digit", 
-        minute: "2-digit"
-      })
+  // 1. Función de formato IDÉNTICA a la de TablaVentas.js
+  const formatFechaNicaragua = (fechaISO) => {
+    if (!fechaISO) {
+      // Si no hay fecha, usar la fecha actual
+      const fechaActual = new Date();
+      const fechaUTC = new Date(fechaActual.getTime());
+      const fechaNicaragua = new Date(fechaUTC.getTime() - (6 * 60 * 60 * 1000));
+      
+      const dia = fechaNicaragua.getDate().toString().padStart(2, '0');
+      const mes = (fechaNicaragua.getMonth() + 1).toString().padStart(2, '0');
+      const año = fechaNicaragua.getFullYear();
+      
+      let horas = fechaNicaragua.getHours();
+      const minutos = fechaNicaragua.getMinutes().toString().padStart(2, '0');
+      const ampm = horas >= 12 ? 'p.m.' : 'a.m.';
+      
+      horas = horas % 12;
+      horas = horas ? horas.toString().padStart(2, '0') : '12';
+      
+      return `${dia}/${mes}/${año}, ${horas}:${minutos} ${ampm}`;
+    }
+    
+    const fechaUTC = new Date(fechaISO);
+    // RESTAR 6 horas para convertir UTC a Nicaragua (Juigalpa)
+    const fechaNicaragua = new Date(fechaUTC.getTime() - (6 * 60 * 60 * 1000));
+    
+    const dia = fechaNicaragua.getDate().toString().padStart(2, '0');
+    const mes = (fechaNicaragua.getMonth() + 1).toString().padStart(2, '0');
+    const año = fechaNicaragua.getFullYear();
+    
+    let horas = fechaNicaragua.getHours();
+    const minutos = fechaNicaragua.getMinutes().toString().padStart(2, '0');
+    const ampm = horas >= 12 ? 'p.m.' : 'a.m.';
+    
+    horas = horas % 12;
+    horas = horas ? horas.toString().padStart(2, '0') : '12';
+    
+    return `${dia}/${mes}/${año}, ${horas}:${minutos} ${ampm}`;
+  };
 
-  // 2. Información del producto
-  const nombreProducto = venta.productos?.nombre || "Producto sin nombre"
-  const cantidad = venta.cantidad || 0
-  const precioUnitario = Number(venta.precio_unitario || 0).toFixed(2)
-  const totalVenta = Number(venta.total || 0)
+  // 2. Información básica - USANDO LA MISMA FUNCIÓN
+  const fecha = formatFechaNicaragua(venta.fecha);
 
-  // 3. Cálculos
-  const iva = totalVenta * 0.15 // 15% de IVA
-  const subtotal = totalVenta - iva
-  const numeroVenta = venta.id ? venta.id.substring(0, 8) : "00000000"
+  // 3. Información del producto
+  const nombreProducto = venta.productos?.nombre || "Producto sin nombre";
+  const categoriaProducto = venta.productos?.categoria || "";
+  const cantidad = venta.cantidad || 0;
+  const precioUnitario = Number(venta.precio_unitario || 0).toFixed(2);
+  const totalVenta = Number(venta.total || 0);
+
+  // 4. Cálculos
+  const iva = totalVenta * 0.15; // 15% de IVA
+  const subtotal = totalVenta - iva;
+  const numeroVenta = venta.id ? venta.id.substring(0, 8).toUpperCase() : "00000000";
   
-  // 4. Método de pago
-  let metodoPago = venta.metodo_pago || "Efectivo"
-  let bancoInfo = ""
+  // 5. Método de pago
+  let metodoPago = venta.metodo_pago || "efectivo";
+  let bancoInfo = "";
+  let montoEfectivo = 0;
+  let montoTarjeta = 0;
+  let montoTransferencia = 0;
   
   if (venta.metodo_pago === "mixto") {
-    metodoPago = "Mixto"
-  } else if (venta.tarjeta > 0) {
-    metodoPago = "Tarjeta"
-    bancoInfo = venta.banco ? `BANCO: ${venta.banco}` : ""
-  } else if (venta.transferencia > 0) {
-    metodoPago = "Transferencia"
-    bancoInfo = venta.banco ? `BANCO: ${venta.banco}` : ""
+    metodoPago = "Mixto";
+    montoEfectivo = venta.efectivo || 0;
+    montoTarjeta = venta.tarjeta || 0;
+    montoTransferencia = venta.transferencia || 0;
+    bancoInfo = venta.banco ? `BANCO: ${venta.banco.toUpperCase()}` : "";
+  } else if (venta.metodo_pago === "tarjeta") {
+    metodoPago = "Tarjeta";
+    montoTarjeta = venta.tarjeta || totalVenta;
+    bancoInfo = venta.banco ? `BANCO: ${venta.banco.toUpperCase()}` : "";
+  } else if (venta.metodo_pago === "transferencia") {
+    metodoPago = "Transferencia";
+    montoTransferencia = venta.transferencia || totalVenta;
+    bancoInfo = venta.banco ? `BANCO: ${venta.banco.toUpperCase()}` : "";
+  } else {
+    // efectivo
+    metodoPago = "Efectivo";
+    montoEfectivo = venta.efectivo || totalVenta;
   }
 
-  // 5. Construir el ticket con formato correcto
+  // 6. Construir el ticket con formato mejorado
   const ticket = `
         ARELYZ SALON
 =========================================
@@ -172,7 +212,8 @@ const generarContenidoTicket = (venta) => {
 
 CLIENTE: Cliente de Mostrador
 -----------------------------------------
-PRODUCTO: ${nombreProducto}
+PRODUCTO: ${nombreProducto.toUpperCase()}
+${categoriaProducto ? `CATEGORIA: ${categoriaProducto.toUpperCase()}` : ''}
 CANTIDAD: ${cantidad}
 PRECIO:   C$${precioUnitario}
 -----------------------------------------
@@ -181,6 +222,14 @@ SUBTOTAL:      C$${subtotal.toFixed(2).padStart(10)}
 TOTAL:         C$${totalVenta.toFixed(2).padStart(10)}
 -----------------------------------------
 MÉTODO PAGO: ${metodoPago.toUpperCase()}
+
+${metodoPago === 'Mixto' ? `
+DESGLOSE:
+EFECTIVO:    C$${montoEfectivo.toFixed(2)}
+TARJETA:     C$${montoTarjeta.toFixed(2)}
+TRANSFERENC: C$${montoTransferencia.toFixed(2)}
+` : ''}
+
 ${bancoInfo}
 -----------------------------------------
    ¡GRACIAS POR SU COMPRA!
@@ -190,10 +239,10 @@ ${bancoInfo}
 =========================================
          CORTE AUTOMÁTICO
 =========================================
-`
+`;
 
-  return ticket.trim()
-}
+  return ticket.trim();
+};
   // ==============================================
   // FALLBACK PARA COPIAR CONTENIDO (MANTENER IGUAL)
   // ==============================================
