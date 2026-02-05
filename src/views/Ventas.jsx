@@ -214,43 +214,32 @@ const generarContenidoTicket = (venta) => {
   const nombreNegocio = "ARELY Z SALON";
 
   // Construir el ticket con ORDEN CORRECTO
-  const ticket = `
-${nombreNegocio}
-${direccionNegocio}
-Tel: ${telefonoNegocio}
------------------------------------------
-        TICKET DE VENTA
------------------------------------------
+  const ticket = `ARELY Z SALON
+En frente de la miel de los pajaritos
+Tel: 7715-4242
+--------------------------------
+TICKET DE VENTA
+--------------------------------
 #${numeroVenta}
 ${fecha}
 
 CLIENTE: Cliente de Mostrador
------------------------------------------
-PRODUCTO: ${nombreProducto.toUpperCase()}
-${categoriaProducto ? `CATEGORIA: ${categoriaProducto.toUpperCase()}` : ''}
+--------------------------------
+PRODUCTO: ${nombreProducto}
+CATEGORIA: ${categoriaProducto}
 CANTIDAD: ${cantidad}
 PRECIO: C$${precioUnitario}
------------------------------------------
-TOTAL:    C$${parseFloat(totalVenta).toFixed(2)}
-RECIBIDO:    C$${parseFloat(montoRecibido).toFixed(2)}
-VUELTO:    C$${parseFloat(vuelto).toFixed(2)}
------------------------------------------
-METODO PAGO: ${metodoPagoTexto}
-${metodoPago === 'mixto' ? `
-DESGLOSE PAGO:
-EFECTIVO:    C$${montoEfectivo.toFixed(2)}
-TARJETA:     C$${montoTarjeta.toFixed(2)}
-TRANSFERENC: C$${montoTransferencia.toFixed(2)}
-` : ''}
-${bancoInfo ? bancoInfo + '\n' : ''}
------------------------------------------
-¡GRACIAS POR SU COMPRA!
-Vuelva pronto
-`;
+--------------------------------
+TOTAL: C$${totalVenta}
+RECIBIDO: C$${parseFloat(montoRecibido).toFixed(2)}
+VUELTO: C$${parseFloat(vuelto).toFixed(2)}
+--------------------------------
+METODO: ${metodoPagoTexto}
+--------------------------------
+GRACIAS POR SU COMPRA`;
 
-  return ticket.trim();
+  return ticket;
 };
-
   // ==============================================
   // FALLBACK PARA COPIAR CONTENIDO (MANTENER IGUAL)
   // ==============================================
