@@ -214,7 +214,7 @@ const generarContenidoTicket = (venta) => {
   const nombreNegocio = "ARELY Z SALON";
 
   // Construir el ticket con ORDEN CORRECTO
-  const ticket = `[C][L][L][L]  <!-- Reduce espacio inicial -->
+  const ticket = `[C]
 ${nombreNegocio}
 ${direccionNegocio}
 Tel: ${telefonoNegocio}
@@ -246,10 +246,11 @@ ${bancoInfo ? bancoInfo + '\n' : ''}
 -----------------------------------------
 ¡GRACIAS POR SU COMPRA!
 Vuelva pronto
-[L][L][L][C]  <!-- Avanza y corta al final -->`;
+[C]`;
 
   return ticket.trim();
 };
+
   // ==============================================
   // FALLBACK PARA COPIAR CONTENIDO (MANTENER IGUAL)
   // ==============================================
