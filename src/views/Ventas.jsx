@@ -115,7 +115,7 @@ const Ventas = () => {
   }
 
 // ==============================================
-// GENERAR CONTENIDO DEL TICKET - COMPLETO CON TELÉFONO Y DIRECCIÓN
+// GENERAR CONTENIDO DEL TICKET - VERSIÓN CORREGIDA SIN CORTE AUTOMATICO
 // ==============================================
 
 const generarContenidoTicket = (venta) => {
@@ -208,7 +208,7 @@ const generarContenidoTicket = (venta) => {
     montoRecibido = montoEfectivo;
   }
 
-  // Información del negocio (puedes cambiar estos datos)
+  // Información del negocio
   const telefonoNegocio = "7715-4242";
   const direccionNegocio = "Juigalpa, Chontales";
   const nombreNegocio = "ARELY Z SALON";
@@ -218,10 +218,8 @@ const generarContenidoTicket = (venta) => {
   const recibidoFormateado = `C$${parseFloat(montoRecibido).toFixed(2)}`;
   const vueltoFormateado = `C$${parseFloat(vuelto).toFixed(2)}`;
 
-  // Construir el ticket COMPLETO CON TELÉFONO Y DIRECCIÓN
-  const ticket = `CORTE AUTOMATICO
-
-${nombreNegocio}
+  // Construir el ticket - VERSIÓN CORREGIDA (sin CORTE AUTOMATICO al inicio)
+  const ticket = `${nombreNegocio}
 ${direccionNegocio}
 Tel: ${telefonoNegocio}
 -----------------------------------------
