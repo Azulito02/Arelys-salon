@@ -3,20 +3,138 @@
   margin-top: 24px;
 }
 
+/* Buscador para móvil */
+.buscador-mobile {
+  display: none;
+  margin-bottom: 20px;
+}
+
+.buscador-mobile-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: white;
+  border-radius: 12px;
+  padding: 8px 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.buscador-mobile-icono {
+  width: 20px;
+  height: 20px;
+  color: #94a3b8;
+  margin-right: 10px;
+}
+
+.buscador-mobile-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  padding: 8px 0;
+  background: transparent;
+  color: #1e293b;
+}
+
+.buscador-mobile-limpiar {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 0 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.buscador-mobile-limpiar:hover {
+  color: #64748b;
+}
+
+/* Buscador desktop */
+.buscador-abonos {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding: 15px 20px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.buscador-input-container {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+  max-width: 400px;
+}
+
+.buscador-icono {
+  position: absolute;
+  left: 15px;
+  width: 18px;
+  height: 18px;
+  color: #94a3b8;
+}
+
+.buscador-input {
+  width: 100%;
+  padding: 12px 15px 12px 45px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 15px;
+  background: #f8fafc;
+  transition: all 0.2s;
+}
+
+.buscador-input:focus {
+  outline: none;
+  border-color: #10b981;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
+
+.buscador-limpiar {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.buscador-limpiar:hover {
+  color: #64748b;
+}
+
+.buscador-info {
+  color: #64748b;
+  font-size: 14px;
+  margin-left: 20px;
+}
+
+/* Tarjeta de tabla */
 .tabla-abonos-card {
   background: white;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
-  border: 1px solid #e5e7eb;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
 }
 
-/* Scroll para desktop */
+/* Scroll container para desktop */
 .tabla-scroll-container {
   overflow-x: auto;
-  width: 100%;
 }
 
+/* Tabla principal */
 .tabla-abonos {
   width: 100%;
   border-collapse: collapse;
@@ -24,7 +142,7 @@
 }
 
 .tabla-abonos thead {
-  background-color: #f8fafc;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
 }
 
 .tabla-abonos th {
@@ -32,25 +150,25 @@
   text-align: left;
   font-size: 12px;
   font-weight: 600;
-  color: #64748b;
+  color: #065f46;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  border-bottom: 2px solid #e2e8f0;
+  letter-spacing: 0.5px;
+  border-bottom: 2px solid #a7f3d0;
   white-space: nowrap;
 }
 
 .tabla-abonos td {
-  padding: 18px 20px;
+  padding: 16px 20px;
   border-bottom: 1px solid #f1f5f9;
-  font-size: 14px;
-}
-
-.tabla-abonos tbody tr:last-child td {
-  border-bottom: none;
+  vertical-align: middle;
 }
 
 .tabla-abonos tbody tr:hover {
-  background-color: #f8fafc;
+  background-color: #f0fdf4;
+}
+
+.tabla-abonos tbody tr.credito-completado {
+  background-color: #f0fdf4;
 }
 
 /* Columnas específicas */
@@ -220,22 +338,420 @@
   stroke-width: 2.5;
 }
 
-/* Estados de carga y sin datos */
-.tabla-abonos .cargando-mensaje,
-.tabla-abonos .sin-registros {
+/* Estados de crédito */
+.badge-estado {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  display: inline-block;
   text-align: center;
+  white-space: nowrap;
+}
+
+.estado-credito-completado {
+  background-color: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.estado-credito-activo {
+  background-color: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+
+.estado-credito-por-vencer {
+  background-color: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.estado-credito-vencido {
+  background-color: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.estado-credito-sin-fecha {
+  background-color: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
+
+.estado-credito-no-encontrado {
+  background-color: #f3f4f6;
+  color: #6b7280;
+  border: 1px dashed #9ca3af;
+}
+
+/* Crédito completado */
+.credito-completado-badge {
+  display: inline-block;
+  background-color: #d1fae5;
+  color: #065f46;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  margin-top: 4px;
+  border: 1px solid #a7f3d0;
+}
+
+/* VISTA MÓVIL */
+.tabla-mobile-view {
+  display: none;
+  padding: 16px;
+}
+
+.abono-card-mobile {
+  background: white;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.abono-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #f1f5f9;
+  flex-wrap: wrap;
+}
+
+.abono-cliente {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-bottom: 4px;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.abono-producto {
+  font-size: 14px;
+  color: #64748b;
+  line-height: 1.4;
+  margin-top: 4px;
+}
+
+.credito-completado-badge-mobile {
+  background-color: #d1fae5;
+  color: #065f46;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1px solid #a7f3d0;
+}
+
+.abono-estado-mobile {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  margin-left: 8px;
+}
+
+.abono-estado-mobile.completado {
+  background-color: #d1fae5;
+  color: #065f46;
+  border: 1px solid #a7f3d0;
+}
+
+.abono-estado-mobile.activo {
+  background-color: #dbeafe;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+
+.abono-estado-mobile.por-vencer {
+  background-color: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.abono-estado-mobile.vencido {
+  background-color: #fee2e2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+/* Monto principal en móvil */
+.abono-monto-info {
+  margin-bottom: 16px;
+  padding: 12px;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-radius: 8px;
+  border: 1px solid #a7f3d0;
+}
+
+.abono-monto-principal {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.monto-label {
+  font-size: 14px;
+  color: #065f46;
+  font-weight: 600;
+}
+
+.monto-valor {
+  font-size: 20px;
+  font-weight: 700;
+  color: #059669;
+  font-family: 'SF Mono', 'Monaco', monospace;
+}
+
+.abono-porcentaje {
+  font-size: 13px;
+  color: #047857;
+  text-align: right;
+  font-weight: 500;
+}
+
+/* Grid de detalles en móvil */
+.abono-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.abono-detail-item {
+  display: flex;
+  flex-direction: column;
+}
+
+.abono-detail-item.full-width {
+  grid-column: span 2;
+}
+
+.abono-detail-label {
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 4px;
+  font-weight: 500;
+}
+
+.abono-detail-value {
+  font-size: 14px;
+  color: #1e293b;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.abono-detail-value.total-credito {
+  color: #1e40af;
+}
+
+.abono-detail-value.saldo-cero {
+  color: #059669;
+}
+
+.abono-detail-value.saldo-pendiente {
+  color: #dc2626;
+}
+
+/* Progreso en móvil */
+.progreso-container {
+  width: 100%;
+}
+
+.progreso-label {
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.barra-progreso-mobile {
+  width: 100%;
+  height: 8px;
+  background-color: #e5e7eb;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.progreso-llenado {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+}
+
+/* Método de pago en móvil */
+.abono-metodo-pago-mobile {
+  margin-bottom: 16px;
+  padding: 12px;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.metodo-label {
+  font-size: 12px;
+  color: #64748b;
+  margin-bottom: 8px;
+  font-weight: 500;
+  display: block;
+}
+
+.metodo-content {
+  display: inline-block;
+}
+
+/* Método simple en móvil */
+.metodo-pago-badge.mobile {
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Método mixto en móvil */
+.metodo-pago-mixto-container.mobile {
+  background: white;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  padding: 12px;
+  width: 100%;
+}
+
+.metodo-pago-header.mobile {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.metodo-pago-icono {
+  font-size: 18px;
+}
+
+.metodo-pago-titulo {
+  font-weight: 600;
+  color: #92400e;
+  font-size: 14px;
+}
+
+/* Fechas en móvil */
+.abono-fechas-mobile {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 12px;
+  background-color: #f8fafc;
+  border-radius: 8px;
+}
+
+.abono-fecha-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.abono-fecha-label {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.abono-fecha-valor {
+  font-size: 13px;
+  color: #1e293b;
+  font-weight: 600;
+  font-family: 'SF Mono', 'Monaco', monospace;
+}
+
+/* Acciones en móvil */
+.abono-actions-mobile {
+  display: flex;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.abono-action-btn {
+  flex: 1;
+  padding: 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s;
+}
+
+.abono-action-btn.editar {
+  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+}
+
+.abono-action-btn.editar:hover:not(:disabled) {
+  background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(29, 78, 216, 0.15);
+}
+
+.abono-action-btn.editar:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.abono-action-btn.eliminar {
+  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.abono-action-btn.eliminar:hover {
+  background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.15);
+}
+
+/* Mensajes de carga y sin datos */
+.cargando-mensaje, .sin-registros {
   padding: 60px 20px;
+  text-align: center;
   color: #64748b;
 }
 
-.tabla-abonos .spinner {
-  border: 3px solid #f1f5f9;
-  border-top: 3px solid #10b981;
-  border-radius: 50%;
+.cargando-mensaje {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 15px;
+}
+
+.spinner {
   width: 40px;
   height: 40px;
+  border: 4px solid #f1f5f9;
+  border-top: 4px solid #10b981;
+  border-radius: 50%;
   animation: spin 1s linear infinite;
-  margin: 0 auto 20px;
+  margin: 0 auto;
 }
 
 @keyframes spin {
@@ -243,231 +759,78 @@
   100% { transform: rotate(360deg); }
 }
 
-.tabla-abonos .sin-registros {
-  font-size: 15px;
+/* Sin resultados móvil */
+.sin-resultados-mobile {
+  text-align: center;
+  padding: 48px 20px;
+  color: #64748b;
+}
+
+.sin-resultados-mobile .spinner {
+  margin-bottom: 20px;
+}
+
+/* Resumen desktop */
+.resumen-abonos {
+  display: flex;
+  justify-content: space-between;
+  padding: 20px;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-top: 1px solid #a7f3d0;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.resumen-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.resumen-item span {
+  font-size: 14px;
+  color: #065f46;
+}
+
+.resumen-item strong {
+  font-size: 16px;
+  color: #065f46;
+  font-weight: 700;
+}
+
+/* Resumen móvil */
+.resumen-mobile {
+  display: none;
+  padding: 16px;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border-top: 1px solid #a7f3d0;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.resumen-mobile-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 8px;
+}
+
+.resumen-mobile-label {
+  font-size: 12px;
+  color: #065f46;
+  margin-bottom: 4px;
   font-weight: 500;
 }
 
-/* Scroll personalizado */
-.tabla-scroll-container::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+.resumen-mobile-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: #065f46;
 }
 
-.tabla-scroll-container::-webkit-scrollbar-track {
-  background: #f1f5f9;
-  border-radius: 3px;
-}
-
-.tabla-scroll-container::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
-}
-
-.tabla-scroll-container::-webkit-scrollbar-thumb:hover {
-  background: #94a3b8;
-}
-
-/* ============ ESTILOS PARA MÓVIL ============ */
-@media (max-width: 768px) {
-  .tabla-scroll-container {
-    display: none;
-  }
-  
-  .tabla-abonos-container {
-    margin-top: 16px;
-  }
-  
-  .tabla-abonos-card {
-    border-radius: 8px;
-    box-shadow: none;
-  }
-  
-  /* Vista móvil */
-  .tabla-mobile-view {
-    display: block;
-    padding: 16px;
-  }
-  
-  /* Tarjetas móviles */
-  .abono-card-mobile {
-    background: white;
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 16px;
-    border: 1px solid #e5e7eb;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-  }
-  
-  .abono-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 12px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid #f1f5f9;
-  }
-  
-  .abono-cliente {
-    font-size: 16px;
-    font-weight: 600;
-    color: #1e293b;
-    margin-bottom: 4px;
-  }
-  
-  .abono-producto {
-    font-size: 14px;
-    color: #64748b;
-    line-height: 1.4;
-  }
-  
-  .abono-monto {
-    font-size: 18px;
-    font-weight: 700;
-    color: #059669;
-    font-family: 'SF Mono', 'Monaco', monospace;
-  }
-  
-  /* Grid de detalles en móvil */
-  .abono-details-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
-    margin-bottom: 16px;
-  }
-  
-  .abono-detail-item {
-    display: flex;
-    flex-direction: column;
-  }
-  
-  .abono-detail-label {
-    font-size: 12px;
-    color: #64748b;
-    margin-bottom: 4px;
-    font-weight: 500;
-  }
-  
-  .abono-detail-value {
-    font-size: 14px;
-    color: #1e293b;
-    font-weight: 500;
-    word-break: break-word;
-  }
-  
-  /* Método de pago en móvil */
-  .metodo-pago-mobile {
-    padding: 8px 12px;
-    border-radius: 20px;
-    font-size: 13px;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-  }
-  
-  .metodo-efectivo {
-    background-color: #d1fae5;
-    color: #065f46;
-  }
-  
-  .metodo-tarjeta {
-    background-color: #dbeafe;
-    color: #1e40af;
-  }
-  
-  .metodo-transferencia {
-    background-color: #ede9fe;
-    color: #5b21b6;
-  }
-  
-  /* Fechas en móvil */
-  .abono-fechas-mobile {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin: 12px 0;
-    padding: 12px;
-    background-color: #f8fafc;
-    border-radius: 8px;
-  }
-  
-  .abono-fecha-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 4px 0;
-  }
-  
-  .abono-fecha-label {
-    font-size: 13px;
-    color: #64748b;
-    font-weight: 500;
-  }
-  
-  .abono-fecha-valor {
-    font-size: 13px;
-    color: #1e293b;
-    font-weight: 600;
-    font-family: 'SF Mono', 'Monaco', monospace;
-  }
-  
-  /* Acciones en móvil */
-  .abono-actions-mobile {
-    display: flex;
-    gap: 12px;
-    justify-content: flex-end;
-    padding-top: 16px;
-    border-top: 1px solid #f1f5f9;
-  }
-  
-  .abono-action-btn {
-    padding: 10px 16px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    border: none;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-height: 44px;
-  }
-  
-  .abono-action-btn.editar {
-    background-color: #dbeafe;
-    color: #1d4ed8;
-  }
-  
-  .abono-action-btn.eliminar {
-    background-color: #fee2e2;
-    color: #dc2626;
-  }
-  
-  /* Sin resultados móvil */
-  .sin-resultados-mobile {
-    text-align: center;
-    padding: 48px 20px;
-    color: #64748b;
-  }
-  
-  .sin-resultados-mobile .spinner {
-    margin-bottom: 20px;
-  }
-}
-
-/* Mostrar tabla desktop en pantallas grandes */
-@media (min-width: 769px) {
-  .tabla-mobile-view {
-    display: none;
-  }
-  
-  .tabla-scroll-container {
-    display: block;
-  }
-}
-
-/* Clases utilitarias */
+/* Clases para responsive */
 .desktop-only {
   display: block;
 }
@@ -476,13 +839,70 @@
   display: none;
 }
 
+/* RESPONSIVE */
 @media (max-width: 768px) {
   .desktop-only {
     display: none !important;
   }
   
   .mobile-only {
+    display: block !important;
+  }
+  
+  .tabla-abonos-container {
+    margin-top: 16px;
+  }
+  
+  .buscador-mobile {
     display: block;
+  }
+  
+  .buscador-abonos {
+    display: none;
+  }
+  
+  .tabla-mobile-view {
+    display: block;
+  }
+  
+  .abono-card-mobile {
+    padding: 14px;
+  }
+  
+  .abono-details-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  
+  .abono-detail-item.full-width {
+    grid-column: span 1;
+  }
+  
+  .abono-actions-mobile {
+    flex-direction: column;
+  }
+  
+  .resumen-mobile {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .abono-card-header {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .abono-estado-mobile {
+    align-self: flex-start;
+  }
+  
+  .resumen-mobile {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  .resumen-mobile-item:last-child {
+    grid-column: span 2;
   }
 }
 

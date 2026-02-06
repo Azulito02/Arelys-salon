@@ -265,20 +265,6 @@ const Inicio = () => {
         </div>
         
         <div className="estadistica-card">
-          <div className="estadistica-icono">💰</div>
-          <div className="estadistica-contenido">
-            <p className="estadistica-valor">
-              {loadingEstadisticas ? (
-                <span className="cargando-estadistica">...</span>
-              ) : (
-                `C$${estadisticas.ventasHoy.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
-              )}
-            </p>
-            <p className="estadistica-label">Ventas del Turno</p>
-          </div>
-        </div>
-        
-        <div className="estadistica-card">
           <div className="estadistica-icono">💳</div>
           <div className="estadistica-contenido">
             <p className="estadistica-valor">

@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import './TablaAbonos.css'
 
 const TablaAbonos = ({ 
@@ -8,6 +8,7 @@ const TablaAbonos = ({
   onEliminar, 
   creditos = [] // Recibir créditos para verificar estado
 }) => {
+  const [busqueda, setBusqueda] = useState('')
   
   // Función para formatear fecha con hora Nicaragua
   const formatFechaNicaragua = (fechaISO) => {
@@ -29,6 +30,32 @@ const TablaAbonos = ({
     horas = horas ? horas.toString().padStart(2, '0') : '12';
     
     return `${dia}/${mes}/${año}, ${horas}:${minutos} ${ampm}`;
+  };
+
+  // Función para formatear solo fecha (sin hora)
+  const formatSoloFecha = (fechaStr) => {
+    if (!fechaStr) return 'Sin fecha';
+    
+    const fecha = new Date(fechaStr);
+    const dia = fecha.getDate().toString().padStart(2, '0');
+    const mes = (fecha.getMonth() + 1).toString().padStart(2, '0');
+    const año = fecha.getFullYear();
+    
+    return `${dia}/${mes}/${año}`;
+  };
+
+  // Función para formatear fecha corta para móvil
+  const formatFechaCorta = (fechaISO) => {
+    if (!fechaISO) return 'Sin fecha';
+    
+    const fechaUTC = new Date(fechaISO);
+    const fechaNicaragua = new Date(fechaUTC.getTime() - (6 * 60 * 60 * 1000));
+    
+    const dia = fechaNicaragua.getDate().toString().padStart(2, '0');
+    const mes = (fechaNicaragua.getMonth() + 1).toString().padStart(2, '0');
+    const año = fechaNicaragua.getFullYear();
+    
+    return `${dia}/${mes}/${año}`;
   };
 
   // Función para verificar si el crédito del abono está completado
@@ -97,15 +124,12 @@ const TablaAbonos = ({
     const metodo = abono.metodo_pago || '';
     const metodoLower = metodo.toLowerCase();
     
-    // Verificar si tiene detalles de pago mixto
     const tieneDetallesMixto = abono.detalles_pago && Object.keys(abono.detalles_pago).length > 0;
     const esMixto = metodoLower.includes('mixto') || tieneDetallesMixto;
     
     if (esMixto && abono.detalles_pago) {
-      // Renderizar detalles de pago mixto
       return renderDetallesPagoMixto(abono);
     } else {
-      // Renderizar método de pago simple
       return renderMetodoPagoSimple(abono);
     }
   };
@@ -147,19 +171,15 @@ const TablaAbonos = ({
     const detalles = abono.detalles_pago || {};
     const metodo = abono.metodo_pago || 'Mixto';
     
-    // Extraer los montos de cada método
     const efectivo = parseFloat(detalles.efectivo || 0);
     const tarjeta = parseFloat(detalles.tarjeta || 0);
     const transferencia = parseFloat(detalles.transferencia || 0);
     
-    // Extraer información de bancos
     const bancoTarjeta = detalles.banco_tarjeta || detalles.banco || '';
     const bancoTransferencia = detalles.banco_transferencia || detalles.banco || '';
     
-    // Calcular total
     const totalMixto = efectivo + tarjeta + transferencia;
     
-    // Crear array de detalles para renderizar
     const detallesArray = [];
     
     if (efectivo > 0) {
@@ -188,7 +208,6 @@ const TablaAbonos = ({
       });
     }
     
-    // Verificar si hay información de banco
     const tieneInfoBanco = bancoTarjeta || bancoTransferencia;
     const bancosUnicos = [...new Set([bancoTarjeta, bancoTransferencia].filter(Boolean))];
     
@@ -232,10 +251,247 @@ const TablaAbonos = ({
     );
   };
 
+  // Filtrar abonos por búsqueda
+  const abonosFiltrados = abonos.filter(abono => {
+    if (!busqueda.trim()) return true;
+    
+    const searchTerm = busqueda.toLowerCase();
+    const credito = creditos.find(c => c.id === abono.venta_credito_id);
+    const clienteNombre = credito?.nombre_cliente || '';
+    const productoNombre = credito?.productos?.nombre || '';
+    
+    return (
+      clienteNombre.toLowerCase().includes(searchTerm) ||
+      productoNombre.toLowerCase().includes(searchTerm) ||
+      (abono.metodo_pago || '').toLowerCase().includes(searchTerm)
+    );
+  });
+
+  // Renderizar abonos para vista móvil
+  const renderAbonosMobile = () => {
+    if (loading) {
+      return (
+        <div className="sin-resultados-mobile">
+          <div className="spinner"></div>
+          <p>Cargando abonos...</p>
+        </div>
+      );
+    }
+
+    if (abonosFiltrados.length === 0) {
+      return (
+        <div className="sin-resultados-mobile">
+          <p>{busqueda ? 'No se encontraron abonos' : 'No hay abonos registrados'}</p>
+        </div>
+      );
+    }
+
+    return abonosFiltrados.map((abono) => {
+      const credito = creditos.find(c => c.id === abono.venta_credito_id);
+      const creditoInfo = getCreditoInfo(abono);
+      const creditoCompletado = isCreditoCompletado(abono);
+      const estadoClase = getEstadoCreditoClase(abono);
+      const estadoTexto = getEstadoCredito(abono);
+      
+      return (
+        <div key={abono.id} className="abono-card-mobile">
+          <div className="abono-card-header">
+            <div style={{ flex: 1 }}>
+              <div className="abono-cliente">
+                {credito?.nombre_cliente || abono.ventas_credito?.nombre_cliente || 'Cliente no encontrado'}
+                {creditoCompletado && (
+                  <span className="credito-completado-badge-mobile">
+                    ✓ Pagado
+                  </span>
+                )}
+              </div>
+              <div className="abono-producto">
+                {credito?.productos?.nombre || abono.ventas_credito?.productos?.nombre || 'Producto no encontrado'}
+                {credito?.productos?.codigo && (
+                  <span style={{ fontSize: '12px', color: '#64748b', marginLeft: '8px' }}>
+                    (Código: {credito.productos.codigo})
+                  </span>
+                )}
+              </div>
+            </div>
+            <span className={`abono-estado-mobile ${estadoClase.replace('estado-credito-', '')}`}>
+              {estadoTexto}
+            </span>
+          </div>
+          
+          <div className="abono-monto-info">
+            <div className="abono-monto-principal">
+              <span className="monto-label">Monto Abono:</span>
+              <span className="monto-valor">${parseFloat(abono.monto).toFixed(2)}</span>
+            </div>
+            {creditoInfo && (
+              <div className="abono-porcentaje">
+                ({creditoInfo.total > 0 ? (abono.monto / creditoInfo.total * 100).toFixed(1) : '0'}% del total)
+              </div>
+            )}
+          </div>
+          
+          <div className="abono-details-grid">
+            <div className="abono-detail-item">
+              <span className="abono-detail-label">Total Crédito</span>
+              <span className="abono-detail-value total-credito">
+                ${creditoInfo ? parseFloat(creditoInfo.total).toFixed(2) : 'N/A'}
+              </span>
+            </div>
+            
+            <div className="abono-detail-item">
+              <span className="abono-detail-label">Saldo Pendiente</span>
+              <span className={`abono-detail-value ${creditoInfo?.saldoPendiente === 0 ? 'saldo-cero' : 'saldo-pendiente'}`}>
+                ${creditoInfo ? parseFloat(creditoInfo.saldoPendiente).toFixed(2) : 'N/A'}
+              </span>
+            </div>
+            
+            {creditoInfo && (
+              <div className="abono-detail-item full-width">
+                <div className="progreso-container">
+                  <div className="progreso-label">
+                    Progreso: {creditoInfo.total > 0 ? ((creditoInfo.totalAbonado / creditoInfo.total) * 100).toFixed(1) : '0'}%
+                  </div>
+                  <div className="barra-progreso-mobile">
+                    <div 
+                      className="progreso-llenado"
+                      style={{ 
+                        width: `${(creditoInfo.totalAbonado / creditoInfo.total * 100).toFixed(1)}%`,
+                        backgroundColor: creditoInfo.saldoPendiente === 0 ? '#10b981' : '#3b82f6'
+                      }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <div className="abono-metodo-pago-mobile">
+            <span className="metodo-label">Método de Pago:</span>
+            <div className="metodo-content">
+              {renderMetodoPago(abono)}
+            </div>
+          </div>
+          
+          <div className="abono-fechas-mobile">
+            <div className="abono-fecha-item">
+              <span className="abono-fecha-label">Fecha Abono:</span>
+              <span className="abono-fecha-valor">
+                {formatFechaCorta(abono.fecha)}
+              </span>
+            </div>
+          </div>
+          
+          <div className="abono-actions-mobile">
+            <button
+              onClick={() => onEditar(abono)}
+              className="abono-action-btn editar"
+              disabled={creditoCompletado}
+            >
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+              </svg>
+              Editar
+            </button>
+            <button
+              onClick={() => onEliminar(abono)}
+              className="abono-action-btn eliminar"
+            >
+              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Eliminar
+            </button>
+          </div>
+        </div>
+      );
+    });
+  };
+
+  // Calcular resumen para móvil
+  const calcularResumenMobile = () => {
+    const abonosParaResumen = busqueda.trim() 
+      ? abonosFiltrados 
+      : abonos;
+
+    const totalAbonos = abonosParaResumen.length;
+    const totalMonto = abonosParaResumen.reduce((sum, abono) => sum + parseFloat(abono.monto), 0);
+    const creditosPendientes = creditos.filter(c => c.saldo_pendiente > 0).length;
+    const creditosCompletados = creditos.filter(c => c.saldo_pendiente === 0).length;
+
+    return { totalAbonos, totalMonto, creditosPendientes, creditosCompletados };
+  };
+
+  const resumenMobile = calcularResumenMobile();
+
   return (
     <div className="tabla-abonos-container">
+      {/* BUSCADOR PARA MÓVIL */}
+      <div className="buscador-mobile mobile-only">
+        <div className="buscador-mobile-container">
+          <svg className="buscador-mobile-icono" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Buscar cliente, producto o método..."
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            className="buscador-mobile-input"
+          />
+          {busqueda && (
+            <button 
+              onClick={() => setBusqueda('')}
+              className="buscador-mobile-limpiar"
+              title="Limpiar búsqueda"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* BUSCADOR PARA DESKTOP */}
+      <div className="buscador-abonos desktop-only">
+        <div className="buscador-input-container">
+          <svg className="buscador-icono" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Buscar por cliente, producto o método de pago..."
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            className="buscador-input"
+          />
+          {busqueda && (
+            <button 
+              onClick={() => setBusqueda('')}
+              className="buscador-limpiar"
+              title="Limpiar búsqueda"
+            >
+              ✕
+            </button>
+          )}
+        </div>
+        <div className="buscador-info">
+          {busqueda ? (
+            <span>
+              Mostrando {abonosFiltrados.length} abono{abonosFiltrados.length !== 1 ? 's' : ''}
+            </span>
+          ) : (
+            <span>
+              Total: {abonos.length} abonos
+            </span>
+          )}
+        </div>
+      </div>
+
       <div className="tabla-abonos-card">
-        <div className="overflow-x-auto">
+        {/* VISTA DESKTOP/TABLET */}
+        <div className="tabla-scroll-container desktop-only">
           <table className="tabla-abonos">
             <thead>
               <tr>
@@ -258,14 +514,14 @@ const TablaAbonos = ({
                     Cargando abonos...
                   </td>
                 </tr>
-              ) : abonos.length === 0 ? (
+              ) : abonosFiltrados.length === 0 ? (
                 <tr>
                   <td colSpan="9" className="sin-registros">
-                    No hay abonos registrados
+                    {busqueda ? 'No se encontraron abonos con esa búsqueda' : 'No hay abonos registrados'}
                   </td>
                 </tr>
               ) : (
-                abonos.map((abono) => {
+                abonosFiltrados.map((abono) => {
                   const credito = creditos.find(c => c.id === abono.venta_credito_id);
                   const creditoInfo = getCreditoInfo(abono);
                   const creditoCompletado = isCreditoCompletado(abono);
@@ -395,17 +651,22 @@ const TablaAbonos = ({
           </table>
         </div>
         
-        {/* Resumen */}
-        {!loading && abonos.length > 0 && (
-          <div className="resumen-abonos">
+        {/* VISTA MÓVIL */}
+        <div className="tabla-mobile-view mobile-only">
+          {renderAbonosMobile()}
+        </div>
+        
+        {/* RESUMEN DESKTOP */}
+        {!loading && abonosFiltrados.length > 0 && (
+          <div className="resumen-abonos desktop-only">
             <div className="resumen-item">
               <span>Total abonos:</span>
-              <strong>{abonos.length} registros</strong>
+              <strong>{abonosFiltrados.length} registros</strong>
             </div>
             <div className="resumen-item">
               <span>Total monto abonos:</span>
               <strong>
-                ${abonos.reduce((sum, abono) => sum + parseFloat(abono.monto), 0).toFixed(2)}
+                ${abonosFiltrados.reduce((sum, abono) => sum + parseFloat(abono.monto), 0).toFixed(2)}
               </strong>
             </div>
             <div className="resumen-item">
@@ -419,6 +680,26 @@ const TablaAbonos = ({
               <strong>
                 {creditos.filter(c => c.saldo_pendiente === 0).length} pagados
               </strong>
+            </div>
+          </div>
+        )}
+        
+        {/* RESUMEN MÓVIL */}
+        {!loading && resumenMobile.totalAbonos > 0 && (
+          <div className="resumen-mobile mobile-only">
+            <div className="resumen-mobile-item">
+              <span className="resumen-mobile-label">Abonos</span>
+              <span className="resumen-mobile-value">{resumenMobile.totalAbonos}</span>
+            </div>
+            <div className="resumen-mobile-item">
+              <span className="resumen-mobile-label">Total</span>
+              <span className="resumen-mobile-value">
+                ${resumenMobile.totalMonto.toFixed(2)}
+              </span>
+            </div>
+            <div className="resumen-mobile-item">
+              <span className="resumen-mobile-label">Pendientes</span>
+              <span className="resumen-mobile-value">{resumenMobile.creditosPendientes}</span>
             </div>
           </div>
         )}
