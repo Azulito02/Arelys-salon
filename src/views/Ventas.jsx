@@ -1,5 +1,5 @@
 // Ventas.jsx - VERSIÓN CORREGIDA PARA TU BASE DE DATOS
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react' // Agrega useRef aquí
 import { supabase } from '../database/supabase'
 import TablaVentas from '../components/ventas/TablaVentas'
 import ModalNuevaVenta from '../components/ventas/ModalNuevaVenta'
@@ -19,6 +19,10 @@ const Ventas = () => {
   const [modalNuevaAbierto, setModalNuevaAbierto] = useState(false)
   const [modalEditarAbierto, setModalEditarAbierto] = useState(false)
   const [modalEliminarAbierto, setModalEliminarAbierto] = useState(false)
+
+  // Estados para código de barras
+  const [codigoBarrasInput, setCodigoBarrasInput] = useState('')
+  const scannerInputRef = useRef(null) // Ahora useRef está definido
   
   // Estados para datos
   const [nuevaVenta, setNuevaVenta] = useState({
@@ -32,10 +36,12 @@ const Ventas = () => {
 
   useEffect(() => {
     cargarDatos()
+    // Enfocar automáticamente el input del scanner
+    scannerInputRef.current?.focus()
   }, [])
 
   // ==============================================
-  // CARGAR DATOS - VERSIÓN CORREGIDA
+  // CARGAR DATOS
   // ==============================================
 
   const cargarDatos = async () => {
@@ -43,7 +49,7 @@ const Ventas = () => {
       setLoading(true)
       setErrorCarga('')
       
-      // Cargar productos
+      // Cargar productos (incluyendo código de barras)
       const { data: productosData, error: errorProductos } = await supabase
         .from('productos')
         .select('*')
@@ -52,14 +58,14 @@ const Ventas = () => {
       if (errorProductos) throw errorProductos
       setProductos(productosData || [])
       
-      // Cargar ventas CON productos (tu estructura)
+      // Cargar ventas CON productos
       const { data: ventasData, error: errorVentas } = await supabase
         .from('ventas')
         .select(`
           *,
           productos (*)
         `)
-        .order('fecha', { ascending: false })  // Cambié fecha_hora por fecha
+        .order('fecha', { ascending: false })
       
       if (errorVentas) throw errorVentas
       setVentas(ventasData || [])
@@ -71,6 +77,9 @@ const Ventas = () => {
       setLoading(false)
     }
   }
+
+
+   
 
   // ==============================================
   // FUNCIÓN DE IMPRESIÓN - VERSIÓN CORREGIDA

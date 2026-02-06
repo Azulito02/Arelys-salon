@@ -22,9 +22,11 @@ const ModalAgregarProductos = ({ isOpen, onClose, onSave }) => {
     nombre: '',
     categoria: 'General',
     descripcion: '',
-    precio: ''
-  })
-  const [error, setError] = useState('')
+    precio: '',
+    codigo_barras: ''
+  });
+  
+  const [error, setError] = useState('') // CORRECCIÓN: Agregar 'const' aquí
 
   const handleSubmit = () => {
     if (!nuevoProducto.nombre.trim()) {
@@ -41,8 +43,9 @@ const ModalAgregarProductos = ({ isOpen, onClose, onSave }) => {
       nombre: nuevoProducto.nombre.trim(),
       descripcion: nuevoProducto.descripcion.trim() || '',
       precio: parseFloat(nuevoProducto.precio),
-      categoria: nuevoProducto.categoria
-    }
+      categoria: nuevoProducto.categoria,
+      codigo_barras: nuevoProducto.codigo_barras.trim() || null
+    };
     
     onSave(productoData)
     setNuevoProducto({
@@ -135,6 +138,29 @@ const ModalAgregarProductos = ({ isOpen, onClose, onSave }) => {
               className="input-campo"
               placeholder="0.00"
             />
+          </div>
+
+          <div className="campo-formulario">
+            <div className="label-contenedor">
+              <label className="label-campo">
+                <strong>Código de Barras (opcional)</strong>
+              </label>
+            </div>
+            <input
+              type="text"
+              value={nuevoProducto.codigo_barras}
+              onChange={(e) => setNuevoProducto({...nuevoProducto, codigo_barras: e.target.value})}
+              className="input-campo"
+              placeholder="Escanear o ingresar manualmente"
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' && nuevoProducto.codigo_barras.trim()) {
+                  e.preventDefault();
+                }
+              }}
+            />
+            <small className="texto-ayuda">
+              Escanear con la pistola o ingresar manualmente
+            </small>
           </div>
         </div>
         

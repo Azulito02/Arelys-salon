@@ -9,6 +9,16 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
     fecha_fin: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   })
   
+  // Estado para búsqueda de productos principal
+  const [busquedaProducto, setBusquedaProducto] = useState('')
+  const [productosFiltrados, setProductosFiltrados] = useState([])
+  const [mostrarResultados, setMostrarResultados] = useState(false)
+  
+  // Estado para búsqueda manual en productos agregados
+  const [busquedaManual, setBusquedaManual] = useState('')
+  const [productosFiltradosManual, setProductosFiltradosManual] = useState([])
+  const [mostrarResultadosManual, setMostrarResultadosManual] = useState(false)
+  
   const [productosSeleccionados, setProductosSeleccionados] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -23,6 +33,48 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
       resetForm()
     }
   }, [isOpen])
+
+  // Filtrar productos según búsqueda principal
+  useEffect(() => {
+    if (busquedaProducto.trim() === '') {
+      setProductosFiltrados([])
+      setMostrarResultados(false)
+      return
+    }
+
+    const termino = busquedaProducto.toLowerCase().trim()
+    
+    const filtrados = productos.filter(producto => {
+      if (producto.nombre?.toLowerCase().includes(termino)) return true
+      if (producto.categoria?.toLowerCase().includes(termino)) return true
+      if (producto.codigo_barras?.toLowerCase().includes(termino)) return true
+      return false
+    })
+    
+    setProductosFiltrados(filtrados)
+    setMostrarResultados(true)
+  }, [busquedaProducto, productos])
+
+  // Filtrar productos según búsqueda manual
+  useEffect(() => {
+    if (busquedaManual.trim() === '') {
+      setProductosFiltradosManual([])
+      setMostrarResultadosManual(false)
+      return
+    }
+
+    const termino = busquedaManual.toLowerCase().trim()
+    
+    const filtrados = productos.filter(producto => {
+      if (producto.nombre?.toLowerCase().includes(termino)) return true
+      if (producto.categoria?.toLowerCase().includes(termino)) return true
+      if (producto.codigo_barras?.toLowerCase().includes(termino)) return true
+      return false
+    })
+    
+    setProductosFiltradosManual(filtrados)
+    setMostrarResultadosManual(true)
+  }, [busquedaManual, productos])
 
   const cargarClientes = async () => {
     try {
@@ -59,14 +111,63 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
     setProductosSeleccionados([])
     setNuevoCliente({ nombre: '', telefono: '', email: '' })
     setMostrarNuevoCliente(false)
+    setBusquedaProducto('')
+    setProductosFiltrados([])
+    setMostrarResultados(false)
+    setBusquedaManual('')
+    setProductosFiltradosManual([])
+    setMostrarResultadosManual(false)
     setError('')
   }
 
-  // Agregar producto a la lista
-  const agregarProducto = () => {
-    setProductosSeleccionados([
-      ...productosSeleccionados,
-      { id: Date.now(), producto_id: '', cantidad: 1, precio_unitario: 0 }
+  // Agregar producto desde búsqueda
+  const agregarProductoDesdeBusqueda = (producto) => {
+    // Verificar si el producto ya está en la lista
+    const existe = productosSeleccionados.find(p => p.producto_id === producto.id)
+    
+    if (existe) {
+      // Si existe, incrementar cantidad
+      setProductosSeleccionados(prev =>
+        prev.map(p =>
+          p.producto_id === producto.id
+            ? { ...p, cantidad: p.cantidad + 1 }
+            : p
+        )
+      )
+    } else {
+      // Si no existe, agregar nuevo
+      setProductosSeleccionados(prev => [
+        ...prev,
+        {
+          id: Date.now() + Math.random(), // ID temporal
+          producto_id: producto.id,
+          cantidad: 1,
+          precio_unitario: producto.precio || 0,
+          producto_nombre: producto.nombre,
+          producto_categoria: producto.categoria,
+          producto_codigo: producto.codigo_barras
+        }
+      ])
+    }
+    
+    setBusquedaProducto('')
+    setMostrarResultados(false)
+    setError('')
+  }
+
+  // Agregar producto manualmente (botón)
+  const agregarProductoManual = () => {
+    setProductosSeleccionados(prev => [
+      ...prev,
+      { 
+        id: Date.now() + Math.random(),
+        producto_id: '', 
+        cantidad: 1, 
+        precio_unitario: 0,
+        producto_nombre: '',
+        producto_categoria: '',
+        producto_codigo: ''
+      }
     ])
   }
 
@@ -87,7 +188,9 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
         ...nuevosProductos[index],
         producto_id: valor,
         precio_unitario: producto?.precio || 0,
-        producto_nombre: producto?.nombre
+        producto_nombre: producto?.nombre,
+        producto_categoria: producto?.categoria,
+        producto_codigo: producto?.codigo_barras
       }
     } else if (campo === 'cantidad') {
       nuevosProductos[index] = {
@@ -129,14 +232,12 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
       )
       
       if (clienteExistente) {
-        // Si ya existe, usar el existente
         const clienteId = typeof clienteExistente === 'object' ? clienteExistente.id : clienteExistente
         setFormData({ ...formData, cliente_nombre: clienteId })
         setMostrarNuevoCliente(false)
         return clienteId
       }
 
-      // Intentar registrar en tabla clientes si existe
       try {
         const { data, error } = await supabase
           .from('clientes')
@@ -157,7 +258,6 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
         console.log('No se pudo registrar en tabla clientes, usando nombre directo')
       }
 
-      // Si no existe tabla clientes, usar el nombre directamente
       setFormData({ ...formData, cliente_nombre: nuevoCliente.nombre.trim() })
       setMostrarNuevoCliente(false)
       return nuevoCliente.nombre.trim()
@@ -172,7 +272,6 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
   const handleSubmit = async (e) => {
     e.preventDefault()
     
-    // Validaciones
     if (!formData.cliente_nombre) {
       setError('Selecciona o registra un cliente')
       return
@@ -189,7 +288,6 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
       return
     }
 
-    // Validar que todos los productos tengan producto_id
     const productosInvalidos = productosSeleccionados.filter(p => !p.producto_id)
     if (productosInvalidos.length > 0) {
       setError('Todos los productos deben estar seleccionados')
@@ -202,15 +300,13 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
     try {
       let clienteNombre = formData.cliente_nombre
       
-      // Si es un ID de cliente (UUID), obtener el nombre
-      if (clienteNombre.includes('-')) { // UUID tiene guiones
+      if (clienteNombre.includes('-')) {
         const cliente = clientes.find(c => c.id === clienteNombre)
         if (cliente) {
           clienteNombre = cliente.nombre
         }
       }
 
-      // Crear UNA venta a crédito por CADA producto (manteniendo compatibilidad)
       const ventasCredito = productosSeleccionados.map(producto => ({
         producto_id: producto.producto_id,
         cantidad: producto.cantidad,
@@ -219,7 +315,7 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
         nombre_cliente: clienteNombre,
         fecha_inicio: formData.fecha_inicio,
         fecha_fin: formData.fecha_fin,
-        saldo_pendiente: calcularTotalProducto(producto), // Saldo inicial = total
+        saldo_pendiente: calcularTotalProducto(producto),
         estado: 'activo'
       }))
 
@@ -231,7 +327,6 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
       
       if (errorVentas) throw errorVentas
 
-      // También insertar en facturados si existe
       try {
         const facturas = ventasCredito.map(venta => ({
           tipo_venta: 'credito',
@@ -372,13 +467,81 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
               )}
             </div>
             
+            {/* BÚSQUEDA DE PRODUCTOS */}
+            <div className="form-grupo">
+              <label className="form-label">
+                Buscar Producto
+                <span className="hint-text"> (nombre, categoría, código de barras)</span>
+              </label>
+              <div className="busqueda-producto-container">
+                <input
+                  type="text"
+                  value={busquedaProducto}
+                  onChange={(e) => setBusquedaProducto(e.target.value)}
+                  onFocus={() => {
+                    if (busquedaProducto.trim()) setMostrarResultados(true)
+                  }}
+                  className="form-input-busqueda"
+                  placeholder="Escribe para buscar productos..."
+                  disabled={loading}
+                />
+                {busquedaProducto && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBusquedaProducto('')
+                      setProductosFiltrados([])
+                      setMostrarResultados(false)
+                    }}
+                    className="boton-limpiar-busqueda"
+                  >
+                    ×
+                  </button>
+                )}
+                
+                {/* Resultados de búsqueda */}
+                {mostrarResultados && productosFiltrados.length > 0 && (
+                  <div className="resultados-busqueda">
+                    {productosFiltrados.slice(0, 10).map((producto) => (
+                      <div
+                        key={producto.id}
+                        className="resultado-item"
+                        onClick={() => agregarProductoDesdeBusqueda(producto)}
+                      >
+                        <div className="resultado-nombre">
+                          <strong>{producto.nombre}</strong>
+                          {producto.categoria && (
+                            <span className="resultado-categoria"> ({producto.categoria})</span>
+                          )}
+                        </div>
+                        <div className="resultado-info">
+                          <span className="resultado-precio">${producto.precio?.toFixed(2)}</span>
+                          {producto.codigo_barras && (
+                            <span className="resultado-codigo">📟 {producto.codigo_barras}</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {mostrarResultados && productosFiltrados.length === 0 && (
+                  <div className="resultados-busqueda">
+                    <div className="resultado-vacio">
+                      No se encontraron productos con "{busquedaProducto}"
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+            
             {/* Lista de Productos */}
             <div className="productos-container">
               <div className="productos-header">
-                <h4 className="productos-titulo">Productos</h4>
+                <h4 className="productos-titulo">Productos ({productosSeleccionados.length})</h4>
                 <button
                   type="button"
-                  onClick={agregarProducto}
+                  onClick={agregarProductoManual}
                   className="btn-agregar-producto"
                   disabled={loading}
                 >
@@ -388,7 +551,7 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
               
               {productosSeleccionados.length === 0 ? (
                 <div className="sin-productos">
-                  <p>No hay productos agregados</p>
+                  <p>No hay productos agregados. Busca o agrega productos.</p>
                 </div>
               ) : (
                 <div className="lista-productos">
@@ -409,21 +572,55 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
                         </div>
                         
                         <div className="producto-form">
-                          <select
-                            value={producto.producto_id}
-                            onChange={(e) => actualizarProducto(index, 'producto_id', e.target.value)}
-                            className="form-select"
-                            disabled={loading}
-                            required
-                          >
-                            <option value="">Selecciona un producto</option>
-                            {productos.map((p) => (
-                              <option key={p.id} value={p.id}>
-                                {p.nombre} - ${p.precio?.toFixed(2) || '0.00'}
-                                {p.categoria && ` (${p.categoria})`}
-                              </option>
-                            ))}
-                          </select>
+                          <div className="producto-seleccionado-info">
+                            {producto.producto_nombre ? (
+                              <div className="producto-info-actual">
+                                <strong>{producto.producto_nombre}</strong>
+                                {producto.producto_categoria && (
+                                  <span className="producto-info-categoria"> ({producto.producto_categoria})</span>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="producto-busqueda-container">
+                                <input
+                                  type="text"
+                                  value={busquedaManual}
+                                  onChange={(e) => setBusquedaManual(e.target.value)}
+                                  placeholder="Buscar producto..."
+                                  className="form-input-busqueda"
+                                  disabled={loading}
+                                />
+                                {mostrarResultadosManual && productosFiltradosManual.length > 0 && (
+                                  <div className="resultados-busqueda-manual">
+                                    {productosFiltradosManual.slice(0, 5).map((p) => (
+                                      <div
+                                        key={p.id}
+                                        className="resultado-item"
+                                        onClick={() => {
+                                          actualizarProducto(index, 'producto_id', p.id)
+                                          setBusquedaManual('')
+                                          setMostrarResultadosManual(false)
+                                        }}
+                                      >
+                                        <div className="resultado-nombre">
+                                          <strong>{p.nombre}</strong>
+                                          {p.categoria && (
+                                            <span className="resultado-categoria"> ({p.categoria})</span>
+                                          )}
+                                        </div>
+                                        <div className="resultado-info">
+                                          <span className="resultado-precio">${p.precio?.toFixed(2)}</span>
+                                          {p.codigo_barras && (
+                                            <span className="resultado-codigo">📟 {p.codigo_barras}</span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
                           
                           <div className="producto-cantidad-precio">
                             <div>

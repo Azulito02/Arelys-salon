@@ -5,15 +5,25 @@ const ModalNuevaVenta = ({
   isOpen,
   onClose,
   onSave,
-  productos,
-  ventaData,
-  setVentaData
+  productos
 }) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [vuelto, setVuelto] = useState(0)
-
-  // Métodos de pago y bancos disponibles
+  
+  // Estado para búsqueda de productos principal
+  const [busqueda, setBusqueda] = useState('')
+  const [productosFiltrados, setProductosFiltrados] = useState([])
+  const [mostrarResultados, setMostrarResultados] = useState(false)
+  
+  // Estado para búsqueda manual en productos agregados
+  const [busquedaManual, setBusquedaManual] = useState('')
+  const [productosFiltradosManual, setProductosFiltradosManual] = useState([])
+  const [mostrarResultadosManual, setMostrarResultadosManual] = useState(false)
+  
+  // Lista de productos seleccionados
+  const [productosSeleccionados, setProductosSeleccionados] = useState([])
+  
+  // Métodos de pago y bancos
   const metodosPago = [
     { value: 'efectivo', label: 'Efectivo', icon: '💰' },
     { value: 'tarjeta', label: 'Tarjeta', icon: '💳' },
@@ -37,7 +47,8 @@ const ModalNuevaVenta = ({
   const [efectivo, setEfectivo] = useState(0)
   const [tarjeta, setTarjeta] = useState(0)
   const [transferencia, setTransferencia] = useState(0)
-  
+  const [vuelto, setVuelto] = useState(0)
+
   // Estado para banco específico en método mixto
   const [bancoTarjeta, setBancoTarjeta] = useState('')
   const [bancoTransferencia, setBancoTransferencia] = useState('')
@@ -54,17 +65,159 @@ const ModalNuevaVenta = ({
       setBancoTarjeta('')
       setBancoTransferencia('')
       setVuelto(0)
-      
-      // Calcular total inicial basado en datos de venta
-      const totalInicial = ventaData.cantidad * ventaData.precio_unitario
-      setEfectivo(totalInicial)
+      setBusqueda('')
+      setProductosFiltrados([])
+      setMostrarResultados(false)
+      setProductosSeleccionados([])
+      setBusquedaManual('')
+      setProductosFiltradosManual([])
+      setMostrarResultadosManual(false)
     }
   }, [isOpen])
 
-  // Calcular total y vuelto
-  const total = ventaData.cantidad * ventaData.precio_unitario
+  // Filtrar productos según búsqueda principal
+  useEffect(() => {
+    if (busqueda.trim() === '') {
+      setProductosFiltrados([])
+      setMostrarResultados(false)
+      return
+    }
+
+    const termino = busqueda.toLowerCase().trim()
+    
+    const filtrados = productos.filter(producto => {
+      if (producto.nombre?.toLowerCase().includes(termino)) return true
+      if (producto.categoria?.toLowerCase().includes(termino)) return true
+      if (producto.codigo_barras?.toLowerCase().includes(termino)) return true
+      return false
+    })
+    
+    setProductosFiltrados(filtrados)
+    setMostrarResultados(true)
+  }, [busqueda, productos])
+
+  // Filtrar productos según búsqueda manual
+  useEffect(() => {
+    if (busquedaManual.trim() === '') {
+      setProductosFiltradosManual([])
+      setMostrarResultadosManual(false)
+      return
+    }
+
+    const termino = busquedaManual.toLowerCase().trim()
+    
+    const filtrados = productos.filter(producto => {
+      if (producto.nombre?.toLowerCase().includes(termino)) return true
+      if (producto.categoria?.toLowerCase().includes(termino)) return true
+      if (producto.codigo_barras?.toLowerCase().includes(termino)) return true
+      return false
+    })
+    
+    setProductosFiltradosManual(filtrados)
+    setMostrarResultadosManual(true)
+  }, [busquedaManual, productos])
+
+  // Agregar producto desde búsqueda principal
+  const agregarProductoDesdeBusqueda = (producto) => {
+    // Verificar si el producto ya está en la lista
+    const existe = productosSeleccionados.find(p => p.producto_id === producto.id)
+    
+    if (existe) {
+      // Si existe, incrementar cantidad
+      setProductosSeleccionados(prev =>
+        prev.map(p =>
+          p.producto_id === producto.id
+            ? { ...p, cantidad: p.cantidad + 1 }
+            : p
+        )
+      )
+    } else {
+      // Si no existe, agregar nuevo
+      setProductosSeleccionados(prev => [
+        ...prev,
+        {
+          id: Date.now() + Math.random(), // ID temporal
+          producto_id: producto.id,
+          cantidad: 1,
+          precio_unitario: producto.precio || 0,
+          producto_nombre: producto.nombre,
+          producto_categoria: producto.categoria,
+          producto_codigo: producto.codigo_barras
+        }
+      ])
+    }
+    
+    setBusqueda('')
+    setMostrarResultados(false)
+    setError('')
+  }
+
+  // Agregar producto manualmente (botón)
+  const agregarProductoManual = () => {
+    setProductosSeleccionados(prev => [
+      ...prev,
+      { 
+        id: Date.now() + Math.random(),
+        producto_id: '', 
+        cantidad: 1, 
+        precio_unitario: 0,
+        producto_nombre: '',
+        producto_categoria: '',
+        producto_codigo: ''
+      }
+    ])
+  }
+
+  // Eliminar producto de la lista
+  const eliminarProducto = (index) => {
+    const nuevosProductos = [...productosSeleccionados]
+    nuevosProductos.splice(index, 1)
+    setProductosSeleccionados(nuevosProductos)
+  }
+
+  // Actualizar producto en la lista
+  const actualizarProducto = (index, campo, valor) => {
+    const nuevosProductos = [...productosSeleccionados]
+    
+    if (campo === 'producto_id') {
+      const producto = productos.find(p => p.id === valor)
+      nuevosProductos[index] = {
+        ...nuevosProductos[index],
+        producto_id: valor,
+        precio_unitario: producto?.precio || 0,
+        producto_nombre: producto?.nombre,
+        producto_categoria: producto?.categoria,
+        producto_codigo: producto?.codigo_barras
+      }
+    } else if (campo === 'cantidad') {
+      nuevosProductos[index] = {
+        ...nuevosProductos[index],
+        cantidad: Math.max(1, parseInt(valor) || 1)
+      }
+    } else if (campo === 'precio_unitario') {
+      nuevosProductos[index] = {
+        ...nuevosProductos[index],
+        precio_unitario: parseFloat(valor) || 0
+      }
+    }
+    
+    setProductosSeleccionados(nuevosProductos)
+  }
+
+  // Calcular totales
+  const calcularTotalProducto = (producto) => {
+    return producto.cantidad * producto.precio_unitario
+  }
+
+  const calcularTotalGeneral = () => {
+    return productosSeleccionados.reduce((total, producto) => {
+      return total + calcularTotalProducto(producto)
+    }, 0)
+  }
+
+  const totalGeneral = calcularTotalGeneral()
   const totalPagos = efectivo + tarjeta + transferencia
-  const diferencia = totalPagos - total
+  const diferencia = totalPagos - totalGeneral
 
   // Calcular vuelto automáticamente
   useEffect(() => {
@@ -78,74 +231,48 @@ const ModalNuevaVenta = ({
   // Manejar cambios en método de pago
   useEffect(() => {
     if (metodoPago === 'efectivo') {
-      // Si cambia a efectivo, mover todo el monto a efectivo
-      setEfectivo(total)
+      setEfectivo(totalGeneral)
       setTarjeta(0)
       setTransferencia(0)
       setBanco('')
     } else if (metodoPago === 'tarjeta') {
-      // Si cambia a tarjeta, mover todo el monto a tarjeta
       setEfectivo(0)
-      setTarjeta(total)
+      setTarjeta(totalGeneral)
       setTransferencia(0)
       setBanco('')
     } else if (metodoPago === 'transferencia') {
-      // Si cambia a transferencia, mover todo el monto a transferencia
       setEfectivo(0)
       setTarjeta(0)
-      setTransferencia(total)
+      setTransferencia(totalGeneral)
       setBanco('')
     } else if (metodoPago === 'mixto') {
-      // Si cambia a mixto, distribuir el total en efectivo
-      setEfectivo(total)
+      setEfectivo(totalGeneral)
       setTarjeta(0)
       setTransferencia(0)
       setBancoTarjeta('')
       setBancoTransferencia('')
     }
-  }, [metodoPago, total])
-
-  // Actualizar montos cuando cambia el total
-  useEffect(() => {
-    if (metodoPago === 'efectivo') {
-      setEfectivo(total)
-    } else if (metodoPago === 'tarjeta') {
-      setTarjeta(total)
-    } else if (metodoPago === 'transferencia') {
-      setTransferencia(total)
-    } else if (metodoPago === 'mixto') {
-      // Mantener la distribución proporcional
-      const proporcionEfectivo = totalPagos > 0 ? efectivo / totalPagos : 1
-      setEfectivo(total * proporcionEfectivo)
-    }
-  }, [total])
-
-  if (!isOpen) return null
-
-  // Obtener producto seleccionado
-  const productoSeleccionado = productos.find(p => p.id === ventaData.producto_id)
+  }, [metodoPago, totalGeneral])
 
   // Función para Pago Completo (exacto)
   const handlePagoCompleto = () => {
     if (metodoPago === 'efectivo') {
-      setEfectivo(total)
+      setEfectivo(totalGeneral)
     } else if (metodoPago === 'tarjeta') {
-      setTarjeta(total)
+      setTarjeta(totalGeneral)
     } else if (metodoPago === 'transferencia') {
-      setTransferencia(total)
+      setTransferencia(totalGeneral)
     } else if (metodoPago === 'mixto') {
-      // Para mixto, poner todo en efectivo como default
-      setEfectivo(total)
+      setEfectivo(totalGeneral)
       setTarjeta(0)
       setTransferencia(0)
     }
   }
 
-  // Función para Pago Excedente (ejemplo: pagar con 1000 para 500)
+  // Función para Pago Excedente
   const handlePagoConVuelto = (montoRedondo) => {
     if (metodoPago === 'efectivo') {
-      // Ejemplo: si total es 470, pagar con 500
-      const montoAPagar = Math.ceil(total / montoRedondo) * montoRedondo
+      const montoAPagar = Math.ceil(totalGeneral / montoRedondo) * montoRedondo
       setEfectivo(montoAPagar)
     }
   }
@@ -153,34 +280,34 @@ const ModalNuevaVenta = ({
   const handleSubmit = async (e) => {
     e.preventDefault()
     
-    if (!ventaData.producto_id) {
-      setError('Selecciona un producto')
+    if (productosSeleccionados.length === 0) {
+      setError('Agrega al menos un producto')
       return
     }
 
-    if (ventaData.cantidad < 1) {
-      setError('La cantidad debe ser mayor a 0')
+    const totalGeneral = calcularTotalGeneral()
+    if (totalGeneral <= 0) {
+      setError('El total debe ser mayor a 0')
       return
     }
 
-    if (ventaData.precio_unitario <= 0) {
-      setError('El precio debe ser mayor a 0')
+    // Validar que todos los productos tengan producto_id
+    const productosInvalidos = productosSeleccionados.filter(p => !p.producto_id)
+    if (productosInvalidos.length > 0) {
+      setError('Todos los productos deben estar seleccionados')
       return
     }
 
-    // Validar que haya al menos un monto positivo
     if (totalPagos <= 0) {
       setError('El monto de la venta debe ser mayor a 0')
       return
     }
 
-    // Validar que NO se pague menos del total (solo permitir igual o mayor)
-    if (totalPagos < total) {
-      setError(`El pago ($${totalPagos.toFixed(2)}) es menor al total ($${total.toFixed(2)})`)
+    if (totalPagos < totalGeneral) {
+      setError(`El pago ($${totalPagos.toFixed(2)}) es menor al total ($${totalGeneral.toFixed(2)})`)
       return
     }
 
-    // Validar banco para tarjeta/transferencia
     if (metodoPago === 'tarjeta' && !banco) {
       setError('Selecciona un banco para pago con tarjeta')
       return
@@ -191,7 +318,6 @@ const ModalNuevaVenta = ({
       return
     }
 
-    // Validar bancos para método mixto
     if (metodoPago === 'mixto') {
       if (tarjeta > 0 && !bancoTarjeta) {
         setError('Selecciona un banco para el pago con tarjeta en método mixto')
@@ -205,41 +331,58 @@ const ModalNuevaVenta = ({
 
     setLoading(true)
     try {
-      // Preparar datos para guardar
-      const datosCompletos = {
-        producto_id: ventaData.producto_id,
-        cantidad: parseInt(ventaData.cantidad),
-        precio_unitario: parseFloat(ventaData.precio_unitario),
-        total: total,
-        fecha: new Date().toISOString(),
-        metodo_pago: metodoPago,
-        efectivo: parseFloat(efectivo),
-        tarjeta: parseFloat(tarjeta),
-        transferencia: parseFloat(transferencia),
-        vuelto: vuelto > 0 ? parseFloat(vuelto) : 0
-      }
-
-      // Agregar banco según el método de pago
-      if (metodoPago === 'tarjeta' || metodoPago === 'transferencia') {
-        datosCompletos.banco = banco
-      } else if (metodoPago === 'mixto') {
-        // Para mixto, guardamos ambos bancos en un campo JSON
-        const bancosMixto = {
-          tarjeta: bancoTarjeta || null,
-          transferencia: bancoTransferencia || null
+      // Crear una venta por cada producto
+      const ventas = productosSeleccionados.map(producto => {
+        const datosVenta = {
+          producto_id: producto.producto_id,
+          cantidad: producto.cantidad,
+          precio_unitario: producto.precio_unitario,
+          total: calcularTotalProducto(producto),
+          fecha: new Date().toISOString(),
+          metodo_pago: metodoPago,
+          efectivo: 0,
+          tarjeta: 0,
+          transferencia: 0,
+          vuelto: 0
         }
-        datosCompletos.banco = JSON.stringify(bancosMixto)
-      }
+
+        // Distribuir pagos proporcionalmente
+        const proporcion = calcularTotalProducto(producto) / totalGeneral
+        
+        if (metodoPago === 'efectivo') {
+          datosVenta.efectivo = parseFloat((efectivo * proporcion).toFixed(2))
+          datosVenta.vuelto = parseFloat((vuelto * proporcion).toFixed(2))
+        } else if (metodoPago === 'tarjeta') {
+          datosVenta.tarjeta = parseFloat((tarjeta * proporcion).toFixed(2))
+          if (banco) datosVenta.banco = banco
+        } else if (metodoPago === 'transferencia') {
+          datosVenta.transferencia = parseFloat((transferencia * proporcion).toFixed(2))
+          if (banco) datosVenta.banco = banco
+        } else if (metodoPago === 'mixto') {
+          datosVenta.efectivo = parseFloat((efectivo * proporcion).toFixed(2))
+          datosVenta.tarjeta = parseFloat((tarjeta * proporcion).toFixed(2))
+          datosVenta.transferencia = parseFloat((transferencia * proporcion).toFixed(2))
+          
+          // Guardar bancos en JSON
+          const bancosMixto = {
+            tarjeta: bancoTarjeta || null,
+            transferencia: bancoTransferencia || null
+          }
+          datosVenta.banco = JSON.stringify(bancosMixto)
+        }
+
+        return datosVenta
+      })
       
-      console.log('Guardando venta:', datosCompletos)
-      await onSave(datosCompletos)
+      console.log('Guardando ventas:', ventas)
+      
+      // Enviar todas las ventas
+      for (const venta of ventas) {
+        await onSave(venta)
+      }
       
       // Resetear formulario después de guardar
-      setVentaData({
-        producto_id: '',
-        cantidad: 1,
-        precio_unitario: 0
-      })
+      setProductosSeleccionados([])
       setMetodoPago('efectivo')
       setBanco('')
       setEfectivo(0)
@@ -248,6 +391,8 @@ const ModalNuevaVenta = ({
       setBancoTarjeta('')
       setBancoTransferencia('')
       setVuelto(0)
+      setBusqueda('')
+      setBusquedaManual('')
     } catch (error) {
       setError('Error al registrar la venta: ' + error.message)
       console.error('Error al registrar:', error)
@@ -256,7 +401,6 @@ const ModalNuevaVenta = ({
     }
   }
 
-  // Manejar cambio en método de pago simple
   const handleMetodoSimpleChange = (metodo, value) => {
     const valor = parseFloat(value) || 0
     
@@ -275,14 +419,15 @@ const ModalNuevaVenta = ({
     }
   }
 
+  if (!isOpen) return null
+
   return (
     <div className="modal-overlay">
       <div className="modal-container-nueva-venta">
         <div className="modal-header-nueva-venta">
           <div className="modal-titulo-contenedor">
             <svg className="modal-icono-nuevo" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                d="M12 4v16m8-8H4" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
             <h3 className="modal-titulo-nueva-venta">
               Nueva Venta
@@ -299,163 +444,307 @@ const ModalNuevaVenta = ({
         
         <form onSubmit={handleSubmit}>
           <div className="modal-contenido-nueva-venta">
-            {/* Formulario */}
+            {/* BÚSQUEDA DE PRODUCTOS */}
             <div className="form-grupo">
               <label className="form-label">
-                Producto **
+                Buscar Producto
+                <span className="hint-text"> (nombre, categoría, código de barras)</span>
               </label>
-              <select
-                value={ventaData.producto_id}
-                onChange={(e) => {
-                  const productoId = e.target.value
-                  const producto = productos.find(p => p.id === productoId)
-                  setVentaData({
-                    ...ventaData,
-                    producto_id: productoId,
-                    precio_unitario: producto?.precio || 0
-                  })
-                  setError('')
-                }}
-                className="form-select"
-                disabled={loading}
-                required
-              >
-                <option value="">Selecciona un producto</option>
-                {productos.map((producto) => (
-                  <option key={producto.id} value={producto.id}>
-                    {producto.nombre} - ${producto.precio?.toFixed(2)}
-                    {producto.categoria && ` (${producto.categoria})`}
-                  </option>
-                ))}
-              </select>
-            </div>
-            
-            <div className="form-grupo">
-              <label className="form-label">
-                Cantidad **
-              </label>
-              <div className="input-group-cantidad">
-                <button
-                  type="button"
-                  onClick={() => setVentaData({
-                    ...ventaData,
-                    cantidad: Math.max(1, ventaData.cantidad - 1)
-                  })}
-                  className="cantidad-btn"
-                  disabled={loading}
-                >
-                  -
-                </button>
+              <div className="busqueda-producto-container">
                 <input
-                  type="number"
-                  min="1"
-                  value={ventaData.cantidad}
-                  onChange={(e) => {
-                    const value = parseInt(e.target.value) || 1
-                    setVentaData({...ventaData, cantidad: Math.max(1, value)})
-                    setError('')
+                  type="text"
+                  value={busqueda}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                  onFocus={() => {
+                    if (busqueda.trim()) setMostrarResultados(true)
                   }}
-                  className="form-input-cantidad"
+                  className="form-input-busqueda"
+                  placeholder="Escribe o escanea código de barras..."
                   disabled={loading}
-                  required
+                  autoFocus
                 />
-                <button
-                  type="button"
-                  onClick={() => setVentaData({
-                    ...ventaData,
-                    cantidad: ventaData.cantidad + 1
-                  })}
-                  className="cantidad-btn"
-                  disabled={loading}
-                >
-                  +
-                </button>
+                {busqueda && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBusqueda('')
+                      setProductosFiltrados([])
+                      setMostrarResultados(false)
+                    }}
+                    className="boton-limpiar-busqueda"
+                  >
+                    ×
+                  </button>
+                )}
+                
+                {/* Resultados de búsqueda */}
+                {mostrarResultados && productosFiltrados.length > 0 && (
+                  <div className="resultados-busqueda">
+                    {productosFiltrados.slice(0, 10).map((producto) => (
+                      <div
+                        key={producto.id}
+                        className="resultado-item"
+                        onClick={() => agregarProductoDesdeBusqueda(producto)}
+                      >
+                        <div className="resultado-nombre">
+                          <strong>{producto.nombre}</strong>
+                          {producto.categoria && (
+                            <span className="resultado-categoria"> ({producto.categoria})</span>
+                          )}
+                        </div>
+                        <div className="resultado-info">
+                          <span className="resultado-precio">${producto.precio?.toFixed(2)}</span>
+                          {producto.codigo_barras && (
+                            <span className="resultado-codigo">📟 {producto.codigo_barras}</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {mostrarResultados && productosFiltrados.length === 0 && (
+                  <div className="resultados-busqueda">
+                    <div className="resultado-vacio">
+                      No se encontraron productos con "{busqueda}"
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
             
-            {/* SECCIÓN DE TOTAL CON BOTÓN PAGO COMPLETO Y VUELTO */}
+            {/* LISTA DE PRODUCTOS SELECCIONADOS */}
+            <div className="productos-container">
+              <div className="productos-header">
+                <h4 className="productos-titulo">Productos ({productosSeleccionados.length})</h4>
+                <button
+                  type="button"
+                  onClick={agregarProductoManual}
+                  className="btn-agregar-producto"
+                  disabled={loading}
+                >
+                  + Agregar Producto
+                </button>
+              </div>
+              
+              {productosSeleccionados.length === 0 ? (
+                <div className="sin-productos">
+                  <p>No hay productos agregados. Busca o agrega productos.</p>
+                </div>
+              ) : (
+                <div className="lista-productos">
+                  {productosSeleccionados.map((producto, index) => {
+                    const productoInfo = productos.find(p => p.id === producto.producto_id)
+                    return (
+                      <div key={producto.id} className="producto-item">
+                        <div className="producto-header">
+                          <span className="producto-numero">#{index + 1}</span>
+                          <button
+                            type="button"
+                            onClick={() => eliminarProducto(index)}
+                            className="btn-eliminar-producto"
+                            disabled={loading}
+                          >
+                            ×
+                          </button>
+                        </div>
+                        
+                        <div className="producto-form">
+                          <div className="producto-seleccionado-info">
+                            {producto.producto_nombre ? (
+                              <div className="producto-info-actual">
+                                <strong>{producto.producto_nombre}</strong>
+                                {producto.producto_categoria && (
+                                  <span className="producto-info-categoria"> ({producto.producto_categoria})</span>
+                                )}
+                                {producto.producto_codigo && (
+                                  <div className="producto-info-codigo">
+                                    <small>Código: {producto.producto_codigo}</small>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div className="producto-busqueda-container">
+                                <input
+                                  type="text"
+                                  value={busquedaManual}
+                                  onChange={(e) => setBusquedaManual(e.target.value)}
+                                  placeholder="Buscar producto..."
+                                  className="form-input-busqueda"
+                                  disabled={loading}
+                                />
+                                {mostrarResultadosManual && productosFiltradosManual.length > 0 && (
+                                  <div className="resultados-busqueda-manual">
+                                    {productosFiltradosManual.slice(0, 5).map((p) => (
+                                      <div
+                                        key={p.id}
+                                        className="resultado-item"
+                                        onClick={() => {
+                                          actualizarProducto(index, 'producto_id', p.id)
+                                          setBusquedaManual('')
+                                          setMostrarResultadosManual(false)
+                                        }}
+                                      >
+                                        <div className="resultado-nombre">
+                                          <strong>{p.nombre}</strong>
+                                          {p.categoria && (
+                                            <span className="resultado-categoria"> ({p.categoria})</span>
+                                          )}
+                                        </div>
+                                        <div className="resultado-info">
+                                          <span className="resultado-precio">${p.precio?.toFixed(2)}</span>
+                                          {p.codigo_barras && (
+                                            <span className="resultado-codigo">📟 {p.codigo_barras}</span>
+                                          )}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="producto-cantidad-precio">
+                            <div>
+                              <label>Cantidad</label>
+                              <div className="input-group-cantidad">
+                                <button
+                                  type="button"
+                                  onClick={() => actualizarProducto(index, 'cantidad', producto.cantidad - 1)}
+                                  className="cantidad-btn"
+                                  disabled={loading}
+                                >
+                                  -
+                                </button>
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={producto.cantidad}
+                                  onChange={(e) => actualizarProducto(index, 'cantidad', e.target.value)}
+                                  className="form-input-cantidad"
+                                  disabled={loading}
+                                  required
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => actualizarProducto(index, 'cantidad', producto.cantidad + 1)}
+                                  className="cantidad-btn"
+                                  disabled={loading}
+                                >
+                                  +
+                                </button>
+                              </div>
+                            </div>
+                            <div>
+                              <label>Precio Unit.</label>
+                              <div className="input-group-precio">
+                                <span className="precio-simbolo">$</span>
+                                <input
+                                  type="number"
+                                  min="0.01"
+                                  step="0.01"
+                                  value={producto.precio_unitario}
+                                  onChange={(e) => actualizarProducto(index, 'precio_unitario', e.target.value)}
+                                  className="form-input-precio"
+                                  disabled={loading}
+                                  required
+                                />
+                              </div>
+                            </div>
+                            <div className="producto-subtotal">
+                              <label>Subtotal</label>
+                              <div className="subtotal-valor">
+                                ${calcularTotalProducto(producto).toFixed(2)}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+            </div>
+            
+            {/* SECCIÓN DE TOTAL */}
             <div className="total-section">
               <div className="total-container">
                 <div className="total-info">
                   <div className="total-label-container">
                     <span className="total-label">TOTAL VENTA:</span>
                     <div className="total-calculation">
-                      {ventaData.cantidad} x ${ventaData.precio_unitario.toFixed(2)}
+                      {productosSeleccionados.length} productos
                     </div>
                   </div>
                   <div className="total-amount-container">
-                    <span className="total-amount">${total.toFixed(2)}</span>
+                    <span className="total-amount">${totalGeneral.toFixed(2)}</span>
                     <div className="pago-buttons-container">
                       <button 
                         type="button" 
                         onClick={handlePagoCompleto}
                         className="btn-pago-completo"
+                        disabled={productosSeleccionados.length === 0}
                         title="Establecer el monto exacto del total"
                       >
                         Pago Exacto
                       </button>
-                      {metodoPago === 'efectivo' && (
+                      {metodoPago === 'efectivo' && productosSeleccionados.length > 0 && (
                         <div className="pago-con-vuelto-buttons">
-
                           <button 
                             type="button" 
                             onClick={() => handlePagoConVuelto(10)}
                             className="btn-pago-vuelto"
+                            disabled={productosSeleccionados.length === 0}
                             title="Pagar con $10"
                           >
                             Con $10
                           </button>
-
-
-
                           <button 
                             type="button" 
                             onClick={() => handlePagoConVuelto(50)}
                             className="btn-pago-vuelto"
+                            disabled={productosSeleccionados.length === 0}
                             title="Pagar con $50"
                           >
                             Con $50
                           </button>
-
                           <button 
                             type="button" 
                             onClick={() => handlePagoConVuelto(100)}
                             className="btn-pago-vuelto"
+                            disabled={productosSeleccionados.length === 0}
                             title="Pagar con $100"
                           >
                             Con $100
                           </button>
-
-
                           <button 
                             type="button" 
                             onClick={() => handlePagoConVuelto(200)}
                             className="btn-pago-vuelto"
+                            disabled={productosSeleccionados.length === 0}
                             title="Pagar con $200"
                           >
                             Con $200
                           </button>
-
-
                           <button 
                             type="button" 
                             onClick={() => handlePagoConVuelto(500)}
                             className="btn-pago-vuelto"
+                            disabled={productosSeleccionados.length === 0}
                             title="Pagar con $500"
                           >
                             Con $500
                           </button>
-
                           <button 
                             type="button" 
                             onClick={() => handlePagoConVuelto(1000)}
                             className="btn-pago-vuelto"
+                            disabled={productosSeleccionados.length === 0}
                             title="Pagar con $1000"
                           >
                             Con $1000
                           </button>
-
-
                         </div>
                       )}
                     </div>
@@ -470,7 +759,7 @@ const ModalNuevaVenta = ({
                       <span className="vuelto-amount">${vuelto.toFixed(2)}</span>
                     </div>
                     <div className="vuelto-detalle">
-                      Se pagó ${totalPagos.toFixed(2)} - Total ${total.toFixed(2)}
+                      Se pagó ${totalPagos.toFixed(2)} - Total ${totalGeneral.toFixed(2)}
                     </div>
                   </div>
                 )}
@@ -492,7 +781,7 @@ const ModalNuevaVenta = ({
                       setMetodoPago(metodo.value)
                       setError('')
                     }}
-                    disabled={loading}
+                    disabled={loading || productosSeleccionados.length === 0}
                   >
                     <span className="metodo-pago-icono">{metodo.icon}</span>
                     <span className="metodo-pago-label">{metodo.label}</span>
@@ -501,7 +790,7 @@ const ModalNuevaVenta = ({
               </div>
             </div>
 
-            {/* Para métodos simples (efectivo, tarjeta, transferencia) */}
+            {/* Para métodos simples */}
             {metodoPago !== 'mixto' && (
               <div className="form-grupo">
                 <label className="form-label">
@@ -520,7 +809,7 @@ const ModalNuevaVenta = ({
                     onChange={(e) => handleMetodoSimpleChange(metodoPago, e.target.value)}
                     className="form-input-precio"
                     placeholder="0.00"
-                    disabled={loading}
+                    disabled={loading || productosSeleccionados.length === 0}
                   />
                 </div>
                 {metodoPago === 'efectivo' && vuelto > 0 && (
@@ -545,7 +834,7 @@ const ModalNuevaVenta = ({
                     setError('')
                   }}
                   className="form-select"
-                  disabled={loading}
+                  disabled={loading || productosSeleccionados.length === 0}
                   required={metodoPago === 'tarjeta' || metodoPago === 'transferencia'}
                 >
                   <option value="">Selecciona un banco</option>
@@ -582,7 +871,7 @@ const ModalNuevaVenta = ({
                           setError('')
                         }}
                         className="form-input-precio"
-                        disabled={loading}
+                        disabled={loading || productosSeleccionados.length === 0}
                       />
                     </div>
                   </div>
@@ -606,7 +895,7 @@ const ModalNuevaVenta = ({
                           setError('')
                         }}
                         className="form-input-precio"
-                        disabled={loading}
+                        disabled={loading || productosSeleccionados.length === 0}
                       />
                     </div>
                     {tarjeta > 0 && (
@@ -617,7 +906,7 @@ const ModalNuevaVenta = ({
                           setError('')
                         }}
                         className="form-select-banco"
-                        disabled={loading}
+                        disabled={loading || productosSeleccionados.length === 0}
                         style={{ marginTop: '0.5rem' }}
                       >
                         <option value="">Banco para tarjeta</option>
@@ -649,7 +938,7 @@ const ModalNuevaVenta = ({
                           setError('')
                         }}
                         className="form-input-precio"
-                        disabled={loading}
+                        disabled={loading || productosSeleccionados.length === 0}
                       />
                     </div>
                     {transferencia > 0 && (
@@ -660,7 +949,7 @@ const ModalNuevaVenta = ({
                           setError('')
                         }}
                         className="form-select-banco"
-                        disabled={loading}
+                        disabled={loading || productosSeleccionados.length === 0}
                         style={{ marginTop: '0.5rem' }}
                       >
                         <option value="">Banco para transferencia</option>
@@ -677,7 +966,7 @@ const ModalNuevaVenta = ({
                 <div className="resumen-mixto">
                   <div className="resumen-mixto-item">
                     <span className="resumen-mixto-label">Total venta:</span>
-                    <span className="resumen-mixto-valor">${total.toFixed(2)}</span>
+                    <span className="resumen-mixto-valor">${totalGeneral.toFixed(2)}</span>
                   </div>
                   <div className="resumen-mixto-item">
                     <span className="resumen-mixto-label">Total pagos:</span>
@@ -719,103 +1008,6 @@ const ModalNuevaVenta = ({
               )}
             </div>
 
-            {/* Separador visual */}
-            <div className="separador-modal"></div>
-
-            {/* Resumen de Venta */}
-            <div className="resumen-venta-container">
-              <h4 className="resumen-venta-titulo">Resumen de Venta:</h4>
-              
-              {productoSeleccionado ? (
-                <div className="resumen-detalles">
-                  <div className="resumen-item">
-                    <span className="resumen-label">Producto:</span>
-                    <span className="resumen-valor">{productoSeleccionado.nombre}</span>
-                  </div>
-                  <div className="resumen-item">
-                    <span className="resumen-label">Precio unitario:</span>
-                    <span className="resumen-valor">${ventaData.precio_unitario.toFixed(2)}</span>
-                  </div>
-                  <div className="resumen-item">
-                    <span className="resumen-label">Cantidad:</span>
-                    <span className="resumen-valor">{ventaData.cantidad} unidades</span>
-                  </div>
-                  <div className="resumen-item resumen-total">
-                    <span className="resumen-label">Total:</span>
-                    <span className="resumen-valor-total">${total.toFixed(2)}</span>
-                  </div>
-                  
-                  {vuelto > 0 && (
-                    <div className="resumen-item resumen-vuelto">
-                      <span className="resumen-label">Vuelto:</span>
-                      <span className="resumen-valor">${vuelto.toFixed(2)}</span>
-                    </div>
-                  )}
-                  
-                  <div className="resumen-item">
-                    <span className="resumen-label">Método de pago:</span>
-                    <span className="resumen-valor">
-                      {metodosPago.find(m => m.value === metodoPago)?.label}
-                    </span>
-                  </div>
-                  
-                  {/* Mostrar banco según método */}
-                  {metodoPago === 'tarjeta' && banco && (
-                    <div className="resumen-item">
-                      <span className="resumen-label">Banco (tarjeta):</span>
-                      <span className="resumen-valor">{banco}</span>
-                    </div>
-                  )}
-                  
-                  {metodoPago === 'transferencia' && banco && (
-                    <div className="resumen-item">
-                      <span className="resumen-label">Banco (transferencia):</span>
-                      <span className="resumen-valor">{banco}</span>
-                    </div>
-                  )}
-                  
-                  {/* Mostrar distribución para mixto */}
-                  {metodoPago === 'mixto' ? (
-                    <>
-                      <div className="resumen-item">
-                        <span className="resumen-label">Efectivo:</span>
-                        <span className="resumen-valor">${efectivo.toFixed(2)}</span>
-                      </div>
-                      {tarjeta > 0 && (
-                        <div className="resumen-item">
-                          <span className="resumen-label">Tarjeta:</span>
-                          <span className="resumen-valor">
-                            ${tarjeta.toFixed(2)} {bancoTarjeta && `(${bancoTarjeta})`}
-                          </span>
-                        </div>
-                      )}
-                      {transferencia > 0 && (
-                        <div className="resumen-item">
-                          <span className="resumen-label">Transferencia:</span>
-                          <span className="resumen-valor">
-                            ${transferencia.toFixed(2)} {bancoTransferencia && `(${bancoTransferencia})`}
-                          </span>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="resumen-item">
-                      <span className="resumen-label">Monto recibido:</span>
-                      <span className="resumen-valor">
-                        ${totalPagos.toFixed(2)}
-                        {metodoPago === 'tarjeta' && banco && ` (${banco})`}
-                        {metodoPago === 'transferencia' && banco && ` (${banco})`}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="resumen-vacio">
-                  <p className="texto-resumen-vacio">Selecciona un producto para ver el resumen</p>
-                </div>
-              )}
-            </div>
-
             {/* Mostrar error */}
             {error && (
               <div className="error-mensaje">
@@ -839,7 +1031,7 @@ const ModalNuevaVenta = ({
             <button
               type="submit"
               className="btn-primario-venta"
-              disabled={loading || !ventaData.producto_id || totalPagos < total}
+              disabled={loading || productosSeleccionados.length === 0 || totalPagos < totalGeneral}
             >
               {loading ? (
                 <>

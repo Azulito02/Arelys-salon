@@ -20,6 +20,10 @@ const TablaProductos = ({ productos, loading, onEditar, onEliminar }) => {
         filtrados = filtrados.filter(p => parseFloat(p.precio) > 500)
       } else if (filtroActivo === 'precio-bajo') {
         filtrados = filtrados.filter(p => parseFloat(p.precio) <= 500)
+      } else if (filtroActivo === 'con-codigo') {
+        filtrados = filtrados.filter(p => p.codigo_barras)
+      } else if (filtroActivo === 'sin-codigo') {
+        filtrados = filtrados.filter(p => !p.codigo_barras)
       }
     }
     
@@ -30,6 +34,7 @@ const TablaProductos = ({ productos, loading, onEditar, onEliminar }) => {
         producto.nombre?.toLowerCase().includes(termino) ||
         producto.descripcion?.toLowerCase().includes(termino) ||
         producto.categoria?.toLowerCase().includes(termino) ||
+        producto.codigo_barras?.toLowerCase().includes(termino) ||
         producto.precio?.toString().includes(termino)
       )
     }
@@ -42,11 +47,12 @@ const TablaProductos = ({ productos, loading, onEditar, onEliminar }) => {
     const totalProductos = productos.length
     const totalFiltrados = productosFiltrados.length
     const totalConCategoria = productos.filter(p => p.categoria).length
+    const totalConCodigo = productos.filter(p => p.codigo_barras).length
     const promedioPrecio = productos.length > 0 
       ? productos.reduce((sum, p) => sum + parseFloat(p.precio), 0) / productos.length
       : 0
     
-    return { totalProductos, totalFiltrados, totalConCategoria, promedioPrecio }
+    return { totalProductos, totalFiltrados, totalConCategoria, totalConCodigo, promedioPrecio }
   }
 
   const estadisticas = calcularEstadisticas()
@@ -57,6 +63,17 @@ const TablaProductos = ({ productos, loading, onEditar, onEliminar }) => {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2 
     })
+  }
+
+  // Copiar código de barras al portapapeles
+  const copiarCodigoBarras = (codigo) => {
+    navigator.clipboard.writeText(codigo)
+      .then(() => {
+        alert(`Código de barras copiado: ${codigo}`)
+      })
+      .catch(err => {
+        console.error('Error al copiar:', err)
+      })
   }
 
   // Renderizar productos para vista móvil
@@ -97,6 +114,19 @@ const TablaProductos = ({ productos, loading, onEditar, onEliminar }) => {
           </div>
         </div>
         
+        {/* Código de barras en móvil */}
+        {producto.codigo_barras && (
+          <div 
+            className="producto-card-codigo-barras"
+            onClick={() => copiarCodigoBarras(producto.codigo_barras)}
+            style={{ cursor: 'pointer' }}
+            title="Haz clic para copiar"
+          >
+            <span className="codigo-barras-icono">📋</span>
+            <span className="codigo-barras-texto">{producto.codigo_barras}</span>
+          </div>
+        )}
+        
         {producto.descripcion && (
           <div className="producto-card-descripcion">
             {producto.descripcion}
@@ -133,7 +163,7 @@ const TablaProductos = ({ productos, loading, onEditar, onEliminar }) => {
           </svg>
           <input
             type="text"
-            placeholder="Buscar por nombre, descripción, categoría o precio..."
+            placeholder="Buscar por nombre, categoría, código de barras o precio..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             className="buscador-productos-input"
@@ -173,7 +203,7 @@ const TablaProductos = ({ productos, loading, onEditar, onEliminar }) => {
             className={`filtro-btn ${filtroActivo === 'con-categoria' ? 'activo' : ''}`}
             onClick={() => setFiltroActivo('con-categoria')}
           >
-           Por categoría
+            Por categoría
           </button>
           
         </div>
@@ -187,7 +217,7 @@ const TablaProductos = ({ productos, loading, onEditar, onEliminar }) => {
           </svg>
           <input
             type="text"
-            placeholder="Buscar productos..."
+            placeholder="Buscar productos o código de barras..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             className="buscador-productos-mobile-input"
@@ -219,6 +249,7 @@ const TablaProductos = ({ productos, loading, onEditar, onEliminar }) => {
             <thead>
               <tr>
                 <th className="columna-nombre">Nombre</th>
+                <th className="columna-codigo-barras">Código Barras</th>
                 <th className="columna-categoria">Categoría</th>
                 <th className="columna-descripcion">Descripción</th>
                 <th className="columna-precio">Precio</th>
@@ -228,14 +259,14 @@ const TablaProductos = ({ productos, loading, onEditar, onEliminar }) => {
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="5" className="tabla-cargando">
+                  <td colSpan="6" className="tabla-cargando">
                     <div className="spinner"></div>
                     <span>Cargando productos...</span>
                   </td>
                 </tr>
               ) : productosFiltrados.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="tabla-vacia">
+                  <td colSpan="6" className="tabla-vacia">
                     {busqueda || filtroActivo !== 'todos' 
                       ? 'No se encontraron productos con los filtros aplicados' 
                       : 'No hay productos registrados'
@@ -247,6 +278,22 @@ const TablaProductos = ({ productos, loading, onEditar, onEliminar }) => {
                   <tr key={producto.id} className="fila-producto">
                     <td className="celda-nombre">
                       <div className="producto-nombre">{producto.nombre}</div>
+                    </td>
+                    <td className="celda-codigo-barras">
+                      <div 
+                        className="producto-codigo-barras"
+                        onClick={() => producto.codigo_barras && copiarCodigoBarras(producto.codigo_barras)}
+                        style={{ cursor: producto.codigo_barras ? 'pointer' : 'default' }}
+                        title={producto.codigo_barras ? "Haz clic para copiar" : ""}
+                      >
+                        {producto.codigo_barras ? (
+                          <span className="codigo-barras-activo">
+                            📋 {producto.codigo_barras}
+                          </span>
+                        ) : (
+                          <span className="codigo-barras-sin">Sin código</span>
+                        )}
+                      </div>
                     </td>
                     <td className="celda-categoria">
                       <div className="producto-categoria">
@@ -310,6 +357,7 @@ const TablaProductos = ({ productos, loading, onEditar, onEliminar }) => {
               <span className="estadistica-valor">{estadisticas.totalConCategoria}</span>
             </div>
             
+            
             {busqueda || filtroActivo !== 'todos' && (
               <div className="estadistica-item">
                 <span className="estadistica-label">Filtrados:</span>
@@ -328,7 +376,7 @@ const TablaProductos = ({ productos, loading, onEditar, onEliminar }) => {
               <span className="estadistica-mobile-label">Con cat.</span>
               <span className="estadistica-mobile-valor">{estadisticas.totalConCategoria}</span>
             </div>
-          
+            
           </div>
         </>
       )}

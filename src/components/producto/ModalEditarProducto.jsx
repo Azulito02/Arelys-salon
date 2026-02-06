@@ -26,17 +26,19 @@ const ModalEditarProducto = ({ isOpen, onClose, onSave, producto }) => {
   })
   const [error, setError] = useState('')
 
-  useEffect(() => {
-    if (producto) {
-      setProductoEditado({
-        nombre: producto.nombre || '',
-        descripcion: producto.descripcion || '',
-        precio: producto.precio || '',
-        categoria: producto.categoria || 'General'
-      })
-      setError('')
-    }
-  }, [producto])
+
+useEffect(() => {
+  if (producto) {
+    setProductoEditado({
+      nombre: producto.nombre || '',
+      descripcion: producto.descripcion || '',
+      precio: producto.precio || '',
+      categoria: producto.categoria || 'General',
+      codigo_barras: producto.codigo_barras || ''
+    })
+    setError('')
+  }
+}, [producto])
 
   if (!isOpen || !producto) return null
 
@@ -51,12 +53,15 @@ const ModalEditarProducto = ({ isOpen, onClose, onSave, producto }) => {
       return
     }
     
-    const productoData = {
-      nombre: productoEditado.nombre.trim(),
-      descripcion: productoEditado.descripcion.trim() || null,
-      precio: parseFloat(productoEditado.precio),
-      categoria: productoEditado.categoria
-    }
+
+    // En handleSubmit
+const productoData = {
+  nombre: productoEditado.nombre.trim(),
+  descripcion: productoEditado.descripcion.trim() || null,
+  precio: parseFloat(productoEditado.precio),
+  categoria: productoEditado.categoria,
+  codigo_barras: productoEditado.codigo_barras.trim() || null
+};
     
     onSave(productoData)
   }
@@ -152,6 +157,30 @@ const ModalEditarProducto = ({ isOpen, onClose, onSave, producto }) => {
               placeholder="0.00"
             />
           </div>
+
+
+              // Agregar el campo en el formulario
+<div className="campo-formulario">
+  <div className="label-contenedor">
+    <label className="label-campo">
+      <strong>Código de Barras</strong>
+    </label>
+  </div>
+  <input
+    type="text"
+    value={productoEditado.codigo_barras}
+    onChange={(e) => setProductoEditado({...productoEditado, codigo_barras: e.target.value})}
+    className="input-campo"
+    placeholder="Escanear o ingresar manualmente"
+  />
+  <small className="texto-ayuda">
+    {productoEditado.codigo_barras ? 
+      `Código actual: ${productoEditado.codigo_barras}` : 
+      'No tiene código asignado'}
+  </small>
+</div>
+
+
         </div>
         
         <div className="modal-editar-footer">

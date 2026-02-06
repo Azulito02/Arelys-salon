@@ -320,3 +320,13 @@
     max-height: 50vh;
   }
 }
+
+
+/* Agregar en ModalAgregarProducto.css y ModalEditarProducto.css */
+.texto-ayuda {
+  display: block;
+  margin-top: 4px;
+  font-size: 12px;
+  color: #6b7280;
+  font-style: italic;
+}

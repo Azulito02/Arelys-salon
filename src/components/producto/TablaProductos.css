@@ -738,3 +738,74 @@
     display: block;
   }
 }
+
+
+/* Agregar en TablaProductos.css */
+
+/* Columna código de barras */
+.columna-codigo-barras {
+  width: 180px;
+  text-align: center;
+}
+
+.celda-codigo-barras {
+  text-align: center;
+  padding: 18px 12px;
+}
+
+.producto-codigo-barras {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-family: 'Monaco', 'Courier New', monospace;
+}
+
+.codigo-barras-activo {
+  background-color: #d1fae5;
+  color: #065f46;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid #a7f3d0;
+  cursor: pointer;
+  max-width: 160px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.codigo-barras-activo:hover {
+  background-color: #a7f3d0;
+}
+
+.codigo-barras-sin {
+  color: #94a3b8;
+  font-size: 12px;
+  font-style: italic;
+}
+
+/* Para móvil */
+.producto-card-codigo-barras {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 6px 10px;
+  background-color: #f0fdf4;
+  border-radius: 6px;
+  border: 1px solid #bbf7d0;
+}
+
+.codigo-barras-icono {
+  font-size: 14px;
+}
+
+.codigo-barras-texto {
+  font-size: 12px;
+  font-family: 'Monaco', 'Courier New', monospace;
+  color: #065f46;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
