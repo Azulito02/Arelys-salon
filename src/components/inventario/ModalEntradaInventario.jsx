@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import './ModalEntradaInventario.css'
 
 const ModalEntradaInventario = ({
@@ -11,6 +11,65 @@ const ModalEntradaInventario = ({
 }) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [busqueda, setBusqueda] = useState('')
+  const [productosFiltrados, setProductosFiltrados] = useState([])
+  const [mostrarResultados, setMostrarResultados] = useState(false)
+
+  // Resetear búsqueda cuando se cierra
+  useEffect(() => {
+    if (!isOpen) {
+      setBusqueda('')
+      setProductosFiltrados([])
+      setMostrarResultados(false)
+    }
+  }, [isOpen])
+
+  // Filtrar productos según búsqueda
+  useEffect(() => {
+    if (busqueda.trim() === '') {
+      setProductosFiltrados([])
+      setMostrarResultados(false)
+      return
+    }
+
+    const termino = busqueda.toLowerCase().trim()
+    
+    const filtrados = productos.filter(producto => {
+      if (producto.nombre?.toLowerCase().includes(termino)) return true
+      if (producto.categoria?.toLowerCase().includes(termino)) return true
+      if (producto.codigo_barras?.toLowerCase().includes(termino)) return true
+      if (producto.codigo?.toLowerCase().includes(termino)) return true
+      return false
+    })
+    
+    setProductosFiltrados(filtrados)
+    setMostrarResultados(true)
+  }, [busqueda, productos])
+
+  // Función para obtener precio del producto
+  const obtenerPrecioProducto = (producto) => {
+    if (producto.precio_venta !== undefined && producto.precio_venta !== null) {
+      return parseFloat(producto.precio_venta)
+    }
+    if (producto.precio !== undefined && producto.precio !== null) {
+      return parseFloat(producto.precio)
+    }
+    if (producto.precio_unitario !== undefined && producto.precio_unitario !== null) {
+      return parseFloat(producto.precio_unitario)
+    }
+    return 0
+  }
+
+  // Seleccionar producto desde búsqueda
+  const seleccionarProducto = (producto) => {
+    setEntradaData({
+      producto_id: producto.id,
+      entrada: 1
+    })
+    setBusqueda('')
+    setMostrarResultados(false)
+    setError('')
+  }
 
   if (!isOpen) return null
 
@@ -109,33 +168,118 @@ const ModalEntradaInventario = ({
 
             <div className="form-grupo">
               <label className="form-label">
-                Producto *
+                Buscar Producto *
+                <span className="hint-text"> (nombre, categoría, código)</span>
               </label>
-              <select
-                value={entradaData.producto_id}
-                onChange={(e) => {
-                  setEntradaData({
-                    ...entradaData, 
-                    producto_id: e.target.value
-                  })
-                  setError('')
-                }}
-                className="form-select"
-                required
-                disabled={loading}
-              >
-                <option value="">Selecciona un producto</option>
-                {productos.map((producto) => (
-                  <option key={producto.id} value={producto.id}>
-                    {producto.nombre} - ${producto.precio?.toFixed(2)}
-                    {producto.codigo && ` (${producto.codigo})`}
-                  </option>
-                ))}
-              </select>
+              <div className="busqueda-producto-container">
+                <input
+                  type="text"
+                  value={busqueda}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                  onFocus={() => {
+                    if (busqueda.trim()) setMostrarResultados(true)
+                  }}
+                  className="form-input-busqueda"
+                  placeholder="Escribe para buscar productos..."
+                  disabled={loading}
+                  autoFocus
+                />
+                {busqueda && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBusqueda('')
+                      setProductosFiltrados([])
+                      setMostrarResultados(false)
+                    }}
+                    className="boton-limpiar-busqueda"
+                  >
+                    ×
+                  </button>
+                )}
+                
+                {/* Resultados de búsqueda */}
+                {mostrarResultados && productosFiltrados.length > 0 && (
+                  <div className="resultados-busqueda">
+                    {productosFiltrados.slice(0, 10).map((producto) => (
+                      <div
+                        key={producto.id}
+                        className="resultado-item"
+                        onClick={() => seleccionarProducto(producto)}
+                      >
+                        <div className="resultado-nombre">
+                          <strong>{producto.nombre}</strong>
+                          {producto.categoria && (
+                            <span className="resultado-categoria"> ({producto.categoria})</span>
+                          )}
+                        </div>
+                        <div className="resultado-info">
+                          <span className="resultado-precio">${obtenerPrecioProducto(producto).toFixed(2)}</span>
+                          {(producto.codigo_barras || producto.codigo) && (
+                            <span className="resultado-codigo">📟 {producto.codigo_barras || producto.codigo}</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {mostrarResultados && productosFiltrados.length === 0 && (
+                  <div className="resultados-busqueda">
+                    <div className="resultado-vacio">
+                      No se encontraron productos con "{busqueda}"
+                    </div>
+                  </div>
+                )}
+              </div>
               <p className="form-ayuda">
-                Selecciona el producto que ingresará al inventario
+                Busca y selecciona el producto que ingresará al inventario
               </p>
             </div>
+
+            {/* Producto seleccionado */}
+            {entradaData.producto_id && productoSeleccionado && (
+              <div className="producto-seleccionado-card">
+                <div className="producto-seleccionado-header">
+                  <h4 className="producto-seleccionado-titulo">Producto Seleccionado</h4>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEntradaData({ producto_id: '', entrada: 1 })
+                      setBusqueda('')
+                    }}
+                    className="btn-cambiar-producto"
+                    disabled={loading}
+                  >
+                    Cambiar
+                  </button>
+                </div>
+                <div className="producto-seleccionado-detalles">
+                  <div className="detalle-linea">
+                    <span className="detalle-label">Nombre:</span>
+                    <span className="detalle-valor">{productoSeleccionado.nombre}</span>
+                  </div>
+                  {productoSeleccionado.categoria && (
+                    <div className="detalle-linea">
+                      <span className="detalle-label">Categoría:</span>
+                      <span className="detalle-valor">{productoSeleccionado.categoria}</span>
+                    </div>
+                  )}
+                  {(productoSeleccionado.codigo_barras || productoSeleccionado.codigo) && (
+                    <div className="detalle-linea">
+                      <span className="detalle-label">Código:</span>
+                      <span className="detalle-valor">
+                        {productoSeleccionado.codigo_barras || productoSeleccionado.codigo}
+                      </span>
+                    </div>
+                  )}
+                  <div className="detalle-linea">
+                    <span className="detalle-label">Precio:</span>
+                    <span className="detalle-valor precio">${obtenerPrecioProducto(productoSeleccionado).toFixed(2)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
             
             <div className="form-grupo">
               <label className="form-label">
@@ -146,7 +290,7 @@ const ModalEntradaInventario = ({
                   type="button"
                   onClick={decrementarCantidad}
                   className="cantidad-btn"
-                  disabled={loading}
+                  disabled={loading || !entradaData.producto_id}
                 >
                   -
                 </button>
@@ -157,13 +301,13 @@ const ModalEntradaInventario = ({
                   onChange={handleCantidadChange}
                   className="form-input-cantidad"
                   required
-                  disabled={loading}
+                  disabled={loading || !entradaData.producto_id}
                 />
                 <button
                   type="button"
                   onClick={incrementarCantidad}
                   className="cantidad-btn"
-                  disabled={loading}
+                  disabled={loading || !entradaData.producto_id}
                 >
                   +
                 </button>
@@ -184,7 +328,7 @@ const ModalEntradaInventario = ({
                   </div>
                   <div className="detalle-item">
                     <span>Precio unitario:</span>
-                    <strong>${productoSeleccionado.precio?.toFixed(2)}</strong>
+                    <strong>${obtenerPrecioProducto(productoSeleccionado).toFixed(2)}</strong>
                   </div>
                   <div className="detalle-item">
                     <span>Cantidad:</span>
@@ -193,7 +337,7 @@ const ModalEntradaInventario = ({
                   <div className="detalle-item total">
                     <span>Valor total:</span>
                     <strong className="valor-total">
-                      ${(productoSeleccionado.precio * (parseInt(entradaData.entrada) || 0)).toFixed(2)}
+                      ${(obtenerPrecioProducto(productoSeleccionado) * (parseInt(entradaData.entrada) || 0)).toFixed(2)}
                     </strong>
                   </div>
                 </div>

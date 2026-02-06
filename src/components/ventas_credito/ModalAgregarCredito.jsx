@@ -18,6 +18,7 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
   const [busquedaManual, setBusquedaManual] = useState('')
   const [productosFiltradosManual, setProductosFiltradosManual] = useState([])
   const [mostrarResultadosManual, setMostrarResultadosManual] = useState(false)
+  const [indiceBuscando, setIndiceBuscando] = useState(null)
   
   const [productosSeleccionados, setProductosSeleccionados] = useState([])
   const [loading, setLoading] = useState(false)
@@ -57,7 +58,7 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
 
   // Filtrar productos según búsqueda manual
   useEffect(() => {
-    if (busquedaManual.trim() === '') {
+    if (busquedaManual.trim() === '' || indiceBuscando === null) {
       setProductosFiltradosManual([])
       setMostrarResultadosManual(false)
       return
@@ -74,7 +75,7 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
     
     setProductosFiltradosManual(filtrados)
     setMostrarResultadosManual(true)
-  }, [busquedaManual, productos])
+  }, [busquedaManual, productos, indiceBuscando])
 
   const cargarClientes = async () => {
     try {
@@ -117,37 +118,63 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
     setBusquedaManual('')
     setProductosFiltradosManual([])
     setMostrarResultadosManual(false)
+    setIndiceBuscando(null)
     setError('')
   }
 
-  // Agregar producto desde búsqueda
+  // Función auxiliar para obtener el precio del producto
+  const obtenerPrecioProducto = (producto) => {
+    if (producto.precio_venta !== undefined && producto.precio_venta !== null) {
+      return parseFloat(producto.precio_venta)
+    }
+    if (producto.precio !== undefined && producto.precio !== null) {
+      return parseFloat(producto.precio)
+    }
+    if (producto.precio_unitario !== undefined && producto.precio_unitario !== null) {
+      return parseFloat(producto.precio_unitario)
+    }
+    return 0
+  }
+
+  // Agregar producto desde búsqueda - CORREGIDA
   const agregarProductoDesdeBusqueda = (producto) => {
-    // Verificar si el producto ya está en la lista
-    const existe = productosSeleccionados.find(p => p.producto_id === producto.id)
+    console.log('🔍 [CRÉDITO] Producto recibido para agregar:', producto)
     
-    if (existe) {
+    // Verificar si el producto ya está en la lista
+    const existeIndex = productosSeleccionados.findIndex(p => p.producto_id === producto.id)
+    
+    // Obtener el precio correcto
+    const precioProducto = obtenerPrecioProducto(producto)
+    console.log('💰 [CRÉDITO] Precio asignado:', precioProducto)
+    
+    if (existeIndex !== -1) {
       // Si existe, incrementar cantidad
       setProductosSeleccionados(prev =>
-        prev.map(p =>
-          p.producto_id === producto.id
-            ? { ...p, cantidad: p.cantidad + 1 }
+        prev.map((p, idx) =>
+          idx === existeIndex
+            ? { 
+                ...p, 
+                cantidad: p.cantidad + 1,
+                precio_unitario: precioProducto > 0 ? precioProducto : p.precio_unitario
+              }
             : p
         )
       )
     } else {
       // Si no existe, agregar nuevo
-      setProductosSeleccionados(prev => [
-        ...prev,
-        {
-          id: Date.now() + Math.random(), // ID temporal
-          producto_id: producto.id,
-          cantidad: 1,
-          precio_unitario: producto.precio || 0,
-          producto_nombre: producto.nombre,
-          producto_categoria: producto.categoria,
-          producto_codigo: producto.codigo_barras
-        }
-      ])
+      const nuevoProducto = {
+        id: Date.now() + Math.random(),
+        producto_id: producto.id,
+        cantidad: 1,
+        precio_unitario: precioProducto,
+        producto_nombre: producto.nombre || producto.producto_nombre,
+        producto_categoria: producto.categoria || producto.producto_categoria,
+        producto_codigo: producto.codigo_barras || producto.producto_codigo || producto.codigo
+      }
+      
+      console.log('🛒 [CRÉDITO] Nuevo producto agregado:', nuevoProducto)
+      
+      setProductosSeleccionados(prev => [...prev, nuevoProducto])
     }
     
     setBusquedaProducto('')
@@ -157,18 +184,20 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
 
   // Agregar producto manualmente (botón)
   const agregarProductoManual = () => {
-    setProductosSeleccionados(prev => [
-      ...prev,
-      { 
-        id: Date.now() + Math.random(),
-        producto_id: '', 
-        cantidad: 1, 
-        precio_unitario: 0,
-        producto_nombre: '',
-        producto_categoria: '',
-        producto_codigo: ''
-      }
-    ])
+    const nuevoProducto = { 
+      id: Date.now() + Math.random(),
+      producto_id: '', 
+      cantidad: 1, 
+      precio_unitario: 0,
+      producto_nombre: '',
+      producto_categoria: '',
+      producto_codigo: ''
+    }
+    
+    setProductosSeleccionados(prev => [...prev, nuevoProducto])
+    // Establecer que estamos buscando para el último producto agregado
+    setIndiceBuscando(productosSeleccionados.length)
+    setBusquedaManual('')
   }
 
   // Eliminar producto de la lista
@@ -178,38 +207,50 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
     setProductosSeleccionados(nuevosProductos)
   }
 
-  // Actualizar producto en la lista
+  // Actualizar producto en la lista - CORREGIDA
   const actualizarProducto = (index, campo, valor) => {
     const nuevosProductos = [...productosSeleccionados]
     
     if (campo === 'producto_id') {
       const producto = productos.find(p => p.id === valor)
-      nuevosProductos[index] = {
-        ...nuevosProductos[index],
-        producto_id: valor,
-        precio_unitario: producto?.precio || 0,
-        producto_nombre: producto?.nombre,
-        producto_categoria: producto?.categoria,
-        producto_codigo: producto?.codigo_barras
+      if (producto) {
+        const precioAsignar = obtenerPrecioProducto(producto)
+        nuevosProductos[index] = {
+          ...nuevosProductos[index],
+          producto_id: valor,
+          precio_unitario: precioAsignar,
+          producto_nombre: producto.nombre,
+          producto_categoria: producto.categoria,
+          producto_codigo: producto.codigo_barras
+        }
+        console.log(`✅ [CRÉDITO] Producto ${index} actualizado con precio: $${precioAsignar}`)
       }
     } else if (campo === 'cantidad') {
+      const nuevaCantidad = Math.max(1, parseInt(valor) || 1)
       nuevosProductos[index] = {
         ...nuevosProductos[index],
-        cantidad: Math.max(1, parseInt(valor) || 1)
+        cantidad: nuevaCantidad
       }
     } else if (campo === 'precio_unitario') {
+      const nuevoPrecio = parseFloat(valor) || 0
       nuevosProductos[index] = {
         ...nuevosProductos[index],
-        precio_unitario: parseFloat(valor) || 0
+        precio_unitario: nuevoPrecio
       }
     }
     
     setProductosSeleccionados(nuevosProductos)
   }
 
-  // Calcular totales
+  // Calcular totales - CORREGIDA
   const calcularTotalProducto = (producto) => {
-    return producto.cantidad * producto.precio_unitario
+    if (!producto) return 0
+    
+    const cantidad = parseInt(producto.cantidad) || 1
+    const precio = parseFloat(producto.precio_unitario) || 0
+    
+    const subtotal = cantidad * precio
+    return subtotal
   }
 
   const calcularTotalGeneral = () => {
@@ -267,6 +308,24 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
       setError('Error al registrar el cliente: ' + err.message)
       return null
     }
+  }
+
+  // Seleccionar producto desde búsqueda manual
+  const seleccionarProductoManual = (producto, index) => {
+    const precioAsignar = obtenerPrecioProducto(producto)
+    actualizarProducto(index, 'producto_id', producto.id)
+    setBusquedaManual('')
+    setMostrarResultadosManual(false)
+    setIndiceBuscando(null)
+    console.log(`✅ [CRÉDITO] Producto manual seleccionado para índice ${index} con precio: $${precioAsignar}`)
+  }
+
+  // Iniciar búsqueda manual para un producto específico
+  const iniciarBusquedaManual = (index) => {
+    setIndiceBuscando(index)
+    setBusquedaManual('')
+    setProductosFiltradosManual([])
+    setMostrarResultadosManual(false)
   }
 
   const handleSubmit = async (e) => {
@@ -515,7 +574,7 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
                           )}
                         </div>
                         <div className="resultado-info">
-                          <span className="resultado-precio">${producto.precio?.toFixed(2)}</span>
+                          <span className="resultado-precio">${obtenerPrecioProducto(producto).toFixed(2)}</span>
                           {producto.codigo_barras && (
                             <span className="resultado-codigo">📟 {producto.codigo_barras}</span>
                           )}
@@ -555,110 +614,114 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
                 </div>
               ) : (
                 <div className="lista-productos">
-                  {productosSeleccionados.map((producto, index) => {
-                    const productoInfo = productos.find(p => p.id === producto.producto_id)
-                    return (
-                      <div key={producto.id} className="producto-item">
-                        <div className="producto-header">
-                          <span className="producto-numero">#{index + 1}</span>
-                          <button
-                            type="button"
-                            onClick={() => eliminarProducto(index)}
-                            className="btn-eliminar-producto"
-                            disabled={loading}
-                          >
-                            ×
-                          </button>
+                  {productosSeleccionados.map((producto, index) => (
+                    <div key={producto.id} className="producto-item">
+                      <div className="producto-header">
+                        <span className="producto-numero">#{index + 1}</span>
+                        <button
+                          type="button"
+                          onClick={() => eliminarProducto(index)}
+                          className="btn-eliminar-producto"
+                          disabled={loading}
+                        >
+                          ×
+                        </button>
+                      </div>
+                      
+                      <div className="producto-form">
+                        <div className="producto-seleccionado-info">
+                          {producto.producto_nombre ? (
+                            <div className="producto-info-actual">
+                              <strong>{producto.producto_nombre}</strong>
+                              {producto.producto_categoria && (
+                                <span className="producto-info-categoria"> ({producto.producto_categoria})</span>
+                              )}
+                              {producto.precio_unitario > 0 && (
+                                <div className="producto-info-precio">
+                                  <small>Precio: ${producto.precio_unitario.toFixed(2)}</small>
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="producto-busqueda-container">
+                              <input
+                                type="text"
+                                value={indiceBuscando === index ? busquedaManual : ''}
+                                onChange={(e) => {
+                                  setBusquedaManual(e.target.value)
+                                  if (indiceBuscando !== index) {
+                                    setIndiceBuscando(index)
+                                  }
+                                }}
+                                onFocus={() => iniciarBusquedaManual(index)}
+                                placeholder="Buscar producto para agregar..."
+                                className="form-input-busqueda"
+                                disabled={loading}
+                              />
+                              {indiceBuscando === index && mostrarResultadosManual && productosFiltradosManual.length > 0 && (
+                                <div className="resultados-busqueda-manual">
+                                  {productosFiltradosManual.slice(0, 5).map((p) => (
+                                    <div
+                                      key={p.id}
+                                      className="resultado-item"
+                                      onClick={() => seleccionarProductoManual(p, index)}
+                                    >
+                                      <div className="resultado-nombre">
+                                        <strong>{p.nombre}</strong>
+                                        {p.categoria && (
+                                          <span className="resultado-categoria"> ({p.categoria})</span>
+                                        )}
+                                      </div>
+                                      <div className="resultado-info">
+                                        <span className="resultado-precio">${obtenerPrecioProducto(p).toFixed(2)}</span>
+                                        {p.codigo_barras && (
+                                          <span className="resultado-codigo">📟 {p.codigo_barras}</span>
+                                        )}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                         
-                        <div className="producto-form">
-                          <div className="producto-seleccionado-info">
-                            {producto.producto_nombre ? (
-                              <div className="producto-info-actual">
-                                <strong>{producto.producto_nombre}</strong>
-                                {producto.producto_categoria && (
-                                  <span className="producto-info-categoria"> ({producto.producto_categoria})</span>
-                                )}
-                              </div>
-                            ) : (
-                              <div className="producto-busqueda-container">
-                                <input
-                                  type="text"
-                                  value={busquedaManual}
-                                  onChange={(e) => setBusquedaManual(e.target.value)}
-                                  placeholder="Buscar producto..."
-                                  className="form-input-busqueda"
-                                  disabled={loading}
-                                />
-                                {mostrarResultadosManual && productosFiltradosManual.length > 0 && (
-                                  <div className="resultados-busqueda-manual">
-                                    {productosFiltradosManual.slice(0, 5).map((p) => (
-                                      <div
-                                        key={p.id}
-                                        className="resultado-item"
-                                        onClick={() => {
-                                          actualizarProducto(index, 'producto_id', p.id)
-                                          setBusquedaManual('')
-                                          setMostrarResultadosManual(false)
-                                        }}
-                                      >
-                                        <div className="resultado-nombre">
-                                          <strong>{p.nombre}</strong>
-                                          {p.categoria && (
-                                            <span className="resultado-categoria"> ({p.categoria})</span>
-                                          )}
-                                        </div>
-                                        <div className="resultado-info">
-                                          <span className="resultado-precio">${p.precio?.toFixed(2)}</span>
-                                          {p.codigo_barras && (
-                                            <span className="resultado-codigo">📟 {p.codigo_barras}</span>
-                                          )}
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            )}
+                        <div className="producto-cantidad-precio">
+                          <div>
+                            <label>Cantidad</label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={producto.cantidad}
+                              onChange={(e) => actualizarProducto(index, 'cantidad', e.target.value)}
+                              className="form-input"
+                              disabled={loading || !producto.producto_id}
+                              required
+                            />
                           </div>
-                          
-                          <div className="producto-cantidad-precio">
-                            <div>
-                              <label>Cantidad</label>
-                              <input
-                                type="number"
-                                min="1"
-                                value={producto.cantidad}
-                                onChange={(e) => actualizarProducto(index, 'cantidad', e.target.value)}
-                                className="form-input"
-                                disabled={loading}
-                                required
-                              />
-                            </div>
-                            <div>
-                              <label>Precio Unit.</label>
-                              <input
-                                type="number"
-                                min="0.01"
-                                step="0.01"
-                                value={producto.precio_unitario}
-                                onChange={(e) => actualizarProducto(index, 'precio_unitario', e.target.value)}
-                                className="form-input"
-                                disabled={loading}
-                                required
-                              />
-                            </div>
-                            <div className="producto-subtotal">
-                              <label>Subtotal</label>
-                              <div className="subtotal-valor">
-                                ${calcularTotalProducto(producto).toFixed(2)}
-                              </div>
+                          <div>
+                            <label>Precio Unit.</label>
+                            <input
+                              type="number"
+                              min="0.01"
+                              step="0.01"
+                              value={producto.precio_unitario}
+                              onChange={(e) => actualizarProducto(index, 'precio_unitario', e.target.value)}
+                              className="form-input"
+                              disabled={loading || !producto.producto_id}
+                              required
+                            />
+                          </div>
+                          <div className="producto-subtotal">
+                            <label>Subtotal</label>
+                            <div className="subtotal-valor">
+                              ${calcularTotalProducto(producto).toFixed(2)}
                             </div>
                           </div>
                         </div>
                       </div>
-                    )
-                  })}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
