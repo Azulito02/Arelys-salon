@@ -930,3 +930,120 @@
     margin: 10px;
   }
 }
+
+
+
+/* CONTROLES DE CANTIDAD PARA CRÉDITOS - SOLO LOS BOTONES + Y - */
+
+/* Contenedor principal de cantidad */
+.input-group-cantidad-credito {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+/* Botones +/- */
+.cantidad-btn-credito {
+  width: 2.5rem;
+  height: 2.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f3f4f6;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 1.25rem;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  padding: 0;
+  line-height: 1;
+  font-weight: 500;
+}
+
+.cantidad-btn-credito:hover:not(:disabled) {
+  background-color: #e5e7eb;
+  border-color: #9ca3af;
+}
+
+.cantidad-btn-credito:active:not(:disabled) {
+  background-color: #d1d5db;
+  transform: scale(0.95);
+}
+
+.cantidad-btn-credito:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #f9fafb;
+}
+
+/* Botón menos */
+.cantidad-btn-menos {
+  order: 1;
+}
+
+/* Input de cantidad */
+.form-input-cantidad-credito {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 1rem;
+  text-align: center;
+  color: #111827;
+  transition: all 0.2s;
+  min-width: 0;
+  width: 100%;
+  -moz-appearance: textfield; /* Firefox: quita flechas */
+  order: 2;
+}
+
+.form-input-cantidad-credito::-webkit-outer-spin-button,
+.form-input-cantidad-credito::-webkit-inner-spin-button {
+  -webkit-appearance: none; /* Chrome/Safari: quita flechas */
+  margin: 0;
+}
+
+.form-input-cantidad-credito:focus {
+  outline: none;
+  border-color: #d97706;
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.1);
+}
+
+.form-input-cantidad-credito:disabled {
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+}
+
+/* Botón más */
+.cantidad-btn-mas {
+  order: 3;
+}
+
+/* Para táctiles */
+@media (hover: none) and (pointer: coarse) {
+  .cantidad-btn-credito {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
+/* Responsive para móviles */
+@media (max-width: 640px) {
+  .input-group-cantidad-credito {
+    gap: 0.25rem;
+  }
+  
+  .cantidad-btn-credito {
+    width: 2.25rem;
+    height: 2.25rem;
+    font-size: 1.125rem;
+  }
+  
+  .form-input-cantidad-credito {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+  }
+}

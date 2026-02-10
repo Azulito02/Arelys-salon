@@ -687,19 +687,21 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
                         </div>
                         
                         <div className="producto-cantidad-precio">
-                          <div>
-                            <label>Cantidad</label>
-                            <input
-                              type="number"
-                              min="1"
-                              value={producto.cantidad}
-                              onChange={(e) => actualizarProducto(index, 'cantidad', e.target.value)}
-                              className="form-input"
-                              disabled={loading || !producto.producto_id}
-                              required
-                            />
-                          </div>
-                          <div>
+                       <div class="form-grupo">
+                              <label class="form-label">Cantidad</label>
+                              <div class="input-group-cantidad-credito">
+                                <button type="button" class="cantidad-btn-credito cantidad-btn-menos">-</button>
+                                <input 
+                                  type="number" 
+                                  class="form-input-cantidad-credito" 
+                                  value="1" 
+                                  min="1" 
+                                  max="999"
+                                />
+                                <button type="button" class="cantidad-btn-credito cantidad-btn-mas">+</button>
+                              </div>
+                            </div>
+                           <div>
                             <label>Precio Unit.</label>
                             <input
                               type="number"
