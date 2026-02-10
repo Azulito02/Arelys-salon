@@ -218,10 +218,10 @@ const Arqueos = () => {
     const usuario = JSON.parse(localStorage.getItem('usuarioArelyz'))?.nombre || 'Sistema'
     const efectivo = parseFloat(efectivoContado)
     
-    // Mensaje de confirmación CON CANTIDADES CORRECTAS
+    // Mensaje de confirmación
     const mensajeConfirmacion = 
       `¿CONFIRMAR ARQUEO DE TURNO?\n\n` +
-      `💰 RESUMEN DE EFECTIVO (SOLO PARA CAJA):\n` +
+      `📊 RESUMEN DEL DÍA COMPLETO:\n` +
       `• Ventas en efectivo: C$${resumenTurno?.totalVentasEfectivo.toFixed(2)} ` +
       `(${resumenTurno?.cantidadVentasEfectivo} ventas)\n` +
       `• Abonos en efectivo: C$${resumenTurno?.totalAbonosEfectivo.toFixed(2)} ` +
@@ -230,16 +230,10 @@ const Arqueos = () => {
       `(${resumenTurno?.cantidadGastos} gastos)\n` +
       `• Efectivo neto esperado: C$${resumenTurno?.efectivoNeto.toFixed(2)}\n` +
       `• Efectivo contado: C$${efectivo.toFixed(2)}\n` +
-      `\n💳 OTROS MÉTODOS DE PAGO (NO VAN A CAJA):\n` +
-      `• Ventas con tarjeta: C$${resumenTurno?.totalVentasTarjeta.toFixed(2)} ` +
-      `(${resumenTurno?.cantidadVentasTarjeta} ventas)\n` +
-      `• Ventas con transferencia: C$${resumenTurno?.totalVentasTransferencia.toFixed(2)} ` +
-      `(${resumenTurno?.cantidadVentasTransferencia} ventas)\n` +
-      `• Abonos con tarjeta: C$${resumenTurno?.abonosTarjeta.toFixed(2)} ` +
-      `(${resumenTurno?.cantidadAbonosTarjeta} abonos)\n` +
-      `• Abonos con transferencia: C$${resumenTurno?.abonosTransferencia.toFixed(2)} ` +
-      `(${resumenTurno?.cantidadAbonosTransferencia} abonos)\n` +
-      `\n⚠️ Esta acción es IRREVERSIBLE.\n` +
+      `\n⚠️ Esta acción es IRREVERSIBLE y eliminará:\n` +
+      `• ${resumenTurno?.cantidadVentas} ventas del día\n` +
+      `• ${resumenTurno?.cantidadGastos} gastos del día\n` +
+      `• ${resumenTurno?.cantidadAbonosEfectivo + resumenTurno?.cantidadAbonosTarjeta + resumenTurno?.cantidadAbonosTransferencia} abonos del día\n\n` +
       `¿Continuar?`
     
     const confirmar = window.confirm(mensajeConfirmacion)
@@ -248,7 +242,8 @@ const Arqueos = () => {
     try {
       setLoading(true)
       
-      const { data, error } = await supabase.rpc('realizar_arqueo_caja', {
+      // **LLAMAR A LA FUNCIÓN DE ARQUEO ACTUALIZADA**
+      const { data, error } = await supabase.rpc('realizar_arqueo_caja_completa', {
         p_efectivo_contado: efectivo,
         p_usuario_nombre: usuario
       })
@@ -275,19 +270,10 @@ const Arqueos = () => {
         `• Efectivo contado: C$${efectivo.toFixed(2)}\n` +
         (diferencia !== 0 ? 
           `• Diferencia: C$${Math.abs(diferencia).toFixed(2)} ${diferencia > 0 ? '(Sobrante)' : '(Faltante)'}\n` : '') +
-        `\n💳 OTROS MÉTODOS PROCESADOS:\n` +
-        `• Ventas tarjeta: C$${(resumen.total_ventas_tarjeta || 0).toFixed(2)} ` +
-        `(${resumen.cantidad_ventas_tarjeta || 0} ventas)\n` +
-        `• Ventas transferencia: C$${(resumen.total_ventas_transferencia || 0).toFixed(2)} ` +
-        `(${resumen.cantidad_ventas_transferencia || 0} ventas)\n` +
-        `• Abonos tarjeta: C$${(resumen.total_abonos_tarjeta || 0).toFixed(2)} ` +
-        `(${resumen.cantidad_abonos_tarjeta || 0} abonos)\n` +
-        `• Abonos transferencia: C$${(resumen.total_abonos_transferencia || 0).toFixed(2)} ` +
-        `(${resumen.cantidad_abonos_transferencia || 0} abonos)\n` +
-        `\n🗑️ REGISTROS PROCESADOS:\n` +
+        `\n🗑️ REGISTROS ELIMINADOS:\n` +
         `• ${resumen.cantidad_ventas || 0} ventas eliminadas\n` +
         `• ${resumen.cantidad_gastos || 0} gastos eliminados\n` +
-        `• ${resumen.cantidad_abonos_efectivo || 0} abonos en efectivo marcados como procesados`
+        `• ${(resumen.cantidad_abonos_efectivo || 0) + (resumen.cantidad_abonos_tarjeta || 0) + (resumen.cantidad_abonos_transferencia || 0)} abonos procesados`
       
       alert(mensajeExito)
       
