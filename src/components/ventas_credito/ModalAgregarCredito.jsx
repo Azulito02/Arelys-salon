@@ -242,6 +242,26 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
     setProductosSeleccionados(nuevosProductos)
   }
 
+
+  const incrementarCantidad = (index) => {
+  const nuevosProductos = [...productosSeleccionados]
+  nuevosProductos[index] = {
+    ...nuevosProductos[index],
+    cantidad: (nuevosProductos[index].cantidad || 1) + 1
+  }
+  setProductosSeleccionados(nuevosProductos)
+}
+
+const decrementarCantidad = (index) => {
+  const nuevosProductos = [...productosSeleccionados]
+  const nuevaCantidad = Math.max(1, (nuevosProductos[index].cantidad || 1) - 1)
+  nuevosProductos[index] = {
+    ...nuevosProductos[index],
+    cantidad: nuevaCantidad
+  }
+  setProductosSeleccionados(nuevosProductos)
+}
+
   // Calcular totales - CORREGIDA
   const calcularTotalProducto = (producto) => {
     if (!producto) return 0
@@ -687,20 +707,38 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
                         </div>
                         
                         <div className="producto-cantidad-precio">
-                       <div class="form-grupo">
-                              <label class="form-label">Cantidad</label>
-                              <div class="input-group-cantidad-credito">
-                                <button type="button" class="cantidad-btn-credito cantidad-btn-menos">-</button>
-                                <input 
-                                  type="number" 
-                                  class="form-input-cantidad-credito" 
-                                  value="1" 
-                                  min="1" 
-                                  max="999"
-                                />
-                                <button type="button" class="cantidad-btn-credito cantidad-btn-mas">+</button>
-                              </div>
-                            </div>
+                       
+                       <div className="form-grupo">
+                          <label className="form-label">Cantidad</label>
+                          <div className="input-group-cantidad-credito">
+                            <button 
+                              type="button" 
+                              className="cantidad-btn-credito cantidad-btn-menos"
+                              onClick={() => decrementarCantidad(index)}
+                              disabled={loading}
+                            >
+                              -
+                            </button>
+                            <input 
+                              type="number" 
+                              className="form-input-cantidad-credito" 
+                              value={producto.cantidad || 1}
+                              min="1" 
+                              max="999"
+                              onChange={(e) => actualizarProducto(index, 'cantidad', e.target.value)}
+                              disabled={loading}
+                            />
+                            <button 
+                              type="button" 
+                              className="cantidad-btn-credito cantidad-btn-mas"
+                              onClick={() => incrementarCantidad(index)}
+                              disabled={loading}
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                       
                            <div>
                             <label>Precio Unit.</label>
                             <input
