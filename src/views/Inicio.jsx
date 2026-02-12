@@ -13,6 +13,8 @@ const Inicio = () => {
   })
   const [loadingEstadisticas, setLoadingEstadisticas] = useState(true)
   
+  // ✅ 1. FALTABA ESTA DECLARACIÓN - useState para deferredPrompt
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
 
   useEffect(() => {
     const loaderShown = sessionStorage.getItem("loaderShown")
@@ -27,7 +29,7 @@ const Inicio = () => {
     }
   }, [])
 
-  // ✅ EFECTO PARA PWA - MOVIDO AQUÍ
+  // ✅ 2. EFECTO PARA PWA
   useEffect(() => {
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
@@ -44,6 +46,23 @@ const Inicio = () => {
     
     return () => clearInterval(intervalo)
   }, [])
+
+  // ✅ 3. FUNCIÓN PARA INSTALAR - FALTABA COMPLETAMENTE
+  const instalarApp = async () => {
+    if (!deferredPrompt) {
+      // Solo mostramos mensaje en iOS, no en Windows
+      if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+        alert('Para instalar en iOS: usa "Compartir" > "Agregar a pantalla de inicio"');
+      }
+      return;
+    }
+    
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  };
 
   const cargarEstadisticas = async () => {
     try {
@@ -201,7 +220,7 @@ const Inicio = () => {
 
   return (
     <div className="inicio-container">
-      {/* ✅ HEADER CON LOGO A LA IZQUIERDA */}
+      {/* HEADER CON LOGO A LA IZQUIERDA */}
       <div className="inicio-header">
         <div className="header-logo-titulo">
           <img 
