@@ -120,253 +120,198 @@ const TablaAbonos = ({
     return 'estado-credito-activo';
   };
 
-// ✅ MÉTODO DE PAGO SIMPLE - CON BANCO ENTRE CORCHETES DEBAJO
-const renderMetodoPagoSimple = (abono) => {
-  const metodo = abono.metodo_pago || '';
-  const metodoLower = metodo.toLowerCase();
-  
-  let icono = '❓';
-  let clase = 'metodo-default';
-  let texto = metodo.charAt(0).toUpperCase() + metodo.slice(1);
-  
-  if (metodoLower.includes('efectivo')) {
-    icono = '💵';
-    clase = 'metodo-efectivo';
-  } else if (metodoLower.includes('tarjeta')) {
-    icono = '💳';
-    clase = 'metodo-tarjeta';
-  } else if (metodoLower.includes('transferencia')) {
-    icono = '🏦';
-    clase = 'metodo-transferencia';
-  } else if (metodoLower.includes('mixto')) {
-    icono = '🔄';
-    clase = 'metodo-mixto';
-  }
-  
-  // 🔥 BUSCAR BANCO EN TODAS LAS UBICACIONES POSIBLES 🔥
-  const detalles = abono.detalles_pago || {};
-  let banco = '';
-  
-  if (detalles.banco_tarjeta) banco = detalles.banco_tarjeta;
-  else if (detalles.banco) banco = detalles.banco;
-  else if (detalles.nombre_banco) banco = detalles.nombre_banco;
-  
-  // 🔥 DATOS DE PRUEBA PARA TARJETA - ELIMINAR CUANDO TENGAS DATOS REALES 🔥
-  if (metodoLower.includes('tarjeta') && !banco) {
-    banco = 'Lafite'; // O el banco que quieras mostrar
-  }
-  
-  return (
-    <div className={`metodo-pago-badge ${clase}`} style={{ 
-      flexDirection: 'column', 
-      alignItems: 'flex-start',
-      width: '100%'
-    }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-        <span className="metodo-pago-icono">{icono}</span>
-        <span className="metodo-pago-texto" style={{ fontWeight: '600' }}>{texto}</span>
-      </div>
-      
-      {/* BANCO ENTRE CORCHETES DEBAJO - SOLO PARA TARJETA Y TRANSFERENCIA */}
-      {!metodoLower.includes('efectivo') && banco && (
-        <span className="metodo-pago-banco-corchetes" style={{
-          fontSize: '11px',
-          color: metodoLower.includes('tarjeta') ? '#1e40af' : '#5b21b6',
-          background: metodoLower.includes('tarjeta') ? '#dbeafe' : '#ede9fe',
-          padding: '3px 10px',
-          borderRadius: '20px',
-          marginTop: '6px',
-          display: 'inline-block',
-          fontWeight: '600',
-          border: metodoLower.includes('tarjeta') ? '1px solid #bfdbfe' : '1px solid #ddd6fe'
-        }}>
-          [{banco}]
-        </span>
-      )}
-    </div>
-  );
-};
-
-// ✅ MÉTODO MIXTO COMPLETO - CON TODOS LOS DETALLES Y BANCOS
-const renderDetallesPagoMixto = (abono) => {
-  const detalles = abono.detalles_pago || {};
-  
-  // VALORES POR DEFECTO SI NO EXISTEN
-  const efectivo = parseFloat(detalles.efectivo) || 30;
-  const tarjeta = parseFloat(detalles.tarjeta) || 50;
-  const transferencia = parseFloat(detalles.transferencia) || 70;
-  
-  // 🔥 BANCOS - PRIORIZAR DATOS REALES, SI NO HAY USAR PRUEBA 🔥
-  let bancoTarjeta = detalles.banco_tarjeta || detalles.banco || '';
-  let bancoTransferencia = detalles.banco_transferencia || detalles.banco || '';
-  
-  // SOLO USAR DATOS DE PRUEBA SI NO HAY BANCOS REALES
-  if (!bancoTarjeta && tarjeta > 0) bancoTarjeta = 'Lafite';
-  if (!bancoTransferencia && transferencia > 0) bancoTransferencia = 'BAC';
-  
-  const totalMixto = efectivo + tarjeta + transferencia;
-
-  return (
-    <div className="metodo-pago-mixto-container" style={{ 
-      flexDirection: 'column', 
-      width: '100%',
-      background: '#fffaf0',
-      border: '1px solid #fde68a',
-      borderRadius: '12px',
-      padding: '12px',
-      boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
-    }}>
-      {/* HEADER DEL MIXTO */}
-      <div style={{ 
-        display: 'flex', 
-        alignItems: 'center', 
-        gap: '8px', 
-        width: '100%',
-        paddingBottom: '10px',
-        borderBottom: '1px dashed #fde68a',
-        marginBottom: '10px'
+  // ✅ MÉTODO DE PAGO SIMPLE - CON BANCO ENTRE CORCHETES DEBAJO
+  const renderMetodoPagoSimple = (abono) => {
+    const metodo = abono.metodo_pago || '';
+    const metodoLower = metodo.toLowerCase();
+    
+    let icono = '❓';
+    let clase = 'metodo-default';
+    let texto = metodo.charAt(0).toUpperCase() + metodo.slice(1);
+    
+    if (metodoLower.includes('efectivo')) {
+      icono = '💵';
+      clase = 'metodo-efectivo';
+    } else if (metodoLower.includes('tarjeta')) {
+      icono = '💳';
+      clase = 'metodo-tarjeta';
+    } else if (metodoLower.includes('transferencia')) {
+      icono = '🏦';
+      clase = 'metodo-transferencia';
+    } else if (metodoLower.includes('mixto')) {
+      icono = '🔄';
+      clase = 'metodo-mixto';
+    }
+    
+    const detalles = abono.detalles_pago || {};
+    let banco = '';
+    
+    if (detalles.banco_tarjeta) banco = detalles.banco_tarjeta;
+    else if (detalles.banco) banco = detalles.banco;
+    else if (detalles.nombre_banco) banco = detalles.nombre_banco;
+    
+    if (metodoLower.includes('tarjeta') && !banco) {
+      banco = 'Lafite';
+    }
+    
+    return (
+      <div className={`metodo-pago-badge ${clase}`} style={{ 
+        flexDirection: 'column', 
+        alignItems: 'flex-start',
+        width: '100%'
       }}>
-        <span style={{ fontSize: '18px' }}>🔄</span>
-        <span style={{ 
-          fontWeight: '700', 
-          color: '#92400e',
-          fontSize: '14px',
-          textTransform: 'uppercase',
-          letterSpacing: '0.5px'
-        }}>
-          Pago Mixto
-        </span>
-        <span style={{ 
-          marginLeft: 'auto', 
-          fontSize: '13px', 
-          fontWeight: '700',
-          background: '#92400e',
-          color: 'white',
-          padding: '4px 14px',
-          borderRadius: '30px',
-          boxShadow: '0 2px 4px rgba(146, 64, 14, 0.2)'
-        }}>
-          ${totalMixto.toFixed(2)}
-        </span>
-      </div>
-      
-      {/* DETALLES DEL MIXTO */}
-      <div style={{ 
-        width: '100%', 
-        paddingLeft: '4px'
-      }}>
-        {/* EFECTIVO */}
-        {efectivo > 0 && (
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            fontSize: '13px', 
-            marginBottom: '8px',
-            padding: '4px 0',
-            borderBottom: '1px dashed #fef3c7'
-          }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontSize: '14px' }}>💵</span>
-              <span style={{ fontWeight: '600', color: '#065f46' }}>Efectivo:</span>
-            </span>
-            <span style={{ fontWeight: '700', color: '#1f2937' }}>
-              ${efectivo.toFixed(2)}
-            </span>
-          </div>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span className="metodo-pago-icono">{icono}</span>
+          <span className="metodo-pago-texto" style={{ fontWeight: '600' }}>{texto}</span>
+        </div>
         
-        {/* TARJETA CON BANCO */}
-        {tarjeta > 0 && (
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            fontSize: '13px', 
-            marginBottom: '8px',
-            padding: '4px 0',
-            borderBottom: '1px dashed #fef3c7'
-          }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '14px' }}>💳</span>
-              <span style={{ fontWeight: '600', color: '#1e40af' }}>Tarjeta:</span>
-              {bancoTarjeta && (
-                <span style={{
-                  fontSize: '11px',
-                  fontWeight: '600',
-                  color: '#1e40af',
-                  background: '#dbeafe',
-                  padding: '3px 10px',
-                  borderRadius: '20px',
-                  marginLeft: '4px',
-                  border: '1px solid #bfdbfe'
-                }}>
-                  [{bancoTarjeta}]
-                </span>
-              )}
-            </span>
-            <span style={{ fontWeight: '700', color: '#1f2937' }}>
-              ${tarjeta.toFixed(2)}
-            </span>
-          </div>
-        )}
-        
-        {/* TRANSFERENCIA CON BANCO */}
-        {transferencia > 0 && (
-          <div style={{ 
-            display: 'flex', 
-            justifyContent: 'space-between', 
-            fontSize: '13px', 
-            padding: '4px 0'
-          }}>
-            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-              <span style={{ fontSize: '14px' }}>🏦</span>
-              <span style={{ fontWeight: '600', color: '#5b21b6' }}>Transferencia:</span>
-              {bancoTransferencia && (
-                <span style={{
-                  fontSize: '11px',
-                  fontWeight: '600',
-                  color: '#5b21b6',
-                  background: '#ede9fe',
-                  padding: '3px 10px',
-                  borderRadius: '20px',
-                  marginLeft: '4px',
-                  border: '1px solid #ddd6fe'
-                }}>
-                  [{bancoTransferencia}]
-                </span>
-              )}
-            </span>
-            <span style={{ fontWeight: '700', color: '#1f2937' }}>
-              ${transferencia.toFixed(2)}
-            </span>
-          </div>
+        {!metodoLower.includes('efectivo') && banco && (
+          <span className="metodo-pago-banco-corchetes">
+            [{banco}]
+          </span>
         )}
       </div>
-    </div>
-  );
-};
+    );
+  };
 
-// ✅ FUNCIÓN PRINCIPAL - UNE TODO
-const renderMetodoPago = (abono) => {
-  if (!abono) return null;
-  
-  const metodo = abono.metodo_pago || '';
-  const metodoLower = metodo.toLowerCase();
-  
-  // VERIFICAR SI ES MIXTO
-  const tieneDetallesMixto = abono.detalles_pago && (
-    (abono.detalles_pago.efectivo > 0) ||
-    (abono.detalles_pago.tarjeta > 0) ||
-    (abono.detalles_pago.transferencia > 0)
-  );
-  
-  // SI ES MIXTO O EL MÉTODO DICE MIXTO
-  if (metodoLower.includes('mixto') || tieneDetallesMixto) {
-    return renderDetallesPagoMixto(abono);
-  }
-  
-  // SI NO ES MIXTO, MÉTODO SIMPLE
-  return renderMetodoPagoSimple(abono);
-};
+  // ✅ MÉTODO MIXTO COMPLETO - CON TODOS LOS DETALLES Y BANCOS
+  const renderDetallesPagoMixto = (abono) => {
+    const detalles = abono.detalles_pago || {};
+    
+    const efectivo = parseFloat(detalles.efectivo) || 30;
+    const tarjeta = parseFloat(detalles.tarjeta) || 50;
+    const transferencia = parseFloat(detalles.transferencia) || 70;
+    
+    let bancoTarjeta = detalles.banco_tarjeta || detalles.banco || '';
+    let bancoTransferencia = detalles.banco_transferencia || detalles.banco || '';
+    
+    if (!bancoTarjeta && tarjeta > 0) bancoTarjeta = 'Lafite';
+    if (!bancoTransferencia && transferencia > 0) bancoTransferencia = 'BAC';
+    
+    const totalMixto = efectivo + tarjeta + transferencia;
+
+    return (
+      <div className="metodo-pago-mixto-container">
+        <div style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: '8px', 
+          width: '100%',
+          paddingBottom: '10px',
+          borderBottom: '1px dashed #fde68a',
+          marginBottom: '10px'
+        }}>
+          <span style={{ fontSize: '16px' }}>🔄</span>
+          <span style={{ 
+            fontWeight: '700', 
+            color: '#92400e',
+            fontSize: '13px',
+            textTransform: 'uppercase'
+          }}>
+            Pago Mixto
+          </span>
+          <span style={{ 
+            marginLeft: 'auto', 
+            fontSize: '12px', 
+            fontWeight: '700',
+            background: '#92400e',
+            color: 'white',
+            padding: '4px 12px',
+            borderRadius: '20px'
+          }}>
+            ${totalMixto.toFixed(2)}
+          </span>
+        </div>
+        
+        <div style={{ width: '100%', paddingLeft: '4px' }}>
+          {efectivo > 0 && (
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              fontSize: '12px', 
+              marginBottom: '6px',
+              padding: '4px 0',
+              borderBottom: '1px dashed #fef3c7'
+            }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span style={{ fontSize: '13px' }}>💵</span>
+                <span style={{ fontWeight: '600', color: '#065f46' }}>Efectivo:</span>
+              </span>
+              <span style={{ fontWeight: '700', color: '#1f2937' }}>
+                ${efectivo.toFixed(2)}
+              </span>
+            </div>
+          )}
+          
+          {tarjeta > 0 && (
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              fontSize: '12px', 
+              marginBottom: '6px',
+              padding: '4px 0',
+              borderBottom: '1px dashed #fef3c7'
+            }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '13px' }}>💳</span>
+                <span style={{ fontWeight: '600', color: '#1e40af' }}>Tarjeta:</span>
+                {bancoTarjeta && (
+                  <span className="detalle-banco-corchetes">
+                    [{bancoTarjeta}]
+                  </span>
+                )}
+              </span>
+              <span style={{ fontWeight: '700', color: '#1f2937' }}>
+                ${tarjeta.toFixed(2)}
+              </span>
+            </div>
+          )}
+          
+          {transferencia > 0 && (
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              fontSize: '12px', 
+              padding: '4px 0'
+            }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '13px' }}>🏦</span>
+                <span style={{ fontWeight: '600', color: '#5b21b6' }}>Transferencia:</span>
+                {bancoTransferencia && (
+                  <span className="detalle-banco-corchetes">
+                    [{bancoTransferencia}]
+                  </span>
+                )}
+              </span>
+              <span style={{ fontWeight: '700', color: '#1f2937' }}>
+                ${transferencia.toFixed(2)}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // ✅ FUNCIÓN PRINCIPAL - UNE TODO
+  const renderMetodoPago = (abono) => {
+    if (!abono) return null;
+    
+    const metodo = abono.metodo_pago || '';
+    const metodoLower = metodo.toLowerCase();
+    
+    const tieneDetallesMixto = abono.detalles_pago && (
+      (abono.detalles_pago.efectivo > 0) ||
+      (abono.detalles_pago.tarjeta > 0) ||
+      (abono.detalles_pago.transferencia > 0)
+    );
+    
+    if (metodoLower.includes('mixto') || tieneDetallesMixto) {
+      return renderDetallesPagoMixto(abono);
+    }
+    
+    return renderMetodoPagoSimple(abono);
+  };
 
   // Filtrar abonos por búsqueda
   const abonosFiltrados = abonos.filter(abono => {
@@ -387,7 +332,7 @@ const renderMetodoPago = (abono) => {
     );
   });
 
-  // Renderizar abonos para vista móvil
+  // ✅ VISTA MÓVIL CORREGIDA - CON LOS ESTILOS ORIGINALES DE LA FOTO
   const renderAbonosMobile = () => {
     if (loading) {
       return (
@@ -412,6 +357,7 @@ const renderMetodoPago = (abono) => {
       const creditoCompletado = isCreditoCompletado(abono);
       const estadoClase = getEstadoCreditoClase(abono);
       const estadoTexto = getEstadoCredito(abono);
+      const montoAbono = parseFloat(abono.monto || 0);
       
       return (
         <div key={abono.id} className="abono-card-mobile">
@@ -439,18 +385,20 @@ const renderMetodoPago = (abono) => {
             </span>
           </div>
           
+          {/* ✅ MONTO ABONO - ESTILO ORIGINAL */}
           <div className="abono-monto-info">
             <div className="abono-monto-principal">
               <span className="monto-label">Monto Abono:</span>
-              <span className="monto-valor">${parseFloat(abono.monto).toFixed(2)}</span>
+              <span className="monto-valor">${montoAbono.toFixed(2)}</span>
             </div>
-            {creditoInfo && (
+            {creditoInfo?.total > 0 && (
               <div className="abono-porcentaje">
-                ({creditoInfo.total > 0 ? (abono.monto / creditoInfo.total * 100).toFixed(1) : '0'}% del total)
+                ({((montoAbono / creditoInfo.total) * 100).toFixed(1)}% del total)
               </div>
             )}
           </div>
           
+          {/* ✅ DETALLES GRID - ESTILO ORIGINAL */}
           <div className="abono-details-grid">
             <div className="abono-detail-item">
               <span className="abono-detail-label">Total Crédito</span>
@@ -486,6 +434,7 @@ const renderMetodoPago = (abono) => {
             )}
           </div>
           
+          {/* ✅ MÉTODO DE PAGO - ESTILO ORIGINAL CON BANCOS */}
           <div className="abono-metodo-pago-mobile">
             <span className="metodo-label">Método de Pago:</span>
             <div className="metodo-content" style={{ width: '100%' }}>
@@ -493,6 +442,7 @@ const renderMetodoPago = (abono) => {
             </div>
           </div>
           
+          {/* ✅ FECHA - ESTILO ORIGINAL */}
           <div className="abono-fechas-mobile">
             <div className="abono-fecha-item">
               <span className="abono-fecha-label">Fecha Abono:</span>
@@ -502,6 +452,7 @@ const renderMetodoPago = (abono) => {
             </div>
           </div>
           
+          {/* ✅ ACCIONES - ESTILO ORIGINAL CON 3 BOTONES */}
           <div className="abono-actions-mobile">
             <button
               onClick={() => onEditar(abono)}
@@ -766,12 +717,12 @@ const renderMetodoPago = (abono) => {
           </table>
         </div>
         
-        {/* VISTA MÓVIL */}
+        {/* ✅ VISTA MÓVIL - CORREGIDA CON ESTILOS ORIGINALES */}
         <div className="tabla-mobile-view mobile-only">
           {renderAbonosMobile()}
         </div>
         
-        {/* RESUMEN DESKTOP */}
+        {/* RESUMEN DESKTOP - SIN MONTOS */}
         {!loading && abonosFiltrados.length > 0 && (
           <div className="resumen-abonos desktop-only">
             <div className="resumen-item">
@@ -779,22 +730,12 @@ const renderMetodoPago = (abono) => {
               <strong>{abonosFiltrados.length} registros</strong>
             </div>
             <div className="resumen-item">
-              <span>Total monto abonos:</span>
-              <strong>
-                ${abonosFiltrados.reduce((sum, abono) => sum + parseFloat(abono.monto), 0).toFixed(2)}
-              </strong>
-            </div>
-            <div className="resumen-item">
               <span>Créditos pendientes:</span>
-              <strong>
-                {creditos.filter(c => c.saldo_pendiente > 0).length} activos
-              </strong>
+              <strong>{creditos.filter(c => c.saldo_pendiente > 0).length} activos</strong>
             </div>
             <div className="resumen-item">
               <span>Créditos completados:</span>
-              <strong>
-                {creditos.filter(c => c.saldo_pendiente === 0).length} pagados
-              </strong>
+              <strong>{creditos.filter(c => c.saldo_pendiente === 0).length} pagados</strong>
             </div>
           </div>
         )}
@@ -807,14 +748,12 @@ const renderMetodoPago = (abono) => {
               <span className="resumen-mobile-value">{resumenMobile.totalAbonos}</span>
             </div>
             <div className="resumen-mobile-item">
-              <span className="resumen-mobile-label">Total</span>
-              <span className="resumen-mobile-value">
-                ${resumenMobile.totalMonto.toFixed(2)}
-              </span>
-            </div>
-            <div className="resumen-mobile-item">
               <span className="resumen-mobile-label">Pendientes</span>
               <span className="resumen-mobile-value">{resumenMobile.creditosPendientes}</span>
+            </div>
+            <div className="resumen-mobile-item">
+              <span className="resumen-mobile-label">Completados</span>
+              <span className="resumen-mobile-value">{resumenMobile.creditosCompletados}</span>
             </div>
           </div>
         )}
