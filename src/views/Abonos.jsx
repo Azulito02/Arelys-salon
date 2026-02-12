@@ -313,8 +313,8 @@ const Abonos = () => {
   const metodo = abono.metodo_pago?.toUpperCase() || "EFECTIVO"
 
   return `
-${centrar("ARELYZ SALON")}
-${centrar("7715-4242")}
+${centrar("ARELYS SALON")}
+${centrar("8354-3180")}
 ${linea()}
         TICKET ABONO
 ${linea()}
