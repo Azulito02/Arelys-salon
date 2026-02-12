@@ -112,7 +112,7 @@ const Ventas = () => {
   }
 
 // ==============================================
-// GENERAR CONTENIDO DEL TICKET - VUELTO CORREGIDO
+// GENERAR CONTENIDO DEL TICKET - VUELTO CORREGIDO (VERSIÓN FINAL)
 // ==============================================
 
 const generarContenidoTicket = (venta) => {
@@ -142,13 +142,13 @@ const generarContenidoTicket = (venta) => {
     return `${d}/${m}/${y} ${h}:${min} ${ampm}`
   }
 
-  // Agrupar TODAS las ventas de la MISMA transacción (mismo segundo)
+  // 🔴 CORREGIDO: AGRUPAR POR FECHA EXACTA (MILISEGUNDOS)
   const fechaVentaOriginal = new Date(venta.fecha).getTime()
   
   const productosDeEstaVenta = ventas.filter(v => {
     const fechaVentaComparar = new Date(v.fecha).getTime()
-    // Diferencia de menos de 2 segundos = misma transacción
-    return Math.abs(fechaVentaComparar - fechaVentaOriginal) < 2000
+    // Diferencia de menos de 1 segundo = misma transacción
+    return Math.abs(fechaVentaComparar - fechaVentaOriginal) < 1000
   })
 
   // Si no encuentra productos, usar solo el producto actual
@@ -169,9 +169,11 @@ const generarContenidoTicket = (venta) => {
   let efectivoTotal = 0
   let tarjetaTotal = 0
   let transferenciaTotal = 0
-  let vueltoTransaccion = 0
-  let recibidoTotal = 0
-
+  
+  // 🔴 CORREGIDO: BUSCAR EL VUELTO REAL (TODOS DEBEN TENER EL MISMO)
+  let vueltoReal = 0
+  
+  // Primero, buscar si ALGÚN producto tiene vuelto
   productosTicket.forEach(v => {
     totalGeneral += Number(v.total || 0)
     
@@ -188,19 +190,21 @@ const generarContenidoTicket = (venta) => {
       transferenciaTotal += Number(v.transferencia || 0)
     }
     
-    // 🔴 CORREGIDO: Si este producto tiene vuelto, lo guardamos
-    // PERO SOLO UNO, porque todos deben tener el mismo vuelto
-    if (v.vuelto && vueltoTransaccion === 0) {
-      vueltoTransaccion = Number(v.vuelto || 0)
+    // 🔴 CORREGIDO: Guardar el primer vuelto que encontremos
+    if (v.vuelto && v.vuelto > 0 && vueltoReal === 0) {
+      vueltoReal = Number(v.vuelto)
     }
   })
 
-  recibidoTotal = efectivoTotal + tarjetaTotal + transferenciaTotal
+  const recibidoTotal = efectivoTotal + tarjetaTotal + transferenciaTotal
 
-  // 🔴 CORREGIDO: Si el vuelto sigue siendo 0 pero hay diferencia, calcularlo
-  if (vueltoTransaccion === 0 && recibidoTotal > totalGeneral) {
-    vueltoTransaccion = recibidoTotal - totalGeneral
+  // 🔴 CORREGIDO: Si NO encontramos vuelto, calcularlo
+  if (vueltoReal === 0 && recibidoTotal > totalGeneral) {
+    vueltoReal = recibidoTotal - totalGeneral
   }
+
+  // 🔴 CORREGIDO: Redondear a 2 decimales
+  vueltoReal = Math.round(vueltoReal * 100) / 100
 
   let contenido = `
 ${centrar("ARELYS SALON")}
@@ -299,13 +303,13 @@ ${icono} METODO: ${metodoTexto}
     }
   }
 
-  // 🔴 CORREGIDO: SIEMPRE mostrar recibido y vuelto (como en créditos)
+  // 🔴 CORREGIDO: SIEMPRE usar el MISMO vuelto para TODOS los productos
   contenido += `${linea()}
 RECIBIDO:   C$${recibidoTotal.toFixed(2)}
 `
 
-  if (vueltoTransaccion > 0) {
-    contenido += `VUELTO:     C$${vueltoTransaccion.toFixed(2)}\n`
+  if (vueltoReal > 0) {
+    contenido += `VUELTO:     C$${vueltoReal.toFixed(2)}\n`
   }
 
   contenido += `${linea()}

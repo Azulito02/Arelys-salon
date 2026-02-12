@@ -119,19 +119,14 @@ const ModalNuevaVenta = ({
     setMostrarResultadosManual(true)
   }, [busquedaManual, productos, indiceBuscando])
 
-  // Agregar producto desde búsqueda principal - CORREGIDA
+  // Agregar producto desde búsqueda principal
   const agregarProductoDesdeBusqueda = (producto) => {
     console.log('🔍 Producto recibido para agregar:', producto)
     
-    // Verificar si el producto ya está en la lista
     const existeIndex = productosSeleccionados.findIndex(p => p.producto_id === producto.id)
-    
-    // Obtener el precio correcto
     const precioProducto = obtenerPrecioProducto(producto)
-    console.log('💰 Precio asignado:', precioProducto)
     
     if (existeIndex !== -1) {
-      // Si existe, incrementar cantidad
       setProductosSeleccionados(prev =>
         prev.map((p, idx) =>
           idx === existeIndex
@@ -144,7 +139,6 @@ const ModalNuevaVenta = ({
         )
       )
     } else {
-      // Si no existe, agregar nuevo
       const nuevoProducto = {
         id: Date.now() + Math.random(),
         producto_id: producto.id,
@@ -154,8 +148,6 @@ const ModalNuevaVenta = ({
         producto_categoria: producto.categoria || producto.producto_categoria,
         producto_codigo: producto.codigo_barras || producto.producto_codigo || producto.codigo
       }
-      
-      console.log('🛒 Nuevo producto agregado:', nuevoProducto)
       
       setProductosSeleccionados(prev => [...prev, nuevoProducto])
     }
@@ -192,7 +184,6 @@ const ModalNuevaVenta = ({
     }
     
     setProductosSeleccionados(prev => [...prev, nuevoProducto])
-    // Establecer que estamos buscando para el último producto agregado
     setIndiceBuscando(productosSeleccionados.length)
     setBusquedaManual('')
   }
@@ -204,7 +195,7 @@ const ModalNuevaVenta = ({
     setProductosSeleccionados(nuevosProductos)
   }
 
-  // Actualizar producto en la lista - CORREGIDA
+  // Actualizar producto en la lista
   const actualizarProducto = (index, campo, valor) => {
     const nuevosProductos = [...productosSeleccionados]
     
@@ -220,7 +211,6 @@ const ModalNuevaVenta = ({
           producto_categoria: producto.categoria,
           producto_codigo: producto.codigo_barras
         }
-        console.log(`✅ Producto ${index} actualizado con precio: $${precioAsignar}`)
       }
     } else if (campo === 'cantidad') {
       const nuevaCantidad = Math.max(1, parseInt(valor) || 1)
@@ -239,15 +229,12 @@ const ModalNuevaVenta = ({
     setProductosSeleccionados(nuevosProductos)
   }
 
-  // Calcular totales - CORREGIDA
+  // Calcular totales
   const calcularTotalProducto = (producto) => {
     if (!producto) return 0
-    
     const cantidad = parseInt(producto.cantidad) || 1
     const precio = parseFloat(producto.precio_unitario) || 0
-    
-    const subtotal = cantidad * precio
-    return subtotal
+    return cantidad * precio
   }
 
   const calcularTotalGeneral = () => {
@@ -260,10 +247,10 @@ const ModalNuevaVenta = ({
   const totalPagos = efectivo + tarjeta + transferencia
   const diferencia = totalPagos - totalGeneral
 
-  // Calcular vuelto automáticamente
+  // 🔴 CORREGIDO: Calcular vuelto UNA SOLA VEZ
   useEffect(() => {
     if (diferencia > 0) {
-      setVuelto(diferencia)
+      setVuelto(Math.round(diferencia * 100) / 100)
     } else {
       setVuelto(0)
     }
@@ -318,6 +305,7 @@ const ModalNuevaVenta = ({
     }
   }
 
+  // 🔴 CORREGIDO: handleSubmit con MISMO vuelto para TODOS los productos
   const handleSubmit = async (e) => {
     e.preventDefault()
     
@@ -332,7 +320,6 @@ const ModalNuevaVenta = ({
       return
     }
 
-    // Validar que todos los productos tengan producto_id
     const productosInvalidos = productosSeleccionados.filter(p => !p.producto_id)
     if (productosInvalidos.length > 0) {
       setError('Todos los productos deben estar seleccionados')
@@ -371,8 +358,13 @@ const ModalNuevaVenta = ({
     }
 
     setLoading(true)
+    
     try {
-      // Crear una venta por cada producto
+      // 🔴 CORREGIDO: Calcular vuelto UNA SOLA VEZ para TODA la transacción
+      const vueltoCalculado = Math.max(0, totalPagos - totalGeneral)
+      const vueltoRedondeado = Math.round(vueltoCalculado * 100) / 100
+
+      // Crear una venta por cada producto con el MISMO vuelto
       const ventas = productosSeleccionados.map(producto => {
         const datosVenta = {
           producto_id: producto.producto_id,
@@ -384,7 +376,7 @@ const ModalNuevaVenta = ({
           efectivo: 0,
           tarjeta: 0,
           transferencia: 0,
-          vuelto: 0
+          vuelto: vueltoRedondeado // ✅ MISMO vuelto para TODOS los productos
         }
 
         // Distribuir pagos proporcionalmente
@@ -392,7 +384,6 @@ const ModalNuevaVenta = ({
         
         if (metodoPago === 'efectivo') {
           datosVenta.efectivo = parseFloat((efectivo * proporcion).toFixed(2))
-          datosVenta.vuelto = parseFloat((vuelto * proporcion).toFixed(2))
         } else if (metodoPago === 'tarjeta') {
           datosVenta.tarjeta = parseFloat((tarjeta * proporcion).toFixed(2))
           if (banco) datosVenta.banco = banco
@@ -404,7 +395,6 @@ const ModalNuevaVenta = ({
           datosVenta.tarjeta = parseFloat((tarjeta * proporcion).toFixed(2))
           datosVenta.transferencia = parseFloat((transferencia * proporcion).toFixed(2))
           
-          // Guardar bancos en JSON
           const bancosMixto = {
             tarjeta: bancoTarjeta || null,
             transferencia: bancoTransferencia || null
@@ -415,7 +405,7 @@ const ModalNuevaVenta = ({
         return datosVenta
       })
       
-      console.log('Guardando ventas:', ventas)
+      console.log('Guardando ventas con vuelto:', vueltoRedondeado, ventas)
       
       // Enviar todas las ventas
       for (const venta of ventas) {
@@ -435,6 +425,9 @@ const ModalNuevaVenta = ({
       setBusqueda('')
       setBusquedaManual('')
       setIndiceBuscando(null)
+      
+      onClose()
+      
     } catch (error) {
       setError('Error al registrar la venta: ' + error.message)
       console.error('Error al registrar:', error)
@@ -468,7 +461,6 @@ const ModalNuevaVenta = ({
     setBusquedaManual('')
     setMostrarResultadosManual(false)
     setIndiceBuscando(null)
-    console.log(`✅ Producto manual seleccionado para índice ${index} con precio: $${precioAsignar}`)
   }
 
   // Iniciar búsqueda manual para un producto específico
@@ -759,8 +751,6 @@ const ModalNuevaVenta = ({
                             type="button" 
                             onClick={() => handlePagoConVuelto(10)}
                             className="btn-pago-vuelto"
-                            disabled={productosSeleccionados.length === 0}
-                            title="Pagar con $10"
                           >
                             Con $10
                           </button>
@@ -768,8 +758,6 @@ const ModalNuevaVenta = ({
                             type="button" 
                             onClick={() => handlePagoConVuelto(50)}
                             className="btn-pago-vuelto"
-                            disabled={productosSeleccionados.length === 0}
-                            title="Pagar con $50"
                           >
                             Con $50
                           </button>
@@ -777,8 +765,6 @@ const ModalNuevaVenta = ({
                             type="button" 
                             onClick={() => handlePagoConVuelto(100)}
                             className="btn-pago-vuelto"
-                            disabled={productosSeleccionados.length === 0}
-                            title="Pagar con $100"
                           >
                             Con $100
                           </button>
@@ -786,8 +772,6 @@ const ModalNuevaVenta = ({
                             type="button" 
                             onClick={() => handlePagoConVuelto(200)}
                             className="btn-pago-vuelto"
-                            disabled={productosSeleccionados.length === 0}
-                            title="Pagar con $200"
                           >
                             Con $200
                           </button>
@@ -795,8 +779,6 @@ const ModalNuevaVenta = ({
                             type="button" 
                             onClick={() => handlePagoConVuelto(500)}
                             className="btn-pago-vuelto"
-                            disabled={productosSeleccionados.length === 0}
-                            title="Pagar con $500"
                           >
                             Con $500
                           </button>
@@ -804,8 +786,6 @@ const ModalNuevaVenta = ({
                             type="button" 
                             onClick={() => handlePagoConVuelto(1000)}
                             className="btn-pago-vuelto"
-                            disabled={productosSeleccionados.length === 0}
-                            title="Pagar con $1000"
                           >
                             Con $1000
                           </button>
