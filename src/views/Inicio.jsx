@@ -191,34 +191,32 @@ const Inicio = () => {
   )
 
   return (
-    <div className="inicio-container">
-      {/* ✅ HEADER CON LOGO - AGREGADO */}
-      <div className="inicio-header-con-logo">
-        <div className="header-logo-container">
-          <img 
-            src="/logo.png" 
-            alt="Arelys Salon" 
-            className="header-logo-imagen"
-            onError={(e) => {
-              console.error('Error cargando logo:', e);
-              e.target.style.display = 'none';
-            }}
-          />
-          <div className="header-titulos">
-            <h1 className="inicio-titulo">
-              Bienvenido a <span className="marca">Arelyz Salon</span>
-            </h1>
-            <p className="inicio-subtitulo">
-              Sistema de gestión de inventario y ventas
-            </p>
-          </div>
-        </div>
-        <div className="usuario-bienvenida">
-          <span className="usuario-saludo">Hola, </span>
-          <span className="usuario-nombre">{usuario.nombre}</span>
-          <span className="usuario-rol-badge">{rol}</span>
-        </div>
+      <div className="inicio-container">
+    {/* ✅ HEADER CON LOGO A LA IZQUIERDA - CORREGIDO CON .jpg */}
+    <div className="inicio-header">
+      <div className="header-logo-titulo">
+        <img 
+          src="/logo.jpg"  
+          alt="Arelys Salon" 
+          className="header-logo"
+          onError={(e) => {
+            console.error('Error cargando logo:', e);
+            e.target.style.display = 'none'; // Oculta si falla
+          }}
+        />
+        <h1 className="inicio-titulo">
+          Bienvenido a <span className="marca">Arelyz Salon</span>
+        </h1>
       </div>
+      <p className="inicio-subtitulo">
+        Sistema de gestión de inventario y ventas
+      </p>
+      <div className="usuario-bienvenida">
+        <span className="usuario-saludo">Hola, </span>
+        <span className="usuario-nombre">{usuario.nombre}</span>
+        <span className="usuario-rol-badge">{rol}</span>
+      </div>
+    </div>
 
       <div className="botones-grid">
         {botonesFiltrados.map((boton) => (
