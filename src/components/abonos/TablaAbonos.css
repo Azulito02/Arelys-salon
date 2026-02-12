@@ -926,3 +926,60 @@
     min-width: 180px;
   }
 }
+
+/* AGREGAR AL FINAL DEL ARCHIVO TablaAbonos.css */
+
+/* Botón imprimir */
+.accion-btn.accion-imprimir {
+  background-color: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.accion-btn.accion-imprimir:hover {
+  background-color: #fde68a;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(146, 64, 14, 0.1);
+}
+
+/* En móvil */
+.abono-action-btn.imprimir {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.abono-action-btn.imprimir:hover {
+  background: linear-gradient(135deg, #fde68a 0%, #fcd34d 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(146, 64, 14, 0.15);
+}
+
+/* Ajuste de acciones container para 3 botones */
+.tabla-abonos .acciones-container {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.tabla-abonos .accion-btn {
+  padding: 6px;
+  width: 32px;
+  height: 32px;
+}
+
+/* Para móvil - 3 botones en fila */
+.abono-actions-mobile {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding-top: 16px;
+  border-top: 1px solid #f1f5f9;
+}
+
+@media (max-width: 480px) {
+  .abono-actions-mobile {
+    grid-template-columns: 1fr;
+  }
+}

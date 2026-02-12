@@ -268,6 +268,94 @@ const Abonos = () => {
     }
   }
 
+
+  const generarContenidoTicketAbono = (abono) => {
+
+  const centrar = (texto) => {
+    const ancho = 32
+    const espacios = Math.max(0, Math.floor((ancho - texto.length) / 2))
+    return " ".repeat(espacios) + texto
+  }
+
+  const linea = () => "--------------------------------"
+
+  const formatFecha = (fechaISO) => {
+    if (!fechaISO) return ''
+    const fechaUTC = new Date(fechaISO)
+    const fechaNic = new Date(fechaUTC.getTime() - (6 * 60 * 60 * 1000))
+
+    const d = fechaNic.getDate().toString().padStart(2, '0')
+    const m = (fechaNic.getMonth() + 1).toString().padStart(2, '0')
+    const y = fechaNic.getFullYear()
+
+    let h = fechaNic.getHours()
+    const min = fechaNic.getMinutes().toString().padStart(2, '0')
+    const ampm = h >= 12 ? 'p.m.' : 'a.m.'
+
+    h = h % 12
+    h = h ? h.toString().padStart(2, '0') : '12'
+
+    return `${d}/${m}/${y} ${h}:${min} ${ampm}`
+  }
+
+  const credito = creditos.find(c => c.id === abono.venta_credito_id)
+
+  const cliente = credito?.nombre_cliente || 'Cliente'
+  const producto = credito?.productos?.nombre || 'Producto'
+
+  const totalCredito = parseFloat(credito?.total || 0)
+  const saldoPendiente = parseFloat(credito?.saldo_pendiente || 0)
+  const montoAbono = parseFloat(abono.monto || 0)
+
+  const saldoAnterior = (saldoPendiente + montoAbono).toFixed(2)
+  const saldoActual = saldoPendiente.toFixed(2)
+
+  const metodo = abono.metodo_pago?.toUpperCase() || "EFECTIVO"
+
+  return `
+${centrar("ARELYZ SALON")}
+${centrar("7715-4242")}
+${linea()}
+        TICKET ABONO
+${linea()}
+CLIENTE:
+${cliente}
+PRODUCTO:
+${producto}
+${linea()}
+FECHA:
+${formatFecha(abono.fecha)}
+${linea()}
+TOTAL CRED: C$${totalCredito.toFixed(2)}
+SALDO ANT:  C$${saldoAnterior}
+ABONO:      C$${montoAbono.toFixed(2)}
+${linea()}
+SALDO ACT:  C$${saldoActual}
+${linea()}
+METODO: ${metodo}
+${linea()}
+${centrar("GRACIAS POR SU PAGO")}
+
+
+
+
+
+\n\n\n\n
+`
+}
+
+
+const imprimirTicketAbono = (abono) => {
+  try {
+    const contenido = generarContenidoTicketAbono(abono)
+    const encoded = encodeURIComponent(contenido)
+    window.location.href = `rawbt:${encoded}`
+  } catch (error) {
+    alert("Error al imprimir ticket")
+  }
+}
+
+
   return (
     <div className="abonos-container">
       {/* Header responsive */}
@@ -406,10 +494,10 @@ const Abonos = () => {
         loading={loading}
         onEditar={handleEditarAbono}
         onEliminar={handleEliminarAbono}
-        getMetodoPagoColor={getMetodoPagoColor}
-        getMetodoPagoIcon={getMetodoPagoIcon}
         creditos={creditos}
+        onImprimir={imprimirTicketAbono}
       />
+
 
       {/* Modales */}
       {showAgregarModal && (
