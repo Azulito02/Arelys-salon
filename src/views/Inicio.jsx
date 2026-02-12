@@ -12,6 +12,9 @@ const Inicio = () => {
     creditosActivos: 0
   })
   const [loadingEstadisticas, setLoadingEstadisticas] = useState(true)
+  
+  // ✅ ESTADO PARA PWA - MOVIDO AQUÍ (ARRIBA DE TODO)
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
 
   useEffect(() => {
     const loaderShown = sessionStorage.getItem("loaderShown")
@@ -25,6 +28,14 @@ const Inicio = () => {
       setShowLoader(false)
     }
   }, [])
+
+  // ✅ EFECTO PARA PWA - MOVIDO AQUÍ
+  useEffect(() => {
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    });
+  }, []);
 
   useEffect(() => {
     cargarEstadisticas()
@@ -112,6 +123,20 @@ const Inicio = () => {
     }
   }
 
+  // ✅ FUNCIÓN PARA INSTALAR - MOVIDA AQUÍ
+  const instalarApp = async () => {
+    if (!deferredPrompt) {
+      alert('Para instalar en iOS: usa "Compartir" > "Agregar a pantalla de inicio"');
+      return;
+    }
+    
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+      setDeferredPrompt(null);
+    }
+  };
+
   const usuario = JSON.parse(localStorage.getItem('usuarioArelyz'))
   
   if (showLoader || !usuario) {
@@ -191,32 +216,34 @@ const Inicio = () => {
   )
 
   return (
-      <div className="inicio-container">
-    {/* ✅ HEADER CON LOGO A LA IZQUIERDA - CORREGIDO CON .jpg */}
-    <div className="inicio-header">
-      <div className="header-logo-titulo">
-        <img 
-          src="/logo.jpg"  
-          alt="Arelys Salon" 
-          className="header-logo"
-          onError={(e) => {
-            console.error('Error cargando logo:', e);
-            e.target.style.display = 'none'; // Oculta si falla
-          }}
-        />
-        <h1 className="inicio-titulo">
-          Bienvenido a <span className="marca">Arelyz Salon</span>
-        </h1>
+    <div className="inicio-container">
+      {/* ✅ HEADER CON LOGO A LA IZQUIERDA */}
+      <div className="inicio-header">
+        <div className="header-logo-titulo">
+          <img 
+            src="/logo.jpg"  
+            alt="Arelys Salon" 
+            className="header-logo"
+            onClick={instalarApp}
+            style={{ cursor: 'pointer' }}
+            onError={(e) => {
+              console.error('Error cargando logo:', e);
+              e.target.style.display = 'none';
+            }}
+          />
+          <h1 className="inicio-titulo">
+            Bienvenido a <span className="marca">Arelyz Salon</span>
+          </h1>
+        </div>
+        <p className="inicio-subtitulo">
+          Sistema de gestión de inventario y ventas
+        </p>
+        <div className="usuario-bienvenida">
+          <span className="usuario-saludo">Hola, </span>
+          <span className="usuario-nombre">{usuario.nombre}</span>
+          <span className="usuario-rol-badge">{rol}</span>
+        </div>
       </div>
-      <p className="inicio-subtitulo">
-        Sistema de gestión de inventario y ventas
-      </p>
-      <div className="usuario-bienvenida">
-        <span className="usuario-saludo">Hola, </span>
-        <span className="usuario-nombre">{usuario.nombre}</span>
-        <span className="usuario-rol-badge">{rol}</span>
-      </div>
-    </div>
 
       <div className="botones-grid">
         {botonesFiltrados.map((boton) => (
@@ -278,7 +305,6 @@ const Inicio = () => {
           </div>
         </div>
         
-        {/* ✅ AGREGADO: Tarjeta de ventas hoy */}
         <div className="estadistica-card">
           <div className="estadistica-icono">💰</div>
           <div className="estadistica-contenido">
@@ -293,7 +319,6 @@ const Inicio = () => {
           </div>
         </div>
       </div>
-      
     </div>
   )
 }

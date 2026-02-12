@@ -40,7 +40,7 @@ export default function App() {
   return (
     <>
       {/* ✅ BOTÓN DE INSTALAR - AHORA SÍ SE VA A VER */}
-      {isAuthenticated && <BotonInstalar />}
+      {isAuthenticated && <BotonInstalar />} {/* ✅ BOTÓN FLOTANTE */}
       
       <Routes>
         <Route 
