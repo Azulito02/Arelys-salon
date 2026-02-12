@@ -200,7 +200,7 @@ ${fecha}
 ${linea()}
 PRODUCTO: ${nombreProducto}
 CANTIDAD: ${cantidad}
-IO: C$${precio}
+PRECIO: C$${precio}
 ${linea()}
 TOTAL   C$${total}
 RECIBIDO   C$${recibido}
