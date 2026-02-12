@@ -29,7 +29,6 @@ const Inicio = () => {
   useEffect(() => {
     cargarEstadisticas()
     
-    // Actualizar cada 30 segundos para ver cambios en tiempo real
     const intervalo = setInterval(() => {
       cargarEstadisticas()
     }, 30000)
@@ -41,21 +40,18 @@ const Inicio = () => {
     try {
       setLoadingEstadisticas(true)
       
-      // 1. Obtener total de productos
       const { count: totalProductos, error: errorProductos } = await supabase
         .from('productos')
         .select('*', { count: 'exact', head: true })
       
       if (errorProductos) throw errorProductos
 
-      // 2. Obtener ventas del turno ACTUAL (solo ventas NO procesadas)
       const hoy = new Date()
       const inicioHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate())
       const finHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() + 1)
       
       let totalVentasHoy = 0
       
-      // 2.1 Ventas normales NO procesadas (tabla ventas - estas son las del turno actual)
       const { data: ventasHoyData, error: errorVentas } = await supabase
         .from('ventas')
         .select('total')
@@ -67,7 +63,6 @@ const Inicio = () => {
           sum + parseFloat(venta.total || 0), 0)
       }
       
-      // 2.2 Abonos NO procesados (del turno actual)
       const { data: abonosHoyData, error: errorAbonos } = await supabase
         .from('abonos_credito')
         .select('monto, procesado_en_arqueo')
@@ -75,18 +70,13 @@ const Inicio = () => {
         .lt('fecha', finHoy.toISOString())
       
       if (!errorAbonos && abonosHoyData) {
-        // Sumar SOLO abonos que NO han sido procesados en arqueo
         const abonosNoProcesados = abonosHoyData
           .filter(abono => !abono.procesado_en_arqueo)
           .reduce((sum, abono) => sum + parseFloat(abono.monto || 0), 0)
         
         totalVentasHoy += abonosNoProcesados
       }
-      
-      // NOTA: NO sumamos de la tabla facturados porque esas ya fueron procesadas en arqueos anteriores
-      // Solo mostramos lo que está pendiente para el próximo arqueo
 
-      // 3. Obtener créditos activos (con saldo pendiente > 0)
       const { data: creditosData, error: errorCreditos } = await supabase
         .from('ventas_credito')
         .select(`
@@ -96,7 +86,6 @@ const Inicio = () => {
       
       if (errorCreditos) throw errorCreditos
       
-      // Calcular cuántos créditos tienen saldo pendiente
       const creditosConSaldo = (creditosData || []).filter(credito => {
         const total = parseFloat(credito.total) || 0
         const totalAbonado = credito.abonos_credito?.reduce((sum, abono) => 
@@ -118,7 +107,6 @@ const Inicio = () => {
       
     } catch (error) {
       console.error('Error cargando estadísticas:', error)
-      // Mantener valores por defecto en caso de error
     } finally {
       setLoadingEstadisticas(false)
     }
@@ -204,13 +192,27 @@ const Inicio = () => {
 
   return (
     <div className="inicio-container">
-      <div className="inicio-header">
-        <h1 className="inicio-titulo">
-          Bienvenido a <span className="marca">Arelyz Salon</span>
-        </h1>
-        <p className="inicio-subtitulo">
-          Sistema de gestión de inventario y ventas
-        </p>
+      {/* ✅ HEADER CON LOGO - AGREGADO */}
+      <div className="inicio-header-con-logo">
+        <div className="header-logo-container">
+          <img 
+            src="/logo.png" 
+            alt="Arelys Salon" 
+            className="header-logo-imagen"
+            onError={(e) => {
+              console.error('Error cargando logo:', e);
+              e.target.style.display = 'none';
+            }}
+          />
+          <div className="header-titulos">
+            <h1 className="inicio-titulo">
+              Bienvenido a <span className="marca">Arelyz Salon</span>
+            </h1>
+            <p className="inicio-subtitulo">
+              Sistema de gestión de inventario y ventas
+            </p>
+          </div>
+        </div>
         <div className="usuario-bienvenida">
           <span className="usuario-saludo">Hola, </span>
           <span className="usuario-nombre">{usuario.nombre}</span>
@@ -275,6 +277,21 @@ const Inicio = () => {
               )}
             </p>
             <p className="estadistica-label">Créditos Activos</p>
+          </div>
+        </div>
+        
+        {/* ✅ AGREGADO: Tarjeta de ventas hoy */}
+        <div className="estadistica-card">
+          <div className="estadistica-icono">💰</div>
+          <div className="estadistica-contenido">
+            <p className="estadistica-valor">
+              {loadingEstadisticas ? (
+                <span className="cargando-estadistica">...</span>
+              ) : (
+                `$${estadisticas.ventasHoy.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+              )}
+            </p>
+            <p className="estadistica-label">Ventas Hoy</p>
           </div>
         </div>
       </div>

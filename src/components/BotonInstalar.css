@@ -1,39 +1,37 @@
-/* components/BotonInstalar.css */
+/* components/BotonInstalar.css - CORREGIDO */
+
 .instalar-boton {
   position: fixed;
-  top: 10px;
-  right: 70px;
+  top: 70px !important;  /* ✅ BAJADO para que no quede detrás del header */
+  right: 20px;
   background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
   color: white;
   border: none;
-  padding: 8px 20px 8px 16px;
+  padding: 10px 24px 10px 20px;
   border-radius: 40px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   box-shadow: 0 4px 12px rgba(217, 119, 6, 0.3);
-  z-index: 1000;
-  transition: all 0.2s;
+  z-index: 999999 !important;  /* ✅ SUPER ALTO */
+  transition: all 0.3s ease;
   border: 1px solid rgba(255, 255, 255, 0.2);
+  animation: slideDown 0.5s ease;
 }
 
-.instalar-boton:hover {
-  background: linear-gradient(135deg, #b45309 0%, #92400e 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(217, 119, 6, 0.4);
+/* ✅ NUEVO: Para cuando hay header fijo */
+@media (max-width: 768px) {
+  .instalar-boton {
+    top: 60px !important;
+    right: 15px;
+    padding: 8px 18px;
+  }
 }
 
-.instalar-boton-logo {
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
-  object-fit: cover;
-}
-
-/* Banner para iOS */
+/* Banner para iOS - CORREGIDO */
 .instalar-banner {
   position: fixed;
   bottom: 20px;
@@ -43,105 +41,19 @@
   border-radius: 16px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
   border-left: 4px solid #d97706;
-  z-index: 9999;
+  z-index: 999999 !important;  /* ✅ SUPER ALTO */
   animation: slideUp 0.3s ease;
   max-width: 400px;
   margin: 0 auto;
 }
 
-.instalar-contenido {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px;
-}
-
+/* ✅ NUEVO: Para que el logo se vea bien */
 .instalar-logo {
   width: 48px;
   height: 48px;
   border-radius: 12px;
   object-fit: cover;
   flex-shrink: 0;
-}
-
-.instalar-texto {
-  flex: 1;
-}
-
-.instalar-texto strong {
-  display: block;
-  color: #111827;
-  font-size: 15px;
-  margin-bottom: 4px;
-}
-
-.instalar-texto p {
-  margin: 0;
-  color: #6b7280;
-  font-size: 13px;
-}
-
-.ios-icon {
-  display: inline-block;
-  background: #e5e7eb;
-  padding: 2px 8px;
-  border-radius: 6px;
-  font-size: 14px;
-  font-weight: 600;
-}
-
-.instalar-cerrar {
-  background: #f3f4f6;
-  border: none;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  font-size: 22px;
-  line-height: 1;
-  color: #6b7280;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  padding: 0;
-  transition: all 0.2s;
-}
-
-.instalar-cerrar:hover {
-  background: #e5e7eb;
-  color: #374151;
-}
-
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@media (min-width: 768px) {
-  .instalar-banner {
-    left: auto;
-    right: 20px;
-    bottom: 20px;
-  }
-}
-
-@media (max-width: 768px) {
-  .instalar-boton {
-    top: 8px;
-    right: 60px;
-    padding: 6px 16px 6px 12px;
-    font-size: 13px;
-  }
-  
-  .instalar-boton-logo {
-    width: 20px;
-    height: 20px;
-  }
+  border: 2px solid #d97706;
+  background-color: white;  /* ✅ Fondo blanco por si el logo tiene transparencia */
 }

@@ -10,14 +10,12 @@ import Creditos from "./views/Creditos";
 import Abonos from "./views/Abonos";
 import Gastos from "./views/Gastos";
 import Arqueos from "./views/Arqueos";
-import BotonInstalar from "./components/BotonInstalar"; // Importar botón de instalación
-import "./App.css"; // Asegúrate de importar App.css
+import BotonInstalar from "./components/BotonInstalar"; // ✅ IMPORTAR
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(null);
 
   useEffect(() => {
-    // Verificar autenticación al cargar la app
     const usuario = JSON.parse(localStorage.getItem('usuarioArelyz'));
     setIsAuthenticated(!!usuario);
   }, []);
@@ -41,11 +39,10 @@ export default function App() {
 
   return (
     <>
-      {/* Botón de instalación PWA - Solo visible cuando está autenticado */}
+      {/* ✅ BOTÓN DE INSTALAR - AHORA SÍ SE VA A VER */}
       {isAuthenticated && <BotonInstalar />}
       
       <Routes>
-        {/* Ruta pública */}
         <Route 
           path="/" 
           element={
@@ -55,7 +52,6 @@ export default function App() {
           } 
         />
 
-        {/* Rutas protegidas */}
         <Route 
           element={
             <RutasProtegidas 
@@ -74,7 +70,6 @@ export default function App() {
           <Route path="/arqueos" element={<Arqueos />} />
         </Route>
 
-        {/* Ruta para manejar rutas no encontradas */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>
