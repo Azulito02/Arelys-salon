@@ -128,127 +128,75 @@ const Ventas = () => {
 // ==============================================
 
 const generarContenidoTicket = (venta) => {
-  // Función de formato EXACTA a TablaVentas.js
-  const formatFechaNicaragua = (fechaISO) => {
-    if (!fechaISO) {
-      const fechaActual = new Date();
-      const fechaUTC = new Date(fechaActual.getTime());
-      const fechaNicaragua = new Date(fechaUTC.getTime() - (6 * 60 * 60 * 1000));
-      
-      const dia = fechaNicaragua.getDate().toString().padStart(2, '0');
-      const mes = (fechaNicaragua.getMonth() + 1).toString().padStart(2, '0');
-      const año = fechaNicaragua.getFullYear();
-      
-      let horas = fechaNicaragua.getHours();
-      const minutos = fechaNicaragua.getMinutes().toString().padStart(2, '0');
-      const ampm = horas >= 12 ? 'p.m.' : 'a.m.';
-      
-      horas = horas % 12;
-      horas = horas ? horas.toString().padStart(2, '0') : '12';
-      
-      return `${dia}/${mes}/${año}, ${horas}:${minutos} ${ampm}`;
-    }
-    
-    const fechaUTC = new Date(fechaISO);
-    const fechaNicaragua = new Date(fechaUTC.getTime() - (6 * 60 * 60 * 1000));
-    
-    const dia = fechaNicaragua.getDate().toString().padStart(2, '0');
-    const mes = (fechaNicaragua.getMonth() + 1).toString().padStart(2, '0');
-    const año = fechaNicaragua.getFullYear();
-    
-    let horas = fechaNicaragua.getHours();
-    const minutos = fechaNicaragua.getMinutes().toString().padStart(2, '0');
-    const ampm = horas >= 12 ? 'p.m.' : 'a.m.';
-    
-    horas = horas % 12;
-    horas = horas ? horas.toString().padStart(2, '0') : '12';
-    
-    return `${dia}/${mes}/${año}, ${horas}:${minutos} ${ampm}`;
-  };
 
-  // Información básica
-  const fecha = formatFechaNicaragua(venta.fecha);
-
-  // Información del producto
-  const nombreProducto = venta.productos?.nombre || "Producto sin nombre";
-  const categoriaProducto = venta.productos?.categoria || "";
-  const cantidad = venta.cantidad || 1;
-  const precioUnitario = Number(venta.precio_unitario || 0).toFixed(2);
-  const totalVenta = Number(venta.total || 0).toFixed(2);
-
-  // Número de venta
-  const numeroVenta = venta.id ? venta.id.substring(0, 8).toUpperCase() : "00000000";
-  
-  // Método de pago
-  let metodoPago = venta.metodo_pago || "efectivo";
-  let metodoPagoTexto = "";
-  let bancoInfo = "";
-  let montoEfectivo = 0;
-  let montoTarjeta = 0;
-  let montoTransferencia = 0;
-  let montoRecibido = 0;
-  let vuelto = venta.vuelto || 0;
-  
-  // Determinar montos según método de pago
-  if (metodoPago === "mixto") {
-    metodoPagoTexto = "MIXTO";
-    montoEfectivo = venta.efectivo || 0;
-    montoTarjeta = venta.tarjeta || 0;
-    montoTransferencia = venta.transferencia || 0;
-    montoRecibido = montoEfectivo + montoTarjeta + montoTransferencia;
-    bancoInfo = venta.banco ? `BANCO: ${venta.banco.toUpperCase()}` : "";
-  } 
-  else if (metodoPago === "tarjeta") {
-    metodoPagoTexto = "TARJETA";
-    montoTarjeta = venta.tarjeta || parseFloat(totalVenta);
-    montoRecibido = montoTarjeta;
-    bancoInfo = venta.banco ? `BANCO: ${venta.banco.toUpperCase()}` : "";
-  } 
-  else if (metodoPago === "transferencia") {
-    metodoPagoTexto = "TRANSFERENCIA";
-    montoTransferencia = venta.transferencia || parseFloat(totalVenta);
-    montoRecibido = montoTransferencia;
-    bancoInfo = venta.banco ? `BANCO: ${venta.banco.toUpperCase()}` : "";
-  } 
-  else {
-    // efectivo
-    metodoPagoTexto = "EFECTIVO";
-    montoEfectivo = venta.efectivo || parseFloat(totalVenta);
-    montoRecibido = montoEfectivo;
+  const centrar = (texto) => {
+    const ancho = 32
+    const espacios = Math.max(0, Math.floor((ancho - texto.length) / 2))
+    return " ".repeat(espacios) + texto
   }
 
-  // Información del negocio
-  const telefonoNegocio = "7715-4242";
-  const direccionNegocio = "En frente de la miel de los pajaritos";
-  const nombreNegocio = "ARELY Z SALON";
+  const linea = () => "--------------------------------"
 
-  // Construir el ticket con ORDEN CORRECTO
-  const ticket = `ARELY Z SALON
-En frente de la miel de los pajaritos
-Tel: 7715-4242
---------------------------------
+  const formatFecha = (fechaISO) => {
+    const fecha = fechaISO ? new Date(fechaISO) : new Date()
+    const fechaNic = new Date(fecha.getTime() - (6 * 60 * 60 * 1000))
+
+    const d = fechaNic.getDate().toString().padStart(2, '0')
+    const m = (fechaNic.getMonth() + 1).toString().padStart(2, '0')
+    const y = fechaNic.getFullYear()
+
+    let h = fechaNic.getHours()
+    const min = fechaNic.getMinutes().toString().padStart(2, '0')
+    const ampm = h >= 12 ? 'p.m.' : 'a.m.'
+
+    h = h % 12
+    h = h ? h.toString().padStart(2, '0') : '12'
+
+    return `${d}/${m}/${y} ${h}:${min} ${ampm}`
+  }
+
+  const fecha = formatFecha(venta.fecha)
+  const nombreProducto = venta.productos?.nombre || "Producto"
+  const categoria = venta.productos?.categoria || ""
+  const cantidad = venta.cantidad || 1
+  const precio = Number(venta.precio_unitario || 0).toFixed(2)
+  const total = Number(venta.total || 0).toFixed(2)
+
+  const numeroVenta = venta.id
+    ? venta.id.substring(0, 8).toUpperCase()
+    : "00000000"
+
+  const recibido = Number(
+    venta.efectivo ||
+    venta.tarjeta ||
+    venta.transferencia ||
+    total
+  ).toFixed(2)
+
+  const vuelto = Number(venta.vuelto || 0).toFixed(2)
+
+  return `
+${centrar("ARELY Z SALON")}
+${centrar("7715-4242")}
+${centrar("En frente miel pajaritos")}
+${linea()}
 TICKET DE VENTA
---------------------------------
 #${numeroVenta}
 ${fecha}
+${linea()}
+PROD: ${nombreProducto}
+CAT : ${categoria}
+CANT: ${cantidad}
+PREC: C$${precio}
+${linea()}
+TOTAL   C$${total}
+RECIB   C$${recibido}
+VUELTO  C$${vuelto}
+${linea()}
+${centrar("GRACIAS POR SU COMPRA")}
 
-CLIENTE: Cliente de Mostrador
---------------------------------
-PRODUCTO: ${nombreProducto}
-CATEGORIA: ${categoriaProducto}
-CANTIDAD: ${cantidad}
-PRECIO: C$${precioUnitario}
---------------------------------
-TOTAL: C$${totalVenta}
-RECIBIDO: C$${parseFloat(montoRecibido).toFixed(2)}
-VUELTO: C$${parseFloat(vuelto).toFixed(2)}
---------------------------------
-METODO: ${metodoPagoTexto}
---------------------------------
-GRACIAS POR SU COMPRA`;
-
-  return ticket;
-};
+`
+}
   // ==============================================
   // FALLBACK PARA COPIAR CONTENIDO (MANTENER IGUAL)
   // ==============================================
