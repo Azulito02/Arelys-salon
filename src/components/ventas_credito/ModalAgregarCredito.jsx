@@ -4,10 +4,16 @@ import './ModalAgregarCredito.css'
 
 const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) => {
   const [formData, setFormData] = useState({
+    cliente_id: '', // Cambiado de cliente_nombre a cliente_id
     cliente_nombre: '',
     fecha_inicio: new Date().toISOString().split('T')[0],
     fecha_fin: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   })
+  
+  // 🔍 ESTADOS PARA BUSCADOR DE CLIENTES
+  const [busquedaCliente, setBusquedaCliente] = useState('')
+  const [clientesFiltrados, setClientesFiltrados] = useState([])
+  const [mostrarResultadosCliente, setMostrarResultadosCliente] = useState(false)
   
   // Estado para búsqueda de productos principal
   const [busquedaProducto, setBusquedaProducto] = useState('')
@@ -34,6 +40,25 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
       resetForm()
     }
   }, [isOpen])
+
+  // 🔍 FILTRAR CLIENTES POR BÚSQUEDA
+  useEffect(() => {
+    if (busquedaCliente.trim() === '') {
+      setClientesFiltrados([])
+      setMostrarResultadosCliente(false)
+      return
+    }
+
+    const termino = busquedaCliente.toLowerCase().trim()
+    
+    const filtrados = clientes.filter(cliente => {
+      const nombreCliente = typeof cliente === 'object' ? cliente.nombre?.toLowerCase() || '' : cliente.toLowerCase()
+      return nombreCliente.includes(termino)
+    })
+    
+    setClientesFiltrados(filtrados.slice(0, 5))
+    setMostrarResultadosCliente(true)
+  }, [busquedaCliente, clientes])
 
   // Filtrar productos según búsqueda principal
   useEffect(() => {
@@ -105,10 +130,14 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
 
   const resetForm = () => {
     setFormData({
+      cliente_id: '',
       cliente_nombre: '',
       fecha_inicio: new Date().toISOString().split('T')[0],
       fecha_fin: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
     })
+    setBusquedaCliente('')
+    setClientesFiltrados([])
+    setMostrarResultadosCliente(false)
     setProductosSeleccionados([])
     setNuevoCliente({ nombre: '', telefono: '', email: '' })
     setMostrarNuevoCliente(false)
@@ -119,6 +148,22 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
     setProductosFiltradosManual([])
     setMostrarResultadosManual(false)
     setIndiceBuscando(null)
+    setError('')
+  }
+
+  // 🔍 SELECCIONAR CLIENTE
+  const seleccionarCliente = (cliente) => {
+    const clienteId = typeof cliente === 'object' ? cliente.id : cliente
+    const clienteNombre = typeof cliente === 'object' ? cliente.nombre : cliente
+    
+    setFormData({
+      ...formData,
+      cliente_id: clienteId,
+      cliente_nombre: clienteNombre
+    })
+    setBusquedaCliente(clienteNombre)
+    setClientesFiltrados([])
+    setMostrarResultadosCliente(false)
     setError('')
   }
 
@@ -136,19 +181,13 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
     return 0
   }
 
-  // Agregar producto desde búsqueda - CORREGIDA
+  // Agregar producto desde búsqueda
   const agregarProductoDesdeBusqueda = (producto) => {
-    console.log('🔍 [CRÉDITO] Producto recibido para agregar:', producto)
-    
-    // Verificar si el producto ya está en la lista
     const existeIndex = productosSeleccionados.findIndex(p => p.producto_id === producto.id)
     
-    // Obtener el precio correcto
     const precioProducto = obtenerPrecioProducto(producto)
-    console.log('💰 [CRÉDITO] Precio asignado:', precioProducto)
     
     if (existeIndex !== -1) {
-      // Si existe, incrementar cantidad
       setProductosSeleccionados(prev =>
         prev.map((p, idx) =>
           idx === existeIndex
@@ -161,7 +200,6 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
         )
       )
     } else {
-      // Si no existe, agregar nuevo
       const nuevoProducto = {
         id: Date.now() + Math.random(),
         producto_id: producto.id,
@@ -171,8 +209,6 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
         producto_categoria: producto.categoria || producto.producto_categoria,
         producto_codigo: producto.codigo_barras || producto.producto_codigo || producto.codigo
       }
-      
-      console.log('🛒 [CRÉDITO] Nuevo producto agregado:', nuevoProducto)
       
       setProductosSeleccionados(prev => [...prev, nuevoProducto])
     }
@@ -195,7 +231,6 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
     }
     
     setProductosSeleccionados(prev => [...prev, nuevoProducto])
-    // Establecer que estamos buscando para el último producto agregado
     setIndiceBuscando(productosSeleccionados.length)
     setBusquedaManual('')
   }
@@ -207,7 +242,7 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
     setProductosSeleccionados(nuevosProductos)
   }
 
-  // Actualizar producto en la lista - CORREGIDA
+  // Actualizar producto en la lista
   const actualizarProducto = (index, campo, valor) => {
     const nuevosProductos = [...productosSeleccionados]
     
@@ -223,7 +258,6 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
           producto_categoria: producto.categoria,
           producto_codigo: producto.codigo_barras
         }
-        console.log(`✅ [CRÉDITO] Producto ${index} actualizado con precio: $${precioAsignar}`)
       }
     } else if (campo === 'cantidad') {
       const nuevaCantidad = Math.max(1, parseInt(valor) || 1)
@@ -242,35 +276,33 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
     setProductosSeleccionados(nuevosProductos)
   }
 
-
   const incrementarCantidad = (index) => {
-  const nuevosProductos = [...productosSeleccionados]
-  nuevosProductos[index] = {
-    ...nuevosProductos[index],
-    cantidad: (nuevosProductos[index].cantidad || 1) + 1
+    const nuevosProductos = [...productosSeleccionados]
+    nuevosProductos[index] = {
+      ...nuevosProductos[index],
+      cantidad: (nuevosProductos[index].cantidad || 1) + 1
+    }
+    setProductosSeleccionados(nuevosProductos)
   }
-  setProductosSeleccionados(nuevosProductos)
-}
 
-const decrementarCantidad = (index) => {
-  const nuevosProductos = [...productosSeleccionados]
-  const nuevaCantidad = Math.max(1, (nuevosProductos[index].cantidad || 1) - 1)
-  nuevosProductos[index] = {
-    ...nuevosProductos[index],
-    cantidad: nuevaCantidad
+  const decrementarCantidad = (index) => {
+    const nuevosProductos = [...productosSeleccionados]
+    const nuevaCantidad = Math.max(1, (nuevosProductos[index].cantidad || 1) - 1)
+    nuevosProductos[index] = {
+      ...nuevosProductos[index],
+      cantidad: nuevaCantidad
+    }
+    setProductosSeleccionados(nuevosProductos)
   }
-  setProductosSeleccionados(nuevosProductos)
-}
 
-  // Calcular totales - CORREGIDA
+  // Calcular totales
   const calcularTotalProducto = (producto) => {
     if (!producto) return 0
     
     const cantidad = parseInt(producto.cantidad) || 1
     const precio = parseFloat(producto.precio_unitario) || 0
     
-    const subtotal = cantidad * precio
-    return subtotal
+    return cantidad * precio
   }
 
   const calcularTotalGeneral = () => {
@@ -287,14 +319,13 @@ const decrementarCantidad = (index) => {
     }
 
     try {
-      // Verificar si ya existe en clientes
       const clienteExistente = clientes.find(c => 
         typeof c === 'object' ? c.nombre === nuevoCliente.nombre.trim() : c === nuevoCliente.nombre.trim()
       )
       
       if (clienteExistente) {
         const clienteId = typeof clienteExistente === 'object' ? clienteExistente.id : clienteExistente
-        setFormData({ ...formData, cliente_nombre: clienteId })
+        seleccionarCliente(clienteExistente)
         setMostrarNuevoCliente(false)
         return clienteId
       }
@@ -311,7 +342,7 @@ const decrementarCantidad = (index) => {
         
         if (!error && data && data[0]) {
           setClientes([...clientes, data[0]])
-          setFormData({ ...formData, cliente_nombre: data[0].id })
+          seleccionarCliente(data[0])
           setMostrarNuevoCliente(false)
           return data[0].id
         }
@@ -319,7 +350,7 @@ const decrementarCantidad = (index) => {
         console.log('No se pudo registrar en tabla clientes, usando nombre directo')
       }
 
-      setFormData({ ...formData, cliente_nombre: nuevoCliente.nombre.trim() })
+      seleccionarCliente({ nombre: nuevoCliente.nombre.trim(), id: nuevoCliente.nombre.trim() })
       setMostrarNuevoCliente(false)
       return nuevoCliente.nombre.trim()
       
@@ -337,7 +368,6 @@ const decrementarCantidad = (index) => {
     setBusquedaManual('')
     setMostrarResultadosManual(false)
     setIndiceBuscando(null)
-    console.log(`✅ [CRÉDITO] Producto manual seleccionado para índice ${index} con precio: $${precioAsignar}`)
   }
 
   // Iniciar búsqueda manual para un producto específico
@@ -351,7 +381,7 @@ const decrementarCantidad = (index) => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     
-    if (!formData.cliente_nombre) {
+    if (!formData.cliente_id && !formData.cliente_nombre) {
       setError('Selecciona o registra un cliente')
       return
     }
@@ -377,14 +407,11 @@ const decrementarCantidad = (index) => {
     setError('')
 
     try {
-      let clienteNombre = formData.cliente_nombre
-      
-      if (clienteNombre.includes('-')) {
-        const cliente = clientes.find(c => c.id === clienteNombre)
-        if (cliente) {
-          clienteNombre = cliente.nombre
-        }
-      }
+      const clienteNombre = formData.cliente_nombre || 
+        (() => {
+          const cliente = clientes.find(c => c.id === formData.cliente_id)
+          return cliente ? (typeof cliente === 'object' ? cliente.nombre : cliente) : ''
+        })()
 
       const ventasCredito = productosSeleccionados.map(producto => ({
         producto_id: producto.producto_id,
@@ -398,8 +425,6 @@ const decrementarCantidad = (index) => {
         estado: 'activo'
       }))
 
-      console.log('Creando ventas a crédito:', ventasCredito)
-      
       const { error: errorVentas } = await supabase
         .from('ventas_credito')
         .insert(ventasCredito)
@@ -466,34 +491,75 @@ const decrementarCantidad = (index) => {
               </div>
             )}
             
-            {/* Selección de Cliente */}
+            {/* 🔍 BUSCADOR DE CLIENTES (REEMPLAZA AL SELECT) */}
             <div className="form-grupo">
               <label className="form-label">
-                Cliente *
+                Buscar Cliente *
               </label>
               {!mostrarNuevoCliente ? (
-                <div className="cliente-seleccion-container">
-                  <select
-                    value={formData.cliente_nombre}
-                    onChange={(e) => setFormData({...formData, cliente_nombre: e.target.value})}
-                    className="form-select"
+                <div className="busqueda-cliente-container">
+                  <input
+                    type="text"
+                    value={busquedaCliente}
+                    onChange={(e) => setBusquedaCliente(e.target.value)}
+                    onFocus={() => busquedaCliente.trim() && setMostrarResultadosCliente(true)}
+                    className="form-input-busqueda"
+                    placeholder="Buscar cliente por nombre..."
                     disabled={loading}
-                  >
-                    <option value="">Selecciona un cliente</option>
-                    {clientes.map((cliente) => {
-                      const clienteId = typeof cliente === 'object' ? cliente.id : cliente
-                      const clienteNombre = typeof cliente === 'object' ? cliente.nombre : cliente
-                      return (
-                        <option key={clienteId} value={clienteId}>
-                          {clienteNombre}
-                        </option>
-                      )
-                    })}
-                  </select>
+                    autoComplete="off"
+                  />
+                  {busquedaCliente && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBusquedaCliente('')
+                        setFormData({...formData, cliente_id: '', cliente_nombre: ''})
+                        setClientesFiltrados([])
+                        setMostrarResultadosCliente(false)
+                      }}
+                      className="boton-limpiar-busqueda"
+                    >
+                      ×
+                    </button>
+                  )}
+                  
+                  {/* RESULTADOS DE BÚSQUEDA DE CLIENTES */}
+                  {mostrarResultadosCliente && clientesFiltrados.length > 0 && (
+                    <div className="resultados-busqueda">
+                      {clientesFiltrados.map((cliente) => {
+                        const clienteId = typeof cliente === 'object' ? cliente.id : cliente
+                        const clienteNombre = typeof cliente === 'object' ? cliente.nombre : cliente
+                        return (
+                          <div
+                            key={clienteId}
+                            className="resultado-item"
+                            onClick={() => seleccionarCliente(cliente)}
+                          >
+                            <div className="resultado-nombre">
+                              <strong>{clienteNombre}</strong>
+                              {typeof cliente === 'object' && cliente.telefono && (
+                                <span className="resultado-categoria"> 📞 {cliente.telefono}</span>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                  
+                  {mostrarResultadosCliente && clientesFiltrados.length === 0 && busquedaCliente.trim() !== '' && (
+                    <div className="resultados-busqueda">
+                      <div className="resultado-vacio">
+                        No se encontraron clientes con "{busquedaCliente}"
+                      </div>
+                    </div>
+                  )}
+
                   <button
                     type="button"
                     onClick={() => setMostrarNuevoCliente(true)}
                     className="btn-nuevo-cliente"
+                    style={{ marginTop: '10px' }}
                   >
                     + Nuevo Cliente
                   </button>
@@ -545,6 +611,23 @@ const decrementarCantidad = (index) => {
                 </div>
               )}
             </div>
+            
+            {/* Información del cliente seleccionado */}
+            {formData.cliente_nombre && !mostrarNuevoCliente && (
+              <div className="cliente-seleccionado-info" style={{
+                background: '#f0f9ff',
+                border: '1px solid #bae6fd',
+                borderRadius: '8px',
+                padding: '12px',
+                marginBottom: '16px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '16px' }}>👤</span>
+                  <span style={{ fontWeight: '600', color: '#0369a1' }}>Cliente seleccionado:</span>
+                  <span style={{ fontWeight: '600' }}>{formData.cliente_nombre}</span>
+                </div>
+              </div>
+            )}
             
             {/* BÚSQUEDA DE PRODUCTOS */}
             <div className="form-grupo">
@@ -707,39 +790,38 @@ const decrementarCantidad = (index) => {
                         </div>
                         
                         <div className="producto-cantidad-precio">
-                       
-                       <div className="form-grupo">
-                          <label className="form-label">Cantidad</label>
-                          <div className="input-group-cantidad-credito">
-                            <button 
-                              type="button" 
-                              className="cantidad-btn-credito cantidad-btn-menos"
-                              onClick={() => decrementarCantidad(index)}
-                              disabled={loading}
-                            >
-                              -
-                            </button>
-                            <input 
-                              type="number" 
-                              className="form-input-cantidad-credito" 
-                              value={producto.cantidad || 1}
-                              min="1" 
-                              max="999"
-                              onChange={(e) => actualizarProducto(index, 'cantidad', e.target.value)}
-                              disabled={loading}
-                            />
-                            <button 
-                              type="button" 
-                              className="cantidad-btn-credito cantidad-btn-mas"
-                              onClick={() => incrementarCantidad(index)}
-                              disabled={loading}
-                            >
-                              +
-                            </button>
+                          <div className="form-grupo">
+                            <label className="form-label">Cantidad</label>
+                            <div className="input-group-cantidad-credito">
+                              <button 
+                                type="button" 
+                                className="cantidad-btn-credito cantidad-btn-menos"
+                                onClick={() => decrementarCantidad(index)}
+                                disabled={loading}
+                              >
+                                -
+                              </button>
+                              <input 
+                                type="number" 
+                                className="form-input-cantidad-credito" 
+                                value={producto.cantidad || 1}
+                                min="1" 
+                                max="999"
+                                onChange={(e) => actualizarProducto(index, 'cantidad', e.target.value)}
+                                disabled={loading}
+                              />
+                              <button 
+                                type="button" 
+                                className="cantidad-btn-credito cantidad-btn-mas"
+                                onClick={() => incrementarCantidad(index)}
+                                disabled={loading}
+                              >
+                                +
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                       
-                           <div>
+                          
+                          <div>
                             <label>Precio Unit.</label>
                             <input
                               type="number"
@@ -803,13 +885,7 @@ const decrementarCantidad = (index) => {
                 <div className="resumen-item">
                   <span className="resumen-label">Cliente:</span>
                   <span className="resumen-valor">
-                    {(() => {
-                      const cliente = clientes.find(c => {
-                        const clienteId = typeof c === 'object' ? c.id : c
-                        return clienteId === formData.cliente_nombre
-                      })
-                      return cliente ? (typeof cliente === 'object' ? cliente.nombre : cliente) : 'No seleccionado'
-                    })()}
+                    {formData.cliente_nombre || 'No seleccionado'}
                   </span>
                 </div>
                 <div className="resumen-item">

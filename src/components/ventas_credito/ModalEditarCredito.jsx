@@ -11,6 +11,12 @@ const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, produc
     fecha_inicio: '',
     fecha_fin: ''
   })
+  
+  // 🔍 ESTADOS PARA BUSCADOR DE PRODUCTOS
+  const [busquedaProducto, setBusquedaProducto] = useState('')
+  const [productosFiltrados, setProductosFiltrados] = useState([])
+  const [mostrarResultados, setMostrarResultados] = useState(false)
+  
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [abonos, setAbonos] = useState([])
@@ -28,10 +34,37 @@ const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, produc
         fecha_fin: credito.fecha_fin
       })
       
+      // Establecer búsqueda con el producto actual
+      const producto = productos.find(p => p.id === credito.producto_id)
+      if (producto) {
+        setBusquedaProducto(producto.nombre)
+      }
+      
       // Cargar abonos de este crédito
       cargarAbonosCredito(credito.id)
     }
-  }, [credito, isOpen])
+  }, [credito, isOpen, productos])
+
+  // 🔍 FILTRAR PRODUCTOS POR BÚSQUEDA
+  useEffect(() => {
+    if (busquedaProducto.trim() === '') {
+      setProductosFiltrados([])
+      setMostrarResultados(false)
+      return
+    }
+
+    const termino = busquedaProducto.toLowerCase().trim()
+    
+    const filtrados = productos.filter(producto => {
+      if (producto.nombre?.toLowerCase().includes(termino)) return true
+      if (producto.categoria?.toLowerCase().includes(termino)) return true
+      if (producto.codigo_barras?.toLowerCase().includes(termino)) return true
+      return false
+    })
+    
+    setProductosFiltrados(filtrados.slice(0, 10))
+    setMostrarResultados(true)
+  }, [busquedaProducto, productos])
 
   // Cargar abonos del crédito
   const cargarAbonosCredito = async (creditoId) => {
@@ -45,12 +78,24 @@ const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, produc
       
       setAbonos(data || [])
       
-      // Calcular total abonado
       const total = (data || []).reduce((sum, abono) => sum + parseFloat(abono.monto), 0)
       setTotalAbonado(total)
     } catch (err) {
       console.error('Error cargando abonos:', err)
     }
+  }
+
+  // 🔍 SELECCIONAR PRODUCTO
+  const seleccionarProducto = (producto) => {
+    setFormData({
+      ...formData,
+      producto_id: producto.id,
+      precio_unitario: producto.precio || producto.precio_venta || 0
+    })
+    setBusquedaProducto(producto.nombre)
+    setProductosFiltrados([])
+    setMostrarResultados(false)
+    setError('')
   }
 
   if (!isOpen || !credito) return null
@@ -59,23 +104,6 @@ const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, produc
     const cantidad = parseInt(formData.cantidad) || 0
     const precio = parseFloat(formData.precio_unitario) || 0
     return cantidad * precio
-  }
-
-  const handleProductoChange = (productoId) => {
-    const producto = productos.find(p => p.id === productoId)
-    if (producto) {
-      setFormData({
-        ...formData,
-        producto_id: productoId,
-        precio_unitario: producto.precio
-      })
-    } else {
-      setFormData({
-        ...formData,
-        producto_id: productoId,
-        precio_unitario: ''
-      })
-    }
   }
 
   const handleCantidadChange = (nuevaCantidad) => {
@@ -102,11 +130,8 @@ const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, produc
       const totalNuevo = calcularTotal()
       const totalAnterior = parseFloat(credito.total) || 0
       
-      // Calcular el nuevo saldo pendiente
-      // Saldo pendiente = Total nuevo - Total ya abonado
       const nuevoSaldoPendiente = totalNuevo - totalAbonado
       
-      // Determinar el nuevo estado
       let nuevoEstado = 'activo'
       if (nuevoSaldoPendiente <= 0) {
         nuevoEstado = 'pagado'
@@ -126,8 +151,6 @@ const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, produc
         estado: nuevoEstado
       }
 
-      console.log('Actualizando crédito con datos:', creditoData)
-      
       const { error: supabaseError } = await supabase
         .from('ventas_credito')
         .update(creditoData)
@@ -135,7 +158,6 @@ const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, produc
       
       if (supabaseError) throw supabaseError
 
-      // Si hay diferencia en el total, actualizar también facturados
       if (Math.abs(totalNuevo - totalAnterior) > 0.01) {
         try {
           const { error: facturaError } = await supabase
@@ -239,25 +261,74 @@ const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, produc
               />
             </div>
             
+            {/* 🔍 BUSCADOR DE PRODUCTOS (REEMPLAZA AL SELECT) */}
             <div className="form-grupo">
               <label className="form-label">
-                Producto *
+                Buscar Producto *
               </label>
-              <select
-                value={formData.producto_id}
-                onChange={(e) => handleProductoChange(e.target.value)}
-                className="form-select"
-                disabled={loading}
-              >
-                <option value="">Selecciona un producto</option>
-                {productos.map((producto) => (
-                  <option key={producto.id} value={producto.id}>
-                    {producto.nombre} - ${producto.precio?.toFixed(2) || '0.00'}
-                  </option>
-                ))}
-              </select>
+              <div className="busqueda-producto-container">
+                <input
+                  type="text"
+                  value={busquedaProducto}
+                  onChange={(e) => setBusquedaProducto(e.target.value)}
+                  onFocus={() => busquedaProducto.trim() && setMostrarResultados(true)}
+                  className="form-input-busqueda"
+                  placeholder="Buscar producto por nombre, categoría o código..."
+                  disabled={loading}
+                  autoComplete="off"
+                />
+                {busquedaProducto && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBusquedaProducto('')
+                      setFormData({...formData, producto_id: '', precio_unitario: ''})
+                      setProductosFiltrados([])
+                      setMostrarResultados(false)
+                    }}
+                    className="boton-limpiar-busqueda"
+                  >
+                    ×
+                  </button>
+                )}
+                
+                {/* RESULTADOS DE BÚSQUEDA DE PRODUCTOS */}
+                {mostrarResultados && productosFiltrados.length > 0 && (
+                  <div className="resultados-busqueda">
+                    {productosFiltrados.map((producto) => (
+                      <div
+                        key={producto.id}
+                        className="resultado-item"
+                        onClick={() => seleccionarProducto(producto)}
+                      >
+                        <div className="resultado-nombre">
+                          <strong>{producto.nombre}</strong>
+                          {producto.categoria && (
+                            <span className="resultado-categoria"> ({producto.categoria})</span>
+                          )}
+                        </div>
+                        <div className="resultado-info">
+                          <span className="resultado-precio">${(producto.precio || producto.precio_venta || 0).toFixed(2)}</span>
+                          {producto.codigo_barras && (
+                            <span className="resultado-codigo">📟 {producto.codigo_barras}</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {mostrarResultados && productosFiltrados.length === 0 && busquedaProducto.trim() !== '' && (
+                  <div className="resultados-busqueda">
+                    <div className="resultado-vacio">
+                      No se encontraron productos con "{busquedaProducto}"
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
             
+            {/* Información del producto seleccionado */}
             {productoSeleccionado && (
               <div className="producto-info-actualizado">
                 <div className="producto-detalles-actualizado">
@@ -269,6 +340,12 @@ const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, produc
                     <span>Categoría:</span>
                     <strong>{productoSeleccionado.categoria || 'Sin categoría'}</strong>
                   </div>
+                  {productoSeleccionado.codigo_barras && (
+                    <div className="detalle-item-actualizado">
+                      <span>Código:</span>
+                      <strong>{productoSeleccionado.codigo_barras}</strong>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

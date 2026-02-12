@@ -12,6 +12,12 @@ const ModalEditarInventario = ({
     producto_id: '',
     entrada: 1
   })
+  
+  // 🔍 ESTADOS PARA BUSCADOR DE PRODUCTOS
+  const [busquedaProducto, setBusquedaProducto] = useState('')
+  const [productosFiltrados, setProductosFiltrados] = useState([])
+  const [mostrarResultados, setMostrarResultados] = useState(false)
+  
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -22,9 +28,50 @@ const ModalEditarInventario = ({
         producto_id: registro.producto_id || '',
         entrada: registro.entrada || 1
       })
+      
+      // Establecer búsqueda con el producto actual
+      const producto = productos.find(p => p.id === registro.producto_id)
+      if (producto) {
+        setBusquedaProducto(producto.nombre)
+      }
+      
       setError('')
     }
-  }, [registro])
+  }, [registro, productos])
+
+  // 🔍 FILTRAR PRODUCTOS POR BÚSQUEDA
+  useEffect(() => {
+    if (busquedaProducto.trim() === '') {
+      setProductosFiltrados([])
+      setMostrarResultados(false)
+      return
+    }
+
+    const termino = busquedaProducto.toLowerCase().trim()
+    
+    const filtrados = productos.filter(producto => {
+      if (producto.nombre?.toLowerCase().includes(termino)) return true
+      if (producto.categoria?.toLowerCase().includes(termino)) return true
+      if (producto.codigo?.toLowerCase().includes(termino)) return true
+      if (producto.codigo_barras?.toLowerCase().includes(termino)) return true
+      return false
+    })
+    
+    setProductosFiltrados(filtrados.slice(0, 10))
+    setMostrarResultados(true)
+  }, [busquedaProducto, productos])
+
+  // 🔍 SELECCIONAR PRODUCTO
+  const seleccionarProducto = (producto) => {
+    setFormData({
+      ...formData,
+      producto_id: producto.id
+    })
+    setBusquedaProducto(producto.nombre)
+    setProductosFiltrados([])
+    setMostrarResultados(false)
+    setError('')
+  }
 
   if (!isOpen || !registro) return null
 
@@ -63,7 +110,6 @@ const ModalEditarInventario = ({
   return (
     <div className="modal-overlay">
       <div className="modal-container-editar-inventario">
-        {/* HEADER */}
         <div className="modal-header-editar-inventario">
           <div className="modal-titulo-contenedor">
             <svg className="modal-icono-editar" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -83,7 +129,6 @@ const ModalEditarInventario = ({
           </button>
         </div>
         
-        {/* CONTENIDO PRINCIPAL - FORMULARIO */}
         <form onSubmit={handleSubmit} className="modal-formulario">
           <div className="modal-contenido-editar-inventario">
             {/* Información del registro original */}
@@ -109,29 +154,71 @@ const ModalEditarInventario = ({
               <span>Nuevos Datos</span>
             </div>
 
-            {/* Formulario de edición */}
+            {/* 🔍 BUSCADOR DE PRODUCTOS (REEMPLAZA AL SELECT) */}
             <div className="form-grupo">
               <label className="form-label">
-                Producto *
+                Buscar Producto *
               </label>
-              <select
-                value={formData.producto_id}
-                onChange={(e) => {
-                  setFormData({...formData, producto_id: e.target.value})
-                  setError('')
-                }}
-                className="form-select"
-                disabled={loading}
-                required
-              >
-                <option value="">Selecciona un producto</option>
-                {productos.map((producto) => (
-                  <option key={producto.id} value={producto.id}>
-                    {producto.nombre} - ${producto.precio?.toFixed(2)}
-                    {producto.codigo && ` (${producto.codigo})`}
-                  </option>
-                ))}
-              </select>
+              <div className="busqueda-producto-container">
+                <input
+                  type="text"
+                  value={busquedaProducto}
+                  onChange={(e) => setBusquedaProducto(e.target.value)}
+                  onFocus={() => busquedaProducto.trim() && setMostrarResultados(true)}
+                  className="form-input-busqueda"
+                  placeholder="Buscar producto por nombre, código o categoría..."
+                  disabled={loading}
+                  autoComplete="off"
+                />
+                {busquedaProducto && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBusquedaProducto('')
+                      setFormData({...formData, producto_id: ''})
+                      setProductosFiltrados([])
+                      setMostrarResultados(false)
+                    }}
+                    className="boton-limpiar-busqueda"
+                  >
+                    ×
+                  </button>
+                )}
+                
+                {/* RESULTADOS DE BÚSQUEDA DE PRODUCTOS */}
+                {mostrarResultados && productosFiltrados.length > 0 && (
+                  <div className="resultados-busqueda">
+                    {productosFiltrados.map((producto) => (
+                      <div
+                        key={producto.id}
+                        className="resultado-item"
+                        onClick={() => seleccionarProducto(producto)}
+                      >
+                        <div className="resultado-nombre">
+                          <strong>{producto.nombre}</strong>
+                          {producto.categoria && (
+                            <span className="resultado-categoria"> ({producto.categoria})</span>
+                          )}
+                        </div>
+                        <div className="resultado-info">
+                          <span className="resultado-precio">${producto.precio?.toFixed(2) || '0.00'}</span>
+                          {producto.codigo && (
+                            <span className="resultado-codigo">📟 {producto.codigo}</span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {mostrarResultados && productosFiltrados.length === 0 && busquedaProducto.trim() !== '' && (
+                  <div className="resultados-busqueda">
+                    <div className="resultado-vacio">
+                      No se encontraron productos con "{busquedaProducto}"
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
             
             <div className="form-grupo">
@@ -188,7 +275,7 @@ const ModalEditarInventario = ({
                   </div>
                   <div className="detalle-item-actualizado">
                     <span>Precio unitario:</span>
-                    <strong>${productoSeleccionado.precio?.toFixed(2)}</strong>
+                    <strong>${productoSeleccionado.precio?.toFixed(2) || '0.00'}</strong>
                   </div>
                   <div className="detalle-item-actualizado">
                     <span>Cantidad:</span>
@@ -197,14 +284,13 @@ const ModalEditarInventario = ({
                   <div className="detalle-item-actualizado total-actualizado">
                     <span>Valor total:</span>
                     <strong className="valor-total-actualizado">
-                      ${(productoSeleccionado.precio * formData.entrada).toFixed(2)}
+                      ${((productoSeleccionado.precio || 0) * formData.entrada).toFixed(2)}
                     </strong>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* Mostrar error */}
             {error && (
               <div className="error-mensaje">
                 <svg className="error-icono" fill="currentColor" viewBox="0 0 20 20">
@@ -215,7 +301,6 @@ const ModalEditarInventario = ({
             )}
           </div>
           
-          {/* FOOTER CON BOTONES - Esto es lo que falta */}
           <div className="modal-footer-editar-inventario">
             <button
               type="button"
