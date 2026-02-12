@@ -4,27 +4,31 @@ import './TablaInventario.css'
 const TablaInventario = ({ inventario, loading, onEditar, onEliminar }) => {
   const [busqueda, setBusqueda] = useState('')
 
-  // Función SIMPLE igual que TablaVentas
+  // ✅ FUNCIÓN ESTÁNDAR PARA TODAS LAS FECHAS (MISMA EN TODA LA APP)
   const formatFechaNicaragua = (fechaISO) => {
     if (!fechaISO) return 'Fecha no disponible';
     
-    const fecha = new Date(fechaISO);
-    
-    const dia = fecha.getDate().toString().padStart(2, '0');
-    const mes = (fecha.getMonth() + 1).toString().padStart(2, '0');
-    const año = fecha.getFullYear();
-    
-    let horas = fecha.getHours();
-    const minutos = fecha.getMinutes().toString().padStart(2, '0');
-    const ampm = horas >= 12 ? 'p.m.' : 'a.m.';
-    
-    horas = horas % 12;
-    horas = horas ? horas.toString().padStart(2, '0') : '12';
-    
-    return `${dia}/${mes}/${año}, ${horas}:${minutos} ${ampm}`;
+    try {
+      const fecha = new Date(fechaISO);
+      
+      const dia = fecha.getDate().toString().padStart(2, '0');
+      const mes = (fecha.getMonth() + 1).toString().padStart(2, '0');
+      const año = fecha.getFullYear();
+      
+      let horas = fecha.getHours();
+      const minutos = fecha.getMinutes().toString().padStart(2, '0');
+      const ampm = horas >= 12 ? 'p.m.' : 'a.m.';
+      
+      horas = horas % 12;
+      horas = horas ? horas.toString().padStart(2, '0') : '12';
+      
+      return `${dia}/${mes}/${año}, ${horas}:${minutos} ${ampm}`;
+    } catch (e) {
+      return fechaISO;
+    }
   };
 
-  // ✅ FILTRAR POR BÚSQUEDA - CORREGIDO PARA CÓDIGO DE BARRAS
+  // ✅ FILTRAR POR BÚSQUEDA - CÓDIGO DE BARRAS
   const inventarioFiltrado = busqueda.trim() 
     ? inventario.filter(item => {
         const nombre = item.productos?.nombre?.toLowerCase() || '';
@@ -67,7 +71,6 @@ const TablaInventario = ({ inventario, loading, onEditar, onEliminar }) => {
               <div className="inventario-producto">
                 {item.productos?.nombre || 'Producto no encontrado'}
               </div>
-              {/* ✅ MOSTRAR CÓDIGO DE BARRAS SI EXISTE */}
               {item.productos?.codigo_barras && (
                 <div className="inventario-codigo-barras">
                   📟 Código: {item.productos.codigo_barras}
@@ -260,7 +263,6 @@ const TablaInventario = ({ inventario, loading, onEditar, onEliminar }) => {
                         <div className="nombre-producto">
                           {item.productos?.nombre || 'Producto no encontrado'}
                         </div>
-                        {/* ✅ MOSTRAR CÓDIGO DE BARRAS EN DESKTOP */}
                         {item.productos?.codigo_barras && (
                           <div className="codigo-barras">
                             📟 {item.productos.codigo_barras}

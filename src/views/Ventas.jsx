@@ -1,5 +1,5 @@
-// Ventas.jsx - VERSIÓN CORREGIDA PARA TU BASE DE DATOS
-import { useState, useEffect, useRef } from 'react' // Agrega useRef aquí
+// Ventas.jsx - VERSIÓN CORREGIDA CON TICKET AGRUPADO POR CLIENTE/VENTA
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../database/supabase'
 import TablaVentas from '../components/ventas/TablaVentas'
 import ModalNuevaVenta from '../components/ventas/ModalNuevaVenta'
@@ -22,7 +22,7 @@ const Ventas = () => {
 
   // Estados para código de barras
   const [codigoBarrasInput, setCodigoBarrasInput] = useState('')
-  const scannerInputRef = useRef(null) // Ahora useRef está definido
+  const scannerInputRef = useRef(null)
   
   // Estados para datos
   const [nuevaVenta, setNuevaVenta] = useState({
@@ -36,7 +36,6 @@ const Ventas = () => {
 
   useEffect(() => {
     cargarDatos()
-    // Enfocar automáticamente el input del scanner
     scannerInputRef.current?.focus()
   }, [])
 
@@ -49,7 +48,6 @@ const Ventas = () => {
       setLoading(true)
       setErrorCarga('')
       
-      // Cargar productos (incluyendo código de barras)
       const { data: productosData, error: errorProductos } = await supabase
         .from('productos')
         .select('*')
@@ -58,7 +56,6 @@ const Ventas = () => {
       if (errorProductos) throw errorProductos
       setProductos(productosData || [])
       
-      // Cargar ventas CON productos
       const { data: ventasData, error: errorVentas } = await supabase
         .from('ventas')
         .select(`
@@ -78,18 +75,14 @@ const Ventas = () => {
     }
   }
 
-
-   
-
   // ==============================================
-  // FUNCIÓN DE IMPRESIÓN - VERSIÓN CORREGIDA
+  // FUNCIÓN DE IMPRESIÓN - POR VENTA COMPLETA
   // ==============================================
 
   const imprimirTicket = (venta) => {
     try {
       setImprimiendo(true)
       
-      // Validar que rawbt esté disponible
       const isAndroid = /Android/.test(navigator.userAgent)
       if (!isAndroid) {
         alert('⚠️ Esta función solo está disponible en dispositivos Android')
@@ -97,21 +90,16 @@ const Ventas = () => {
         return
       }
       
-      // Generar el contenido del ticket
       const contenido = generarContenidoTicket(venta)
-      
-      // Codificar y enviar a rawbt
       const encoded = encodeURIComponent(contenido)
       window.location.href = `rawbt:${encoded}`
       
-      // Fallback si rawbt no está instalado
       setTimeout(() => {
         if (!document.hidden) {
           mostrarContenidoParaCopiar(contenido)
         }
       }, 1500)
       
-      // Resetear estado después de 2 segundos
       setTimeout(() => {
         setImprimiendo(false)
       }, 2000)
@@ -123,106 +111,184 @@ const Ventas = () => {
     }
   }
 
-// ==============================================
-// GENERAR CONTENIDO DEL TICKET - VERSIÓN CON ORDEN CORREGIDO
-// ==============================================
+  // ==============================================
+  // GENERAR CONTENIDO DEL TICKET - CON VARIOS PRODUCTOS
+  // ==============================================
 
-const generarContenidoTicket = (venta) => {
+  const generarContenidoTicket = (venta) => {
+    const centrar = (texto) => {
+      const ancho = 32
+      const espacios = Math.max(0, Math.floor((ancho - texto.length) / 2))
+      return " ".repeat(espacios) + texto
+    }
 
-  const centrar = (texto) => {
-    const ancho = 32
-    const espacios = Math.max(0, Math.floor((ancho - texto.length) / 2))
-    return " ".repeat(espacios) + texto
-  }
+    const linea = () => "--------------------------------"
 
-  const linea = () => "--------------------------------"
+    const formatFecha = (fechaISO) => {
+      const fecha = fechaISO ? new Date(fechaISO) : new Date()
+      const fechaNic = new Date(fecha.getTime() - (6 * 60 * 60 * 1000))
 
-  const formatFecha = (fechaISO) => {
-    const fecha = fechaISO ? new Date(fechaISO) : new Date()
-    const fechaNic = new Date(fecha.getTime() - (6 * 60 * 60 * 1000))
+      const d = fechaNic.getDate().toString().padStart(2, '0')
+      const m = (fechaNic.getMonth() + 1).toString().padStart(2, '0')
+      const y = fechaNic.getFullYear()
 
-    const d = fechaNic.getDate().toString().padStart(2, '0')
-    const m = (fechaNic.getMonth() + 1).toString().padStart(2, '0')
-    const y = fechaNic.getFullYear()
+      let h = fechaNic.getHours()
+      const min = fechaNic.getMinutes().toString().padStart(2, '0')
+      const ampm = h >= 12 ? 'p.m.' : 'a.m.'
 
-    let h = fechaNic.getHours()
-    const min = fechaNic.getMinutes().toString().padStart(2, '0')
-    const ampm = h >= 12 ? 'p.m.' : 'a.m.'
+      h = h % 12
+      h = h ? h.toString().padStart(2, '0') : '12'
 
-    h = h % 12
-    h = h ? h.toString().padStart(2, '0') : '12'
+      return `${d}/${m}/${y} ${h}:${min} ${ampm}`
+    }
 
-    return `${d}/${m}/${y} ${h}:${min} ${ampm}`
-  }
+    // ==============================================
+    // AGRUPAR PRODUCTOS DE LA MISMA VENTA
+    // ==============================================
+    
+    // Buscar TODOS los productos de la misma venta
+    const productosDeEstaVenta = ventas.filter(v => 
+      v.id === venta.id || // Si es la misma venta
+      (v.fecha === venta.fecha && v.total === venta.total) // O misma fecha y total
+    )
 
-  const fecha = formatFecha(venta.fecha)
-  const nombreProducto = venta.productos?.nombre || "Producto"
-  const categoria = venta.productos?.categoria || ""
-  const cantidad = venta.cantidad || 1
-  const precio = Number(venta.precio_unitario || 0).toFixed(2)
-  const total = Number(venta.total || 0).toFixed(2)
+    const fecha = formatFecha(venta.fecha)
+    const numeroVenta = venta.id
+      ? venta.id.substring(0, 8).toUpperCase()
+      : "00000000"
 
-  const numeroVenta = venta.id
-    ? venta.id.substring(0, 8).toUpperCase()
-    : "00000000"
+    // ==============================================
+    // CALCULAR TOTALES
+    // ==============================================
+    
+    let totalGeneral = 0
+    let efectivoTotal = 0
+    let tarjetaTotal = 0
+    let transferenciaTotal = 0
+    let metodoPago = venta.metodo_pago || "efectivo"
 
-  // ============================
-  // MÉTODO DE PAGO
-  // ============================
+    productosDeEstaVenta.forEach(v => {
+      totalGeneral += Number(v.total || 0)
+      
+      if (v.metodo_pago === "efectivo") {
+        efectivoTotal += Number(v.efectivo || v.total || 0)
+      } else if (v.metodo_pago === "tarjeta") {
+        tarjetaTotal += Number(v.tarjeta || v.total || 0)
+      } else if (v.metodo_pago === "transferencia") {
+        transferenciaTotal += Number(v.transferencia || v.total || 0)
+      } else if (v.metodo_pago === "mixto") {
+        efectivoTotal += Number(v.efectivo || 0)
+        tarjetaTotal += Number(v.tarjeta || 0)
+        transferenciaTotal += Number(v.transferencia || 0)
+      }
+    })
 
-  let metodo = (venta.metodo_pago || "efectivo").toUpperCase()
-  let recibido = 0
+    const recibidoTotal = efectivoTotal + tarjetaTotal + transferenciaTotal
+    const vuelto = Number(venta.vuelto || 0)
 
-  if (venta.metodo_pago === "mixto") {
-    recibido =
-      Number(venta.efectivo || 0) +
-      Number(venta.tarjeta || 0) +
-      Number(venta.transferencia || 0)
-  } else if (venta.metodo_pago === "tarjeta") {
-    recibido = Number(venta.tarjeta || total)
-  } else if (venta.metodo_pago === "transferencia") {
-    recibido = Number(venta.transferencia || total)
-  } else {
-    recibido = Number(venta.efectivo || total)
-  }
-
-  recibido = recibido.toFixed(2)
-
-  const vuelto = Number(venta.vuelto || 0).toFixed(2)
-
-  return `
+    let contenido = `
 ${centrar("ARELYS SALON")}
 ${centrar("8354-3180")}
 ${centrar("Uno petrol una cuadra al norte media al oeste")}
 ${linea()}
 TICKET DE VENTA
 ${fecha}
+N°: ${numeroVenta}
 ${linea()}
-PRODUCTO: ${nombreProducto}
-CANTIDAD: ${cantidad}
-PRECIO: C$${precio}
-${linea()}
-TOTAL   C$${total}
-RECIBIDO   C$${recibido}
-VUELTO  C$${vuelto}
-${linea()}
-METODO: ${metodo}
-${linea()}
-${centrar("GRACIAS POR SU COMPRA")}
-
-
-
-
-
-\n\n\n\n\n
+PRODUCTOS:
 `
-}
+
+    // ==============================================
+    // LISTAR TODOS LOS PRODUCTOS DE LA VENTA
+    // ==============================================
+    
+    productosDeEstaVenta.forEach((v, index) => {
+      const nombre = v.productos?.nombre || "Producto"
+      const cantidad = v.cantidad || 1
+      const precio = Number(v.precio_unitario || 0).toFixed(2)
+      const subtotal = Number(v.total || 0).toFixed(2)
+      
+      contenido += `
+${index + 1}. ${nombre}
+   ${cantidad} x C$${precio} = C$${subtotal}
+`
+    })
+
+    contenido += `${linea()}
+TOTAL       C$${totalGeneral.toFixed(2)}
+`
+
+    // ==============================================
+    // DETALLE DE PAGO (MÉTODO MIXTO)
+    // ==============================================
+    
+    if (productosDeEstaVenta.some(v => v.metodo_pago === "mixto") || 
+        (efectivoTotal > 0 && tarjetaTotal > 0) || 
+        (efectivoTotal > 0 && transferenciaTotal > 0) ||
+        (tarjetaTotal > 0 && transferenciaTotal > 0)) {
+      
+      contenido += `${linea()}
+PAGO MIXTO:
+`
+      if (efectivoTotal > 0) {
+        contenido += `   💵 Efectivo: C$${efectivoTotal.toFixed(2)}\n`
+      }
+      if (tarjetaTotal > 0) {
+        const banco = venta.detalles_pago?.banco_tarjeta || ''
+        contenido += `   💳 Tarjeta: C$${tarjetaTotal.toFixed(2)}${banco ? ` [${banco}]` : ''}\n`
+      }
+      if (transferenciaTotal > 0) {
+        const banco = venta.detalles_pago?.banco_transferencia || ''
+        contenido += `   🏦 Transferencia: C$${transferenciaTotal.toFixed(2)}${banco ? ` [${banco}]` : ''}\n`
+      }
+      
+    } else {
+      // MÉTODO SIMPLE
+      let metodoTexto = ""
+      let bancoTexto = ""
+      
+      if (metodoPago === "efectivo") {
+        metodoTexto = "EFECTIVO"
+      } else if (metodoPago === "tarjeta") {
+        metodoTexto = "TARJETA"
+        bancoTexto = venta.detalles_pago?.banco_tarjeta || venta.detalles_pago?.banco || ''
+      } else if (metodoPago === "transferencia") {
+        metodoTexto = "TRANSFERENCIA"
+        bancoTexto = venta.detalles_pago?.banco_transferencia || venta.detalles_pago?.banco || ''
+      }
+      
+      contenido += `${linea()}
+METODO: ${metodoTexto}
+`
+      if (bancoTexto) {
+        contenido += `BANCO: ${bancoTexto}\n`
+      }
+      contenido += `RECIBIDO: C$${recibidoTotal.toFixed(2)}\n`
+    }
+
+    // ==============================================
+    // VUELTO
+    // ==============================================
+    
+    if (vuelto > 0) {
+      contenido += `VUELTO:  C$${vuelto.toFixed(2)}\n`
+    }
+
+    contenido += `${linea()}
+${centrar("GRACIAS POR SU COMPRA")}
+${centrar("VUELVA PRONTO")}
+
+\n\n\n\n\n`
+
+    return contenido
+  }
 
   // ==============================================
-  // FALLBACK PARA COPIAR CONTENIDO (MANTENER IGUAL)
+  // FALLBACK PARA COPIAR CONTENIDO
   // ==============================================
 
   const mostrarContenidoParaCopiar = (contenido) => {
+    // ... (mantener el mismo código de fallback que ya tienes)
     const ventana = window.open('', '_blank')
     ventana.document.write(`
       <html>
@@ -518,7 +584,6 @@ ${centrar("GRACIAS POR SU COMPRA")}
                   console.error('Error al copiar:', err)
                   alert('❌ Error al copiar: ' + err.message)
                   
-                  // Fallback para navegadores antiguos
                   const textarea = document.createElement('textarea')
                   textarea.value = contenidoTicket
                   document.body.appendChild(textarea)
@@ -529,7 +594,6 @@ ${centrar("GRACIAS POR SU COMPRA")}
                 })
             }
             
-            // Configurar impresión térmica
             window.addEventListener('beforeprint', () => {
               document.querySelector('.ticket-content').style.fontSize = '9pt'
             })
@@ -545,7 +609,7 @@ ${centrar("GRACIAS POR SU COMPRA")}
   }
 
   // ==============================================
-  // FUNCIONES DE MODALES (MANTENER IGUAL)
+  // FUNCIONES DE MODALES
   // ==============================================
 
   const abrirModalNueva = () => {
@@ -630,7 +694,7 @@ ${centrar("GRACIAS POR SU COMPRA")}
   }
 
   // ==============================================
-  // RENDERIZADO - VERSIÓN CORREGIDA
+  // RENDERIZADO
   // ==============================================
 
   return (
@@ -675,7 +739,6 @@ ${centrar("GRACIAS POR SU COMPRA")}
         </div>
       )}
 
-      {/* Indicador Android */}
       <div className="modo-impresion-indicator">
         <span className="modo-badge modo-bluetooth">
           📱 Android - rawbt
@@ -687,7 +750,6 @@ ${centrar("GRACIAS POR SU COMPRA")}
         )}
       </div>
 
-      {/* Tabla de ventas */}
       <TablaVentas
         ventas={ventas}
         loading={loading}
@@ -697,7 +759,6 @@ ${centrar("GRACIAS POR SU COMPRA")}
         imprimiendo={imprimiendo}
       />
 
-      {/* Modales */}
       {modalNuevaAbierto && (
         <ModalNuevaVenta
           isOpen={modalNuevaAbierto}
