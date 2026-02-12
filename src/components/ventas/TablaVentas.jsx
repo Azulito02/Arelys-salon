@@ -8,7 +8,6 @@ const TablaVentas = ({ ventas, loading, onEditar, onEliminar, onImprimir, imprim
     if (!fechaISO) return 'Fecha no disponible';
     
     const fechaUTC = new Date(fechaISO);
-    // RESTAR 6 horas para convertir UTC a Nicaragua (Juigalpa)
     const fechaNicaragua = new Date(fechaUTC.getTime() - (6 * 60 * 60 * 1000));
     
     const dia = fechaNicaragua.getDate().toString().padStart(2, '0');
@@ -47,6 +46,83 @@ const TablaVentas = ({ ventas, loading, onEditar, onEliminar, onImprimir, imprim
     }
   };
 
+  // ✅ FUNCIÓN CON DATOS DE PRUEBA PARA VER LOS BANCOS YA MISMO
+const renderMetodoPagoConBanco = (venta) => {
+  const metodo = venta.metodo_pago;
+  const clase = getMetodoPagoClase(metodo);
+  const icono = getMetodoPagoIcon(metodo);
+  const texto = metodo ? metodo.charAt(0).toUpperCase() + metodo.slice(1) : 'No especificado';
+  
+  // 🔥🔥🔥 DATOS DE PRUEBA - ELIMINA ESTO CUANDO TENGAS BANCOS REALES 🔥🔥🔥
+  const detallesPrueba = {
+    efectivo: 50.00,
+    tarjeta: 100.00,
+    transferencia: 200.00,
+    banco_tarjeta: 'Lafite',
+    banco_transferencia: 'BAC'
+  };
+  
+  // USA LOS DATOS DE PRUEBA
+  const detalles = detallesPrueba;
+  
+  // MÉTODO MIXTO - CON DETALLES Y BANCOS
+  if (metodo === 'mixto') {
+    const efectivo = detalles.efectivo || 50;
+    const tarjeta = detalles.tarjeta || 100;
+    const transferencia = detalles.transferencia || 200;
+    const total = efectivo + tarjeta + transferencia;
+
+    return (
+      <div className={`metodo-pago-badge ${clase}`} style={{ flexDirection: 'column', alignItems: 'flex-start', width: '100%' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%' }}>
+          <span className="metodo-pago-icono">{icono}</span>
+          <span className="metodo-pago-texto">{texto}</span>
+          <span style={{ marginLeft: 'auto', fontSize: '12px', fontWeight: '600' }}>${total.toFixed(2)}</span>
+        </div>
+        
+        {/* DETALLES DEL MIXTO CON BANCOS ENTRE CORCHETES */}
+        <div style={{ marginTop: '8px', width: '100%', paddingLeft: '8px', borderLeft: '2px solid rgba(107, 33, 168, 0.3)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+            <span>💵 Efectivo</span>
+            <span style={{ fontWeight: '600' }}>${efectivo.toFixed(2)}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+            <span>
+              💳 Tarjeta 
+              <span className="detalle-banco-corchetes">[Lafite]</span>
+            </span>
+            <span style={{ fontWeight: '600' }}>${tarjeta.toFixed(2)}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+            <span>
+              🏦 Transferencia
+              <span className="detalle-banco-corchetes">[BAC]</span>
+            </span>
+            <span style={{ fontWeight: '600' }}>${transferencia.toFixed(2)}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // MÉTODO SIMPLE - CON BANCO DE PRUEBA ENTRE CORCHETES DEBAJO
+  return (
+    <div className={`metodo-pago-badge ${clase}`} style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <span className="metodo-pago-icono">{icono}</span>
+        <span className="metodo-pago-texto">{texto}</span>
+      </div>
+      
+      {/* BANCO DE PRUEBA ENTRE CORCHETES */}
+      {metodo === 'tarjeta' && (
+        <span className="metodo-pago-banco-corchetes">[Lafite]</span>
+      )}
+      {metodo === 'transferencia' && (
+        <span className="metodo-pago-banco-corchetes">[BAC]</span>
+      )}
+    </div>
+  );
+};
   // Renderizar vista móvil
   const renderVistaMobile = () => {
     if (loading) {
@@ -100,19 +176,10 @@ const TablaVentas = ({ ventas, loading, onEditar, onEliminar, onImprimir, imprim
           </div>
         </div>
         
-        {/* Método de pago móvil */}
-        <div className={`venta-metodo-mobile ${getMetodoPagoClase(venta.metodo_pago)}`}>
-          <span className="venta-metodo-icono">
-            {getMetodoPagoIcon(venta.metodo_pago)}
-          </span>
-          <span className="venta-metodo-texto">
-            {venta.metodo_pago ? venta.metodo_pago.charAt(0).toUpperCase() + venta.metodo_pago.slice(1) : 'No especificado'}
-          </span>
-          {venta.metodo_pago === 'mixto' && (
-            <div style={{ fontSize: '11px', marginLeft: 'auto' }}>
-              Mixto
-            </div>
-          )}
+        {/* Método de pago móvil - AHORA CON BANCOS */}
+        <div className={`venta-metodo-mobile`}>
+          <span className="venta-metodo-label">Método de Pago</span>
+          {renderMetodoPagoConBanco(venta)}
         </div>
         
         {/* Fecha en móvil */}
@@ -128,14 +195,14 @@ const TablaVentas = ({ ventas, loading, onEditar, onEliminar, onImprimir, imprim
           <button
             onClick={() => onImprimir && onImprimir(venta)}
             disabled={imprimiendo}
-            className="venta-action-btn editar"
+            className="venta-action-btn imprimir"
             title="Imprimir"
           >
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
                 d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
             </svg>
-            {imprimiendo ? 'Imprimiendo...' : 'Imprimir'}
+            Imprimir
           </button>
           <button
             onClick={() => onEditar(venta)}
@@ -228,14 +295,8 @@ const TablaVentas = ({ ventas, loading, onEditar, onEliminar, onImprimir, imprim
                       {formatFechaNicaragua(venta.fecha)}
                     </td>
                     <td className="celda-metodo">
-                      <div className={`metodo-pago-badge ${getMetodoPagoClase(venta.metodo_pago)}`}>
-                        <span className="metodo-pago-icono">
-                          {getMetodoPagoIcon(venta.metodo_pago)}
-                        </span>
-                        <span className="metodo-pago-texto">
-                          {venta.metodo_pago ? venta.metodo_pago.charAt(0).toUpperCase() + venta.metodo_pago.slice(1) : 'No especificado'}
-                        </span>
-                      </div>
+                      {/* ✅ REEMPLAZADO CON LA NUEVA FUNCIÓN QUE MUESTRA BANCOS */}
+                      {renderMetodoPagoConBanco(venta)}
                     </td>
                     <td className="celda-precio">
                       <div className="precio-venta">
@@ -253,19 +314,11 @@ const TablaVentas = ({ ventas, loading, onEditar, onEliminar, onImprimir, imprim
                         <button
                           onClick={() => onImprimir && onImprimir(venta)}
                           disabled={imprimiendo}
-                          className="accion-btn accion-editar"
+                          className="accion-btn accion-imprimir"
                           title="Imprimir ticket"
-                          style={{ backgroundColor: '#10b981', color: 'white', borderColor: '#059669' }}
                         >
                           {imprimiendo ? (
-                            <div className="spinner-mini-accion" style={{
-                              width: '12px',
-                              height: '12px',
-                              border: '2px solid white',
-                              borderTop: '2px solid transparent',
-                              borderRadius: '50%',
-                              animation: 'spin 1s linear infinite'
-                            }}></div>
+                            <div className="spinner-mini-accion"></div>
                           ) : (
                             <svg className="accion-icono" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 

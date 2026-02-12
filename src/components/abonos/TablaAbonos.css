@@ -983,3 +983,50 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Banco entre corchetes - DEBAJO DEL MÉTODO */
+.metodo-pago-banco-corchetes {
+  display: block;
+  font-size: 11px;
+  color: inherit;
+  opacity: 0.9;
+  background: rgba(255, 255, 255, 0.4);
+  padding: 3px 8px;
+  border-radius: 12px;
+  margin-top: 4px;
+  font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
+  font-weight: 500;
+  border: 1px solid rgba(0,0,0,0.05);
+}
+
+/* Para método mixto */
+.detalle-banco-corchetes {
+  display: inline-block;
+  font-size: 10px;
+  color: #4b5563;
+  background: #f3f4f6;
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-left: 8px;
+  font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+  border: 1px solid #e5e7eb;
+}
+
+/* Ajuste para móvil */
+@media (max-width: 768px) {
+  .metodo-pago-banco-corchetes {
+    max-width: 120px;
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+  
+  .detalle-banco-corchetes {
+    font-size: 9px;
+    padding: 2px 6px;
+  }
+}

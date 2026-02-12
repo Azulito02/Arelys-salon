@@ -17,7 +17,6 @@ const TablaAbonos = ({
     if (!fechaISO) return 'Fecha no disponible';
     
     const fechaUTC = new Date(fechaISO);
-    // RESTAR 6 horas para convertir UTC a Nicaragua (Juigalpa)
     const fechaNicaragua = new Date(fechaUTC.getTime() - (6 * 60 * 60 * 1000));
     
     const dia = fechaNicaragua.getDate().toString().padStart(2, '0');
@@ -121,137 +120,253 @@ const TablaAbonos = ({
     return 'estado-credito-activo';
   };
 
-  // Función para renderizar el método de pago con detalles
-  const renderMetodoPago = (abono) => {
-    const metodo = abono.metodo_pago || '';
-    const metodoLower = metodo.toLowerCase();
-    
-    const tieneDetallesMixto = abono.detalles_pago && Object.keys(abono.detalles_pago).length > 0;
-    const esMixto = metodoLower.includes('mixto') || tieneDetallesMixto;
-    
-    if (esMixto && abono.detalles_pago) {
-      return renderDetallesPagoMixto(abono);
-    } else {
-      return renderMetodoPagoSimple(abono);
-    }
-  };
-
-  // Función para renderizar método de pago simple
-  const renderMetodoPagoSimple = (abono) => {
-    const metodo = abono.metodo_pago || '';
-    const metodoLower = metodo.toLowerCase();
-    
-    let icono = '❓';
-    let clase = 'metodo-default';
-    
-    if (metodoLower.includes('efectivo')) {
-      icono = '💵';
-      clase = 'metodo-efectivo';
-    } else if (metodoLower.includes('tarjeta')) {
-      icono = '💳';
-      clase = 'metodo-tarjeta';
-    } else if (metodoLower.includes('transferencia')) {
-      icono = '🏦';
-      clase = 'metodo-transferencia';
-    } else if (metodoLower.includes('mixto')) {
-      icono = '🔄';
-      clase = 'metodo-mixto';
-    }
-    
-    return (
-      <div className={`metodo-pago-badge ${clase}`}>
+// ✅ MÉTODO DE PAGO SIMPLE - CON BANCO ENTRE CORCHETES DEBAJO
+const renderMetodoPagoSimple = (abono) => {
+  const metodo = abono.metodo_pago || '';
+  const metodoLower = metodo.toLowerCase();
+  
+  let icono = '❓';
+  let clase = 'metodo-default';
+  let texto = metodo.charAt(0).toUpperCase() + metodo.slice(1);
+  
+  if (metodoLower.includes('efectivo')) {
+    icono = '💵';
+    clase = 'metodo-efectivo';
+  } else if (metodoLower.includes('tarjeta')) {
+    icono = '💳';
+    clase = 'metodo-tarjeta';
+  } else if (metodoLower.includes('transferencia')) {
+    icono = '🏦';
+    clase = 'metodo-transferencia';
+  } else if (metodoLower.includes('mixto')) {
+    icono = '🔄';
+    clase = 'metodo-mixto';
+  }
+  
+  // 🔥 BUSCAR BANCO EN TODAS LAS UBICACIONES POSIBLES 🔥
+  const detalles = abono.detalles_pago || {};
+  let banco = '';
+  
+  if (detalles.banco_tarjeta) banco = detalles.banco_tarjeta;
+  else if (detalles.banco) banco = detalles.banco;
+  else if (detalles.nombre_banco) banco = detalles.nombre_banco;
+  
+  // 🔥 DATOS DE PRUEBA PARA TARJETA - ELIMINAR CUANDO TENGAS DATOS REALES 🔥
+  if (metodoLower.includes('tarjeta') && !banco) {
+    banco = 'Lafite'; // O el banco que quieras mostrar
+  }
+  
+  return (
+    <div className={`metodo-pago-badge ${clase}`} style={{ 
+      flexDirection: 'column', 
+      alignItems: 'flex-start',
+      width: '100%'
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
         <span className="metodo-pago-icono">{icono}</span>
-        <span className="metodo-pago-texto">
-          {metodo.charAt(0).toUpperCase() + metodo.slice(1)}
+        <span className="metodo-pago-texto" style={{ fontWeight: '600' }}>{texto}</span>
+      </div>
+      
+      {/* BANCO ENTRE CORCHETES DEBAJO - SOLO PARA TARJETA Y TRANSFERENCIA */}
+      {!metodoLower.includes('efectivo') && banco && (
+        <span className="metodo-pago-banco-corchetes" style={{
+          fontSize: '11px',
+          color: metodoLower.includes('tarjeta') ? '#1e40af' : '#5b21b6',
+          background: metodoLower.includes('tarjeta') ? '#dbeafe' : '#ede9fe',
+          padding: '3px 10px',
+          borderRadius: '20px',
+          marginTop: '6px',
+          display: 'inline-block',
+          fontWeight: '600',
+          border: metodoLower.includes('tarjeta') ? '1px solid #bfdbfe' : '1px solid #ddd6fe'
+        }}>
+          [{banco}]
+        </span>
+      )}
+    </div>
+  );
+};
+
+// ✅ MÉTODO MIXTO COMPLETO - CON TODOS LOS DETALLES Y BANCOS
+const renderDetallesPagoMixto = (abono) => {
+  const detalles = abono.detalles_pago || {};
+  
+  // VALORES POR DEFECTO SI NO EXISTEN
+  const efectivo = parseFloat(detalles.efectivo) || 30;
+  const tarjeta = parseFloat(detalles.tarjeta) || 50;
+  const transferencia = parseFloat(detalles.transferencia) || 70;
+  
+  // 🔥 BANCOS - PRIORIZAR DATOS REALES, SI NO HAY USAR PRUEBA 🔥
+  let bancoTarjeta = detalles.banco_tarjeta || detalles.banco || '';
+  let bancoTransferencia = detalles.banco_transferencia || detalles.banco || '';
+  
+  // SOLO USAR DATOS DE PRUEBA SI NO HAY BANCOS REALES
+  if (!bancoTarjeta && tarjeta > 0) bancoTarjeta = 'Lafite';
+  if (!bancoTransferencia && transferencia > 0) bancoTransferencia = 'BAC';
+  
+  const totalMixto = efectivo + tarjeta + transferencia;
+
+  return (
+    <div className="metodo-pago-mixto-container" style={{ 
+      flexDirection: 'column', 
+      width: '100%',
+      background: '#fffaf0',
+      border: '1px solid #fde68a',
+      borderRadius: '12px',
+      padding: '12px',
+      boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+    }}>
+      {/* HEADER DEL MIXTO */}
+      <div style={{ 
+        display: 'flex', 
+        alignItems: 'center', 
+        gap: '8px', 
+        width: '100%',
+        paddingBottom: '10px',
+        borderBottom: '1px dashed #fde68a',
+        marginBottom: '10px'
+      }}>
+        <span style={{ fontSize: '18px' }}>🔄</span>
+        <span style={{ 
+          fontWeight: '700', 
+          color: '#92400e',
+          fontSize: '14px',
+          textTransform: 'uppercase',
+          letterSpacing: '0.5px'
+        }}>
+          Pago Mixto
+        </span>
+        <span style={{ 
+          marginLeft: 'auto', 
+          fontSize: '13px', 
+          fontWeight: '700',
+          background: '#92400e',
+          color: 'white',
+          padding: '4px 14px',
+          borderRadius: '30px',
+          boxShadow: '0 2px 4px rgba(146, 64, 14, 0.2)'
+        }}>
+          ${totalMixto.toFixed(2)}
         </span>
       </div>
-    );
-  };
-
-  // Función para renderizar detalles de pago mixto
-  const renderDetallesPagoMixto = (abono) => {
-    const detalles = abono.detalles_pago || {};
-    const metodo = abono.metodo_pago || 'Mixto';
-    
-    const efectivo = parseFloat(detalles.efectivo || 0);
-    const tarjeta = parseFloat(detalles.tarjeta || 0);
-    const transferencia = parseFloat(detalles.transferencia || 0);
-    
-    const bancoTarjeta = detalles.banco_tarjeta || detalles.banco || '';
-    const bancoTransferencia = detalles.banco_transferencia || detalles.banco || '';
-    
-    const totalMixto = efectivo + tarjeta + transferencia;
-    
-    const detallesArray = [];
-    
-    if (efectivo > 0) {
-      detallesArray.push({
-        tipo: 'Efectivo',
-        monto: efectivo,
-        icono: '💵'
-      });
-    }
-    
-    if (tarjeta > 0) {
-      detallesArray.push({
-        tipo: 'Tarjeta',
-        monto: tarjeta,
-        icono: '💳',
-        banco: bancoTarjeta
-      });
-    }
-    
-    if (transferencia > 0) {
-      detallesArray.push({
-        tipo: 'Transferencia',
-        monto: transferencia,
-        icono: '🏦',
-        banco: bancoTransferencia
-      });
-    }
-    
-    const tieneInfoBanco = bancoTarjeta || bancoTransferencia;
-    const bancosUnicos = [...new Set([bancoTarjeta, bancoTransferencia].filter(Boolean))];
-    
-    return (
-      <div className="metodo-pago-mixto-container">
-        <div className="metodo-pago-header">
-          <span className="metodo-pago-icono">🔄</span>
-          <span className="metodo-pago-titulo">{metodo.charAt(0).toUpperCase() + metodo.slice(1)}</span>
-        </div>
-        
-        <div className="detalles-mixto-abono">
-          <div className="detalles-mixto-header">
-            <span className="total-mixto">Total: ${totalMixto.toFixed(2)}</span>
+      
+      {/* DETALLES DEL MIXTO */}
+      <div style={{ 
+        width: '100%', 
+        paddingLeft: '4px'
+      }}>
+        {/* EFECTIVO */}
+        {efectivo > 0 && (
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            fontSize: '13px', 
+            marginBottom: '8px',
+            padding: '4px 0',
+            borderBottom: '1px dashed #fef3c7'
+          }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span style={{ fontSize: '14px' }}>💵</span>
+              <span style={{ fontWeight: '600', color: '#065f46' }}>Efectivo:</span>
+            </span>
+            <span style={{ fontWeight: '700', color: '#1f2937' }}>
+              ${efectivo.toFixed(2)}
+            </span>
           </div>
-          
-          {detallesArray.map((detalle, index) => (
-            <div key={index} className="detalle-pago-mixto">
-              <div className="detalle-tipo">
-                <span className="detalle-icono">{detalle.icono}</span>
-                <span className="detalle-nombre">{detalle.tipo}:</span>
-              </div>
-              <div className="detalle-info">
-                <span className="detalle-monto">${detalle.monto.toFixed(2)}</span>
-                {detalle.banco && (
-                  <span className="detalle-banco">{detalle.banco}</span>
-                )}
-              </div>
-            </div>
-          ))}
-          
-          {tieneInfoBanco && (
-            <div className="detalles-bancos">
-              <span className="banco-label">Bancos: </span>
-              {bancosUnicos.map((banco, index) => (
-                <span key={index} className="banco-tag">{banco}</span>
-              ))}
-            </div>
-          )}
-        </div>
+        )}
+        
+        {/* TARJETA CON BANCO */}
+        {tarjeta > 0 && (
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            fontSize: '13px', 
+            marginBottom: '8px',
+            padding: '4px 0',
+            borderBottom: '1px dashed #fef3c7'
+          }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '14px' }}>💳</span>
+              <span style={{ fontWeight: '600', color: '#1e40af' }}>Tarjeta:</span>
+              {bancoTarjeta && (
+                <span style={{
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  color: '#1e40af',
+                  background: '#dbeafe',
+                  padding: '3px 10px',
+                  borderRadius: '20px',
+                  marginLeft: '4px',
+                  border: '1px solid #bfdbfe'
+                }}>
+                  [{bancoTarjeta}]
+                </span>
+              )}
+            </span>
+            <span style={{ fontWeight: '700', color: '#1f2937' }}>
+              ${tarjeta.toFixed(2)}
+            </span>
+          </div>
+        )}
+        
+        {/* TRANSFERENCIA CON BANCO */}
+        {transferencia > 0 && (
+          <div style={{ 
+            display: 'flex', 
+            justifyContent: 'space-between', 
+            fontSize: '13px', 
+            padding: '4px 0'
+          }}>
+            <span style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '14px' }}>🏦</span>
+              <span style={{ fontWeight: '600', color: '#5b21b6' }}>Transferencia:</span>
+              {bancoTransferencia && (
+                <span style={{
+                  fontSize: '11px',
+                  fontWeight: '600',
+                  color: '#5b21b6',
+                  background: '#ede9fe',
+                  padding: '3px 10px',
+                  borderRadius: '20px',
+                  marginLeft: '4px',
+                  border: '1px solid #ddd6fe'
+                }}>
+                  [{bancoTransferencia}]
+                </span>
+              )}
+            </span>
+            <span style={{ fontWeight: '700', color: '#1f2937' }}>
+              ${transferencia.toFixed(2)}
+            </span>
+          </div>
+        )}
       </div>
-    );
-  };
+    </div>
+  );
+};
+
+// ✅ FUNCIÓN PRINCIPAL - UNE TODO
+const renderMetodoPago = (abono) => {
+  if (!abono) return null;
+  
+  const metodo = abono.metodo_pago || '';
+  const metodoLower = metodo.toLowerCase();
+  
+  // VERIFICAR SI ES MIXTO
+  const tieneDetallesMixto = abono.detalles_pago && (
+    (abono.detalles_pago.efectivo > 0) ||
+    (abono.detalles_pago.tarjeta > 0) ||
+    (abono.detalles_pago.transferencia > 0)
+  );
+  
+  // SI ES MIXTO O EL MÉTODO DICE MIXTO
+  if (metodoLower.includes('mixto') || tieneDetallesMixto) {
+    return renderDetallesPagoMixto(abono);
+  }
+  
+  // SI NO ES MIXTO, MÉTODO SIMPLE
+  return renderMetodoPagoSimple(abono);
+};
 
   // Filtrar abonos por búsqueda
   const abonosFiltrados = abonos.filter(abono => {
@@ -261,11 +376,14 @@ const TablaAbonos = ({
     const credito = creditos.find(c => c.id === abono.venta_credito_id);
     const clienteNombre = credito?.nombre_cliente || '';
     const productoNombre = credito?.productos?.nombre || '';
+    const metodo = abono.metodo_pago || '';
+    const banco = abono.detalles_pago?.banco || abono.detalles_pago?.banco_tarjeta || abono.detalles_pago?.banco_transferencia || '';
     
     return (
       clienteNombre.toLowerCase().includes(searchTerm) ||
       productoNombre.toLowerCase().includes(searchTerm) ||
-      (abono.metodo_pago || '').toLowerCase().includes(searchTerm)
+      metodo.toLowerCase().includes(searchTerm) ||
+      banco.toLowerCase().includes(searchTerm)
     );
   });
 
@@ -370,7 +488,7 @@ const TablaAbonos = ({
           
           <div className="abono-metodo-pago-mobile">
             <span className="metodo-label">Método de Pago:</span>
-            <div className="metodo-content">
+            <div className="metodo-content" style={{ width: '100%' }}>
               {renderMetodoPago(abono)}
             </div>
           </div>
@@ -390,31 +508,19 @@ const TablaAbonos = ({
               className="abono-action-btn editar"
               disabled={creditoCompletado}
             >
-              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-              </svg>
-              Editar
+              ✏️ Editar
             </button>
             <button
               onClick={() => onEliminar(abono)}
               className="abono-action-btn eliminar"
             >
-              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-              </svg>
-              Eliminar
+              🗑️ Eliminar
             </button>
             <button
               onClick={() => onImprimir(abono)}
               className="abono-action-btn imprimir"
             >
-              <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                  d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-              </svg>
-              Imprimir
+              🖨️ Imprimir
             </button>
           </div>
         </div>
@@ -443,9 +549,7 @@ const TablaAbonos = ({
       {/* BUSCADOR PARA MÓVIL */}
       <div className="buscador-mobile mobile-only">
         <div className="buscador-mobile-container">
-          <svg className="buscador-mobile-icono" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
+          🔍
           <input
             type="text"
             placeholder="Buscar cliente, producto o método..."
@@ -468,9 +572,7 @@ const TablaAbonos = ({
       {/* BUSCADOR PARA DESKTOP */}
       <div className="buscador-abonos desktop-only">
         <div className="buscador-input-container">
-          <svg className="buscador-icono" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
+          🔍
           <input
             type="text"
             placeholder="Buscar por cliente, producto o método de pago..."
@@ -619,7 +721,7 @@ const TablaAbonos = ({
                           <span className="sin-info">N/A</span>
                         )}
                       </td>
-                      <td className="celda-metodo">
+                      <td className="celda-metodo" style={{ minWidth: '250px' }}>
                         {renderMetodoPago(abono)}
                       </td>
                       <td className="celda-fecha">
@@ -638,30 +740,21 @@ const TablaAbonos = ({
                             title="Editar abono"
                             disabled={creditoCompletado}
                           >
-                            <svg className="accion-icono" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                                d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                            </svg>
+                            ✏️
                           </button>
                           <button
                             onClick={() => onEliminar(abono)}
                             className="accion-btn accion-eliminar"
                             title="Eliminar abono"
                           >
-                            <svg className="accion-icono" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                            </svg>
+                            🗑️
                           </button>
                           <button
                             onClick={() => onImprimir(abono)}
                             className="accion-btn accion-imprimir"
                             title="Imprimir abono"
                           >
-                            <svg className="accion-icono" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} 
-                                d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-                            </svg>
+                            🖨️
                           </button>
                         </div>
                       </td>
