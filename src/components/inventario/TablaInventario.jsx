@@ -10,12 +10,11 @@ const TablaInventario = ({ inventario, loading, onEditar, onEliminar }) => {
     
     const fecha = new Date(fechaISO);
     
-    // Usar métodos locales directos
     const dia = fecha.getDate().toString().padStart(2, '0');
     const mes = (fecha.getMonth() + 1).toString().padStart(2, '0');
     const año = fecha.getFullYear();
     
-    let horas = fecha.getHours();  // getHours() local, no UTC
+    let horas = fecha.getHours();
     const minutos = fecha.getMinutes().toString().padStart(2, '0');
     const ampm = horas >= 12 ? 'p.m.' : 'a.m.';
     
@@ -25,12 +24,18 @@ const TablaInventario = ({ inventario, loading, onEditar, onEliminar }) => {
     return `${dia}/${mes}/${año}, ${horas}:${minutos} ${ampm}`;
   };
 
-  // Filtrar por búsqueda
+  // ✅ FILTRAR POR BÚSQUEDA - CORREGIDO PARA CÓDIGO DE BARRAS
   const inventarioFiltrado = busqueda.trim() 
-    ? inventario.filter(item => 
-        item.productos?.nombre?.toLowerCase().includes(busqueda.toLowerCase()) ||
-        item.productos?.codigo?.toLowerCase().includes(busqueda.toLowerCase())
-      )
+    ? inventario.filter(item => {
+        const nombre = item.productos?.nombre?.toLowerCase() || '';
+        const codigo = item.productos?.codigo?.toLowerCase() || '';
+        const codigoBarras = item.productos?.codigo_barras?.toLowerCase() || '';
+        const busquedaLower = busqueda.toLowerCase();
+        
+        return nombre.includes(busquedaLower) ||
+               codigo.includes(busquedaLower) ||
+               codigoBarras.includes(busquedaLower);
+      })
     : inventario;
 
   // Renderizar vista móvil
@@ -62,7 +67,13 @@ const TablaInventario = ({ inventario, loading, onEditar, onEliminar }) => {
               <div className="inventario-producto">
                 {item.productos?.nombre || 'Producto no encontrado'}
               </div>
-              {item.productos?.codigo && (
+              {/* ✅ MOSTRAR CÓDIGO DE BARRAS SI EXISTE */}
+              {item.productos?.codigo_barras && (
+                <div className="inventario-codigo-barras">
+                  📟 Código: {item.productos.codigo_barras}
+                </div>
+              )}
+              {item.productos?.codigo && !item.productos?.codigo_barras && (
                 <div className="inventario-codigo">
                   Código: {item.productos.codigo}
                 </div>
@@ -89,7 +100,6 @@ const TablaInventario = ({ inventario, loading, onEditar, onEliminar }) => {
             </div>
           </div>
           
-          {/* FECHAS - MISMA FUNCIÓN PARA AMBAS */}
           <div className="inventario-fechas-mobile">
             <div className="inventario-fecha-item">
               <span className="inventario-fecha-label">Registro:</span>
@@ -158,7 +168,7 @@ const TablaInventario = ({ inventario, loading, onEditar, onEliminar }) => {
           </svg>
           <input
             type="text"
-            placeholder="Buscar producto..."
+            placeholder="Buscar por nombre, código o código de barras..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             className="buscador-mobile-input"
@@ -183,7 +193,7 @@ const TablaInventario = ({ inventario, loading, onEditar, onEliminar }) => {
           </svg>
           <input
             type="text"
-            placeholder="Buscar por producto o código..."
+            placeholder="Buscar por nombre, código o código de barras..."
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             className="buscador-input"
@@ -250,7 +260,13 @@ const TablaInventario = ({ inventario, loading, onEditar, onEliminar }) => {
                         <div className="nombre-producto">
                           {item.productos?.nombre || 'Producto no encontrado'}
                         </div>
-                        {item.productos?.codigo && (
+                        {/* ✅ MOSTRAR CÓDIGO DE BARRAS EN DESKTOP */}
+                        {item.productos?.codigo_barras && (
+                          <div className="codigo-barras">
+                            📟 {item.productos.codigo_barras}
+                          </div>
+                        )}
+                        {item.productos?.codigo && !item.productos?.codigo_barras && (
                           <div className="codigo-producto">
                             Código: {item.productos.codigo}
                           </div>
@@ -309,7 +325,7 @@ const TablaInventario = ({ inventario, loading, onEditar, onEliminar }) => {
           </table>
         </div>
         
-        {/* VISTA MÓVIL COMPLETA */}
+        {/* VISTA MÓVIL */}
         <div className="tabla-mobile-view mobile-only">
           {renderVistaMobile()}
         </div>
