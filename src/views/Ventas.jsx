@@ -166,19 +166,34 @@ const generarContenidoTicket = (venta) => {
     ? venta.id.substring(0, 8).toUpperCase()
     : "00000000"
 
-  const recibido = Number(
-    venta.efectivo ||
-    venta.tarjeta ||
-    venta.transferencia ||
-    total
-  ).toFixed(2)
+  // ============================
+  // MÉTODO DE PAGO
+  // ============================
+
+  let metodo = (venta.metodo_pago || "efectivo").toUpperCase()
+  let recibido = 0
+
+  if (venta.metodo_pago === "mixto") {
+    recibido =
+      Number(venta.efectivo || 0) +
+      Number(venta.tarjeta || 0) +
+      Number(venta.transferencia || 0)
+  } else if (venta.metodo_pago === "tarjeta") {
+    recibido = Number(venta.tarjeta || total)
+  } else if (venta.metodo_pago === "transferencia") {
+    recibido = Number(venta.transferencia || total)
+  } else {
+    recibido = Number(venta.efectivo || total)
+  }
+
+  recibido = recibido.toFixed(2)
 
   const vuelto = Number(venta.vuelto || 0).toFixed(2)
 
   return `
 ${centrar("ARELYZ SALON")}
-${centrar("7715-4242")}
-${centrar("En frente miel pajaritos")}
+${centrar("8354'3180")}
+${centrar("Uno petrol una cuadra al norte media al oeste")}
 ${linea()}
 TICKET DE VENTA
 #${numeroVenta}
@@ -193,7 +208,10 @@ TOTAL   C$${total}
 RECIB   C$${recibido}
 VUELTO  C$${vuelto}
 ${linea()}
+METODO: ${metodo}
+${linea()}
 ${centrar("GRACIAS POR SU COMPRA")}
+
 
 
 
@@ -201,6 +219,7 @@ ${centrar("GRACIAS POR SU COMPRA")}
 \n\n\n\n\n
 `
 }
+
   // ==============================================
   // FALLBACK PARA COPIAR CONTENIDO (MANTENER IGUAL)
   // ==============================================
