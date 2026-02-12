@@ -166,7 +166,7 @@ const Creditos = () => {
     setShowEliminarModal(false)
   }
 
-// 🖨️ FUNCIÓN PARA GENERAR TICKET DE CRÉDITO - POR CLIENTE (TODOS LOS PRODUCTOS)
+// 🖨️ FUNCIÓN PARA GENERAR TICKET DE CRÉDITO - SOLO RESUMEN DEL CLIENTE
 const generarContenidoTicketCredito = (credito) => {
   try {
     const centrar = (texto) => {
@@ -182,19 +182,10 @@ const generarContenidoTicketCredito = (credito) => {
       try {
         const fechaUTC = new Date(fechaISO)
         const fechaNic = new Date(fechaUTC.getTime() - (6 * 60 * 60 * 1000))
-
         const d = fechaNic.getDate().toString().padStart(2, '0')
         const m = (fechaNic.getMonth() + 1).toString().padStart(2, '0')
         const y = fechaNic.getFullYear()
-
-        let h = fechaNic.getHours()
-        const min = fechaNic.getMinutes().toString().padStart(2, '0')
-        const ampm = h >= 12 ? 'p.m.' : 'a.m.'
-
-        h = h % 12
-        h = h ? h.toString().padStart(2, '0') : '12'
-
-        return `${d}/${m}/${y} ${h}:${min} ${ampm}`
+        return `${d}/${m}/${y}`
       } catch (e) {
         return fechaISO
       }
@@ -211,8 +202,6 @@ const generarContenidoTicketCredito = (credito) => {
     )
 
     const cliente = credito.nombre_cliente || 'Cliente'
-    const fechaInicio = credito.fecha_inicio ? formatFecha(credito.fecha_inicio) : 'Sin fecha'
-    const fechaFin = credito.fecha_fin ? formatFecha(credito.fecha_fin) : 'Sin fecha'
 
     // ✅ CALCULAR TOTALES GENERALES DEL CLIENTE
     let totalGeneralCliente = 0
@@ -236,64 +225,17 @@ ${linea()}
 CLIENTE:
 ${cliente}
 ${linea()}
-FECHA DE IMPRESIÓN:
+FECHA:
 ${formatFecha(new Date().toISOString())}
 ${linea()}
-RESUMEN GENERAL:
-Total Créditos: ${creditosDelCliente.length}
-Monto Total:    C$${totalGeneralCliente.toFixed(2)}
-Total Abonado:  C$${totalAbonadoCliente.toFixed(2)}
-Saldo Actual:   C$${saldoGeneralCliente.toFixed(2)}
+RESUMEN DE CRÉDITOS:
+Total de créditos: ${creditosDelCliente.length}
+Monto total:       C$${totalGeneralCliente.toFixed(2)}
+Total abonado:     C$${totalAbonadoCliente.toFixed(2)}
 ${linea()}
-DETALLE POR PRODUCTO:
-`
-
-    // ✅ LISTAR CADA PRODUCTO DEL CLIENTE
-    creditosDelCliente.forEach((c, index) => {
-      const producto = c.productos?.nombre || 'Producto'
-      const cantidad = c.cantidad || 1
-      const precio = parseFloat(c.precio_unitario || 0).toFixed(2)
-      const subtotal = parseFloat(c.total || 0).toFixed(2)
-      const saldo = parseFloat(c.saldo_pendiente || 0).toFixed(2)
-      
-      const abonos = c.abonos_credito || []
-      const abonado = abonos.reduce((sum, a) => sum + parseFloat(a.monto || 0), 0).toFixed(2)
-
-      contenido += `
-${index + 1}. ${producto}
-   Cant: ${cantidad} x C$${precio}
-   Total: C$${subtotal}
-   Abonado: C$${abonado}
-   Saldo: C$${saldo}
-${linea()}`
-    })
-
-    // ✅ AGREGAR HISTORIAL DE ABONOS (TODOS LOS ABONOS DEL CLIENTE)
-    const todosLosAbonos = creditosDelCliente
-      .flatMap(c => c.abonos_credito || [])
-      .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
-
-    contenido += `
-HISTORIAL DE ABONOS:
-`
-
-    if (todosLosAbonos.length === 0) {
-      contenido += '  No hay abonos registrados\n'
-    } else {
-      todosLosAbonos.forEach((a, i) => {
-        const fechaAbono = a.fecha ? formatFecha(a.fecha).split(' ')[0] : 'Sin fecha'
-        const monto = parseFloat(a.monto || 0).toFixed(2)
-        
-        // Buscar a qué producto pertenece este abono
-        const creditoOrigen = creditosDelCliente.find(c => c.id === a.venta_credito_id)
-        const productoOrigen = creditoOrigen?.productos?.nombre || 'Producto'
-        
-        contenido += `${i+1}. ${fechaAbono} - C$${monto} (${productoOrigen})\n`
-      })
-    }
-
-    contenido += `${linea()}
-${centrar("GRACIAS POR SU CONFIANZA")}
+SALDO PENDIENTE:   C$${saldoGeneralCliente.toFixed(2)}
+${linea()}
+${centrar("GRACIAS POR SU PAGO")}
 ${centrar("Conserve este comprobante")}
 
 \n\n\n\n`
@@ -305,14 +247,12 @@ ${centrar("Conserve este comprobante")}
   }
 }
 
-// 🖨️ FUNCIÓN PARA IMPRIMIR TICKET DE CRÉDITO - POR CLIENTE
+// 🖨️ FUNCIÓN PARA IMPRIMIR TICKET DE CRÉDITO
 const imprimirTicketCredito = (credito) => {
   console.log('🖨️ Imprimiendo estado de cuenta para cliente:', credito?.nombre_cliente)
   
   try {
     const contenido = generarContenidoTicketCredito(credito)
-    console.log('📄 Contenido generado')
-    
     const encoded = encodeURIComponent(contenido)
     
     if (navigator.userAgent.includes('Android')) {
