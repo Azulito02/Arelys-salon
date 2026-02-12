@@ -192,20 +192,18 @@ const generarContenidoTicket = (venta) => {
 
   return `
 ${centrar("ARELYS SALON")}
-${centrar("8354'3180")}
+${centrar("8354-3180")}
 ${centrar("Uno petrol una cuadra al norte media al oeste")}
 ${linea()}
 TICKET DE VENTA
-#${numeroVenta}
 ${fecha}
 ${linea()}
-PROD: ${nombreProducto}
-CAT : ${categoria}
-CANT: ${cantidad}
-PREC: C$${precio}
+PRODUCTO: ${nombreProducto}
+CANTIDAD: ${cantidad}
+IO: C$${precio}
 ${linea()}
 TOTAL   C$${total}
-RECIB   C$${recibido}
+RECIBIDO   C$${recibido}
 VUELTO  C$${vuelto}
 ${linea()}
 METODO: ${metodo}
