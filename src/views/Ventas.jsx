@@ -119,6 +119,10 @@ const Ventas = () => {
 // GENERAR CONTENIDO DEL TICKET - CORREGIDO
 // ==============================================
 
+// ==============================================
+// GENERAR CONTENIDO DEL TICKET - CORREGIDO (IGUAL QUE CRÉDITOS)
+// ==============================================
+
 const generarContenidoTicket = (venta) => {
   const centrar = (texto) => {
     const ancho = 32
@@ -146,24 +150,17 @@ const generarContenidoTicket = (venta) => {
     return `${d}/${m}/${y} ${h}:${min} ${ampm}`
   }
 
-  // 🔴🔴🔴 CORREGIDO: AGRUPAR POR FECHA COMPLETA (incluyendo minutos)
-  // 🔴🔴🔴 ESTE ES EL PROBLEMA - NO ESTABAS AGRUPANDO BIEN
+  // 🔴 CORREGIDO: AGRUPAR POR TRANSACCIÓN COMPLETA (NO POR PRODUCTO)
+  // Buscar TODAS las ventas que ocurrieron en el MISMO SEGUNDO
+  const fechaVentaOriginal = new Date(venta.fecha).getTime()
+  
   const productosDeEstaVenta = ventas.filter(v => {
-    // Comparar fecha COMPLETA (incluyendo hora y minuto)
-    const fechaVenta = new Date(v.fecha).getTime()
-    const fechaActual = new Date(venta.fecha).getTime()
-    
-    // Misma fecha (mismo día, misma hora, mismo minuto)
-    const mismaFecha = Math.abs(fechaVenta - fechaActual) < 1000 // 1 segundo de tolerancia
-    
-    // Mismo método de pago y mismo total aproximado
-    const mismoMetodo = v.metodo_pago === venta.metodo_pago
-    const mismoTotal = Math.abs(Number(v.total || 0) - Number(venta.total || 0)) < 0.01
-    
-    return mismaFecha && mismoMetodo && mismoTotal
+    const fechaVentaComparar = new Date(v.fecha).getTime()
+    // Diferencia de menos de 2 segundos = misma transacción
+    return Math.abs(fechaVentaComparar - fechaVentaOriginal) < 2000
   })
 
-  // Si no encuentra productos con ese filtro, usar solo el producto actual
+  // Si no encuentra productos, usar solo el producto actual
   const productosTicket = productosDeEstaVenta.length > 0 
     ? productosDeEstaVenta 
     : [venta]
@@ -174,17 +171,19 @@ const generarContenidoTicket = (venta) => {
     : "00000000"
 
   // ==============================================
-  // CALCULAR TOTALES
+  // CALCULAR TOTALES DE TODA LA TRANSACCIÓN
   // ==============================================
   
   let totalGeneral = 0
   let efectivoTotal = 0
   let tarjetaTotal = 0
   let transferenciaTotal = 0
+  let vueltoTotal = 0
 
   productosTicket.forEach(v => {
     totalGeneral += Number(v.total || 0)
     
+    // Sumar montos por método de pago
     if (v.metodo_pago === "efectivo") {
       efectivoTotal += Number(v.efectivo || v.total || 0)
     } else if (v.metodo_pago === "tarjeta") {
@@ -196,23 +195,30 @@ const generarContenidoTicket = (venta) => {
       tarjetaTotal += Number(v.tarjeta || 0)
       transferenciaTotal += Number(v.transferencia || 0)
     }
+    
+    // Usar el vuelto del primer producto (todos deben tener el mismo)
+    if (vueltoTotal === 0 && v.vuelto) {
+      vueltoTotal = Number(v.vuelto || 0)
+    }
   })
 
   const recibidoTotal = efectivoTotal + tarjetaTotal + transferenciaTotal
-  const vuelto = Number(venta.vuelto || 0)
 
   let contenido = `
 ${centrar("ARELYS SALON")}
 ${centrar("8354-3180")}
 ${centrar("Uno petrol una cuadra al norte media al oeste")}
 ${linea()}
-TICKET DE VENTA
-${fecha}
-N°: ${numeroVenta}
+        TICKET DE VENTA
 ${linea()}
-`
+FECHA: ${fecha}
+N°: ${numeroVenta}
+${linea()}`
 
-  // 🔴🔴🔴 CORREGIDO: LISTAR TODOS LOS PRODUCTOS DE LA VENTA
+  // ==============================================
+  // LISTAR TODOS LOS PRODUCTOS DE LA TRANSACCIÓN
+  // ==============================================
+  
   if (productosTicket.length === 1) {
     // SOLO UN PRODUCTO - Formato simple
     const v = productosTicket[0]
@@ -220,83 +226,93 @@ ${linea()}
     const cantidad = v.cantidad || 1
     const precio = Number(v.precio_unitario || 0).toFixed(2)
     
-    contenido += `PRODUCTO: ${nombre}
+    contenido += `
+PRODUCTO: ${nombre}
 CANTIDAD: ${cantidad}
-PRECIO: C$${precio}
+PRECIO:   C$${precio}
 `
   } else {
     // VARIOS PRODUCTOS - Formato listado
-    contenido += `PRODUCTOS:\n`
+    contenido += `\nPRODUCTOS:\n`
     productosTicket.forEach((v, index) => {
       const nombre = v.productos?.nombre || "Producto"
       const cantidad = v.cantidad || 1
       const precio = Number(v.precio_unitario || 0).toFixed(2)
       const subtotal = Number(v.total || 0).toFixed(2)
       
-      contenido += `${index + 1}. ${nombre}
-   ${cantidad} x C$${precio} = C$${subtotal}\n`
+      contenido += `
+${index + 1}. ${nombre}
+   ${cantidad} x C$${precio} = C$${subtotal}`
     })
+    contenido += `\n`
   }
 
   contenido += `${linea()}
-TOTAL       C$${totalGeneral.toFixed(2)}
+TOTAL:      C$${totalGeneral.toFixed(2)}
 `
 
   // ==============================================
-  // DETALLE DE PAGO
+  // DETALLE DE PAGO - IGUAL QUE CRÉDITOS
   // ==============================================
   
-  if (efectivoTotal > 0 && tarjetaTotal > 0 || 
-      efectivoTotal > 0 && transferenciaTotal > 0 ||
-      tarjetaTotal > 0 && transferenciaTotal > 0) {
-    
+  const esMixto = (efectivoTotal > 0 && tarjetaTotal > 0) || 
+                  (efectivoTotal > 0 && transferenciaTotal > 0) ||
+                  (tarjetaTotal > 0 && transferenciaTotal > 0)
+
+  if (esMixto) {
     contenido += `${linea()}
 PAGO MIXTO:
 `
     if (efectivoTotal > 0) {
-      contenido += `   💵 Efectivo: C$${efectivoTotal.toFixed(2)}\n`
+      contenido += `   💵 Efectivo:   C$${efectivoTotal.toFixed(2)}\n`
     }
     if (tarjetaTotal > 0) {
-      const banco = venta.detalles_pago?.banco_tarjeta || ''
-      contenido += `   💳 Tarjeta: C$${tarjetaTotal.toFixed(2)}${banco ? ` [${banco}]` : ''}\n`
+      const banco = productosTicket[0]?.detalles_pago?.banco_tarjeta || ''
+      contenido += `   💳 Tarjeta:    C$${tarjetaTotal.toFixed(2)}${banco ? ` [${banco}]` : ''}\n`
     }
     if (transferenciaTotal > 0) {
-      const banco = venta.detalles_pago?.banco_transferencia || ''
-      contenido += `   🏦 Transferencia: C$${transferenciaTotal.toFixed(2)}${banco ? ` [${banco}]` : ''}\n`
+      const banco = productosTicket[0]?.detalles_pago?.banco_transferencia || ''
+      contenido += `   🏦 Transfer:   C$${transferenciaTotal.toFixed(2)}${banco ? ` [${banco}]` : ''}\n`
     }
-    
+    contenido += `${linea()}
+RECIBIDO:   C$${recibidoTotal.toFixed(2)}
+`
   } else {
     // MÉTODO SIMPLE
     let metodoTexto = ""
     let bancoTexto = ""
+    let icono = ""
     
     if (venta.metodo_pago === "efectivo") {
       metodoTexto = "EFECTIVO"
+      icono = "💰"
     } else if (venta.metodo_pago === "tarjeta") {
       metodoTexto = "TARJETA"
+      icono = "💳"
       bancoTexto = venta.detalles_pago?.banco_tarjeta || venta.detalles_pago?.banco || ''
     } else if (venta.metodo_pago === "transferencia") {
       metodoTexto = "TRANSFERENCIA"
+      icono = "🏦"
       bancoTexto = venta.detalles_pago?.banco_transferencia || venta.detalles_pago?.banco || ''
     }
     
     contenido += `${linea()}
-METODO: ${metodoTexto}
+${icono} METODO: ${metodoTexto}
 `
     if (bancoTexto) {
-      contenido += `BANCO: ${bancoTexto}\n`
+      contenido += `   BANCO: ${bancoTexto}\n`
     }
+    contenido += `${linea()}
+RECIBIDO:   C$${recibidoTotal.toFixed(2)}
+`
   }
 
-  contenido += `RECIBIDO: C$${recibidoTotal.toFixed(2)}
-`
-
-  if (vuelto > 0) {
-    contenido += `VUELTO:  C$${vuelto.toFixed(2)}\n`
+  if (vueltoTotal > 0) {
+    contenido += `VUELTO:     C$${vueltoTotal.toFixed(2)}\n`
   }
 
   contenido += `${linea()}
-${centrar("GRACIAS POR SU COMPRA")}
+${centrar("¡GRACIAS POR SU COMPRA!")}
 ${centrar("VUELVA PRONTO")}
 
 \n\n\n\n\n`
