@@ -1,6 +1,8 @@
 /* src/components/abonos/TablaAbonos.css */
 .tabla-abonos-container {
   margin-top: 24px;
+  width: 100%;
+  overflow-x: hidden;
 }
 
 /* Buscador para móvil */
@@ -119,6 +121,7 @@
   color: #64748b;
   font-size: 14px;
   margin-left: 20px;
+  white-space: nowrap;
 }
 
 /* Tarjeta de tabla */
@@ -127,26 +130,35 @@
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+  width: 100%;
 }
 
-/* Scroll container para desktop */
+/* Scroll container para desktop - MEJORADO */
 .tabla-scroll-container {
   overflow-x: auto;
+  overflow-y: visible;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 12px;
 }
 
-/* Tabla principal */
+/* Tabla principal - OPTIMIZADA */
 .tabla-abonos {
   width: 100%;
   border-collapse: collapse;
-  min-width: 1200px;
+  min-width: 1000px; /* REDUCIDO de 1200px */
+  table-layout: auto;
 }
 
 .tabla-abonos thead {
   background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .tabla-abonos th {
-  padding: 16px 20px;
+  padding: 14px 12px; /* REDUCIDO */
   text-align: left;
   font-size: 12px;
   font-weight: 600;
@@ -158,9 +170,10 @@
 }
 
 .tabla-abonos td {
-  padding: 16px 20px;
+  padding: 12px 12px; /* REDUCIDO */
   border-bottom: 1px solid #f1f5f9;
   vertical-align: middle;
+  font-size: 13px; /* REDUCIDO */
 }
 
 .tabla-abonos tbody tr:hover {
@@ -171,584 +184,318 @@
   background-color: #f0fdf4;
 }
 
-/* Columnas específicas */
+/* Columnas específicas - AJUSTADAS Y OPTIMIZADAS */
 .tabla-abonos .columna-cliente {
-  min-width: 180px;
+  min-width: 140px; /* REDUCIDO */
+  width: 14%;
 }
 
 .tabla-abonos .columna-producto {
-  min-width: 200px;
+  min-width: 160px; /* REDUCIDO */
+  width: 16%;
 }
 
 .tabla-abonos .columna-monto {
-  min-width: 120px;
+  min-width: 100px; /* REDUCIDO */
+  width: 10%;
+}
+
+.tabla-abonos .columna-total-credito {
+  min-width: 110px; /* REDUCIDO */
+  width: 11%;
+}
+
+.tabla-abonos .columna-saldo-pendiente {
+  min-width: 110px; /* REDUCIDO */
+  width: 11%;
 }
 
 .tabla-abonos .columna-metodo {
-  min-width: 220px;
-  width: 220px;
+  min-width: 200px; /* REDUCIDO de 220px */
+  width: 18%;
 }
 
 .tabla-abonos .columna-fecha {
-  min-width: 160px;
+  min-width: 130px; /* REDUCIDO de 160px */
+  width: 12%;
+}
+
+.tabla-abonos .columna-estado {
+  min-width: 100px; /* REDUCIDO */
+  width: 10%;
 }
 
 .tabla-abonos .columna-acciones {
-  min-width: 100px;
-  width: 100px;
+  min-width: 100px; /* MANTENIDO */
+  width: 8%;
+  text-align: center;
 }
 
-/* Contenido de celdas */
+/* Contenido de celdas - OPTIMIZADO */
 .tabla-abonos .nombre-cliente {
   font-weight: 600;
   color: #1e293b;
-  font-size: 15px;
+  font-size: 13px; /* REDUCIDO */
+  line-height: 1.3;
+  word-break: break-word;
 }
 
 .tabla-abonos .nombre-producto {
   font-weight: 500;
   color: #334155;
-  font-size: 14px;
-  line-height: 1.4;
+  font-size: 13px; /* REDUCIDO */
+  line-height: 1.3;
+  word-break: break-word;
 }
 
 .tabla-abonos .codigo-producto {
-  font-size: 12px;
+  font-size: 11px; /* REDUCIDO */
   color: #64748b;
-  margin-top: 4px;
+  margin-top: 2px;
   font-family: 'Monaco', 'Courier New', monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
 }
 
 .tabla-abonos .celda-monto {
   font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
   color: #059669;
   font-weight: 600;
-  font-size: 15px;
+  font-size: 13px; /* REDUCIDO */
 }
 
-/* Métodos de pago */
+.monto-abono {
+  font-size: 13px; /* REDUCIDO */
+}
+
+.porcentaje-abono {
+  font-size: 11px; /* REDUCIDO */
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.total-credito-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.total-credito {
+  font-size: 13px; /* REDUCIDO */
+  color: #1e40af;
+}
+
+.total-abonado {
+  font-size: 11px; /* REDUCIDO */
+  color: #059669;
+}
+
+.saldo-pendiente-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.saldo-monto {
+  font-size: 13px; /* REDUCIDO */
+}
+
+.saldo-cero .saldo-monto {
+  color: #059669;
+}
+
+.saldo-pendiente .saldo-monto {
+  color: #dc2626;
+}
+
+/* Barra de progreso - MÁS COMPACTA */
+.barra-progreso {
+  width: 80px; /* REDUCIDO */
+  height: 4px; /* REDUCIDO */
+  background-color: #e5e7eb;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 2px;
+}
+
+.progreso-llenado {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.3s ease;
+}
+
+.porcentaje-completado {
+  font-size: 11px; /* REDUCIDO */
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* Métodos de pago - MÁS COMPACTOS */
 .tabla-abonos .metodo-pago-badge {
   display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 20px;
-  font-size: 13px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 6px 10px; /* REDUCIDO */
+  border-radius: 16px; /* REDUCIDO */
+  font-size: 12px; /* REDUCIDO */
   font-weight: 600;
   border: 1px solid transparent;
-  position: relative;
-  white-space: nowrap;
+  width: 100%;
+  max-width: 200px;
 }
 
 .tabla-abonos .metodo-pago-icono {
-  font-size: 16px;
+  font-size: 14px; /* REDUCIDO */
   line-height: 1;
 }
 
 .tabla-abonos .metodo-pago-texto {
   white-space: nowrap;
+  font-size: 12px; /* REDUCIDO */
 }
 
-/* Colores para cada método */
-.tabla-abonos .metodo-efectivo {
-  background-color: #d1fae5;
-  color: #065f46;
-  border-color: #a7f3d0;
-}
-
-.tabla-abonos .metodo-tarjeta {
-  background-color: #dbeafe;
-  color: #1e40af;
-  border-color: #bfdbfe;
-}
-
-.tabla-abonos .metodo-transferencia {
-  background-color: #ede9fe;
-  color: #5b21b6;
-  border-color: #ddd6fe;
-}
-
-.tabla-abonos .metodo-mixto {
-  background-color: #fef3c7;
-  color: #92400e;
-  border-color: #fde68a;
-}
-
-.tabla-abonos .metodo-default {
-  background-color: #f1f5f9;
-  color: #475569;
-  border-color: #e2e8f0;
+/* Método mixto - MÁS COMPACTO */
+.metodo-pago-mixto-container {
+  flex-direction: column;
+  width: 100%;
+  max-width: 200px; /* LIMITADO */
+  background: #fffaf0;
+  border: 1px solid #fde68a;
+  border-radius: 10px; /* REDUCIDO */
+  padding: 10px; /* REDUCIDO */
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  font-size: 12px; /* REDUCIDO */
 }
 
 /* Fechas */
 .tabla-abonos .celda-fecha {
   font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
-  font-size: 13px;
+  font-size: 12px; /* REDUCIDO */
   color: #475569;
   white-space: nowrap;
 }
 
-/* Acciones */
-.tabla-abonos .acciones-container {
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-}
-
-.tabla-abonos .accion-btn {
-  padding: 8px;
-  border-radius: 8px;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-  width: 36px;
-  height: 36px;
-}
-
-.tabla-abonos .accion-editar {
-  background-color: #dbeafe;
-  color: #1d4ed8;
-  border: 1px solid #bfdbfe;
-}
-
-.tabla-abonos .accion-editar:hover {
-  background-color: #bfdbfe;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(29, 78, 216, 0.1);
-}
-
-.tabla-abonos .accion-eliminar {
-  background-color: #fee2e2;
-  color: #dc2626;
-  border: 1px solid #fecaca;
-}
-
-.tabla-abonos .accion-eliminar:hover {
-  background-color: #fecaca;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(220, 38, 38, 0.1);
-}
-
-.tabla-abonos .accion-icono {
-  width: 18px;
-  height: 18px;
-  stroke-width: 2.5;
-}
-
-/* Estados de crédito */
+/* Badge de estado */
 .badge-estado {
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 12px;
+  padding: 4px 8px; /* REDUCIDO */
+  border-radius: 16px; /* REDUCIDO */
+  font-size: 11px; /* REDUCIDO */
   font-weight: 600;
   display: inline-block;
   text-align: center;
   white-space: nowrap;
 }
 
-.estado-credito-completado {
-  background-color: #d1fae5;
-  color: #065f46;
-  border: 1px solid #a7f3d0;
+/* Acciones - MEJOR POSICIONAMIENTO */
+.tabla-abonos .acciones-container {
+  display: flex;
+  gap: 4px; /* REDUCIDO */
+  justify-content: center;
+  align-items: center;
+  flex-wrap: nowrap;
 }
 
-.estado-credito-activo {
-  background-color: #dbeafe;
-  color: #1e40af;
-  border: 1px solid #bfdbfe;
+.tabla-abonos .accion-btn {
+  padding: 5px; /* REDUCIDO */
+  border-radius: 6px; /* REDUCIDO */
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  width: 28px; /* REDUCIDO */
+  height: 28px; /* REDUCIDO */
+  font-size: 14px; /* REDUCIDO */
 }
 
-.estado-credito-por-vencer {
+.tabla-abonos .accion-icono {
+  width: 14px; /* REDUCIDO */
+  height: 14px; /* REDUCIDO */
+  stroke-width: 2.5;
+}
+
+/* Botón imprimir */
+.accion-btn.accion-imprimir {
   background-color: #fef3c7;
   color: #92400e;
   border: 1px solid #fde68a;
 }
 
-.estado-credito-vencido {
-  background-color: #fee2e2;
-  color: #dc2626;
-  border: 1px solid #fecaca;
+.accion-btn.accion-imprimir:hover {
+  background-color: #fde68a;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(146, 64, 14, 0.1);
 }
 
-.estado-credito-sin-fecha {
-  background-color: #f3f4f6;
-  color: #6b7280;
-  border: 1px solid #e5e7eb;
-}
-
-.estado-credito-no-encontrado {
-  background-color: #f3f4f6;
-  color: #6b7280;
-  border: 1px dashed #9ca3af;
-}
-
-/* Crédito completado */
+/* Crédito completado badge */
 .credito-completado-badge {
   display: inline-block;
   background-color: #d1fae5;
   color: #065f46;
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 11px;
+  padding: 2px 6px; /* REDUCIDO */
+  border-radius: 10px; /* REDUCIDO */
+  font-size: 10px; /* REDUCIDO */
   font-weight: 600;
-  margin-top: 4px;
+  margin-top: 2px;
   border: 1px solid #a7f3d0;
 }
 
-/* VISTA MÓVIL */
-.tabla-mobile-view {
-  display: none;
-  padding: 16px;
+/* Banco entre corchetes */
+.metodo-pago-banco-corchetes {
+  display: block;
+  font-size: 10px; /* REDUCIDO */
+  color: inherit;
+  opacity: 0.9;
+  background: rgba(255, 255, 255, 0.4);
+  padding: 2px 8px; /* REDUCIDO */
+  border-radius: 12px;
+  margin-top: 4px;
+  font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
+  font-weight: 500;
+  border: 1px solid rgba(0,0,0,0.05);
 }
 
-.abono-card-mobile {
-  background: white;
+/* Para método mixto */
+.detalle-banco-corchetes {
+  display: inline-block;
+  font-size: 10px; /* REDUCIDO */
+  color: #4b5563;
+  background: #f3f4f6;
+  padding: 2px 8px; /* REDUCIDO */
   border-radius: 12px;
-  padding: 16px;
-  margin-bottom: 16px;
+  margin-left: 4px;
+  font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
   border: 1px solid #e5e7eb;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
-.abono-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #f1f5f9;
-  flex-wrap: wrap;
-}
-
-.abono-cliente {
-  font-size: 16px;
-  font-weight: 600;
-  color: #1e293b;
-  margin-bottom: 4px;
-  flex: 1;
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.abono-producto {
-  font-size: 14px;
-  color: #64748b;
-  line-height: 1.4;
-  margin-top: 4px;
-}
-
-.credito-completado-badge-mobile {
-  background-color: #d1fae5;
-  color: #065f46;
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: 600;
-  border: 1px solid #a7f3d0;
-}
-
-.abono-estado-mobile {
-  padding: 6px 12px;
-  border-radius: 20px;
-  font-size: 12px;
+/* Estados de crédito */
+.estado-credito-completado,
+.estado-credito-activo,
+.estado-credito-por-vencer,
+.estado-credito-vencido,
+.estado-credito-sin-fecha,
+.estado-credito-no-encontrado {
+  padding: 4px 8px; /* REDUCIDO */
+  border-radius: 16px; /* REDUCIDO */
+  font-size: 11px; /* REDUCIDO */
   font-weight: 600;
   white-space: nowrap;
-  margin-left: 8px;
 }
 
-.abono-estado-mobile.completado {
-  background-color: #d1fae5;
-  color: #065f46;
-  border: 1px solid #a7f3d0;
-}
-
-.abono-estado-mobile.activo {
-  background-color: #dbeafe;
-  color: #1e40af;
-  border: 1px solid #bfdbfe;
-}
-
-.abono-estado-mobile.por-vencer {
-  background-color: #fef3c7;
-  color: #92400e;
-  border: 1px solid #fde68a;
-}
-
-.abono-estado-mobile.vencido {
-  background-color: #fee2e2;
-  color: #dc2626;
-  border: 1px solid #fecaca;
-}
-
-/* Monto principal en móvil */
-.abono-monto-info {
-  margin-bottom: 16px;
-  padding: 12px;
-  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-  border-radius: 8px;
-  border: 1px solid #a7f3d0;
-}
-
-.abono-monto-principal {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 4px;
-}
-
-.monto-label {
-  font-size: 14px;
-  color: #065f46;
-  font-weight: 600;
-}
-
-.monto-valor {
-  font-size: 20px;
-  font-weight: 700;
-  color: #059669;
-  font-family: 'SF Mono', 'Monaco', monospace;
-}
-
-.abono-porcentaje {
-  font-size: 13px;
-  color: #047857;
-  text-align: right;
-  font-weight: 500;
-}
-
-/* Grid de detalles en móvil */
-.abono-details-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  margin-bottom: 16px;
-}
-
-.abono-detail-item {
-  display: flex;
-  flex-direction: column;
-}
-
-.abono-detail-item.full-width {
-  grid-column: span 2;
-}
-
-.abono-detail-label {
-  font-size: 12px;
-  color: #64748b;
-  margin-bottom: 4px;
-  font-weight: 500;
-}
-
-.abono-detail-value {
-  font-size: 14px;
-  color: #1e293b;
-  font-weight: 600;
-  word-break: break-word;
-}
-
-.abono-detail-value.total-credito {
-  color: #1e40af;
-}
-
-.abono-detail-value.saldo-cero {
-  color: #059669;
-}
-
-.abono-detail-value.saldo-pendiente {
-  color: #dc2626;
-}
-
-/* Progreso en móvil */
-.progreso-container {
-  width: 100%;
-}
-
-.progreso-label {
-  font-size: 12px;
-  color: #64748b;
-  margin-bottom: 6px;
-  font-weight: 500;
-}
-
-.barra-progreso-mobile {
-  width: 100%;
-  height: 8px;
-  background-color: #e5e7eb;
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.progreso-llenado {
-  height: 100%;
-  border-radius: 4px;
-  transition: width 0.3s ease;
-}
-
-/* Método de pago en móvil */
-.abono-metodo-pago-mobile {
-  margin-bottom: 16px;
-  padding: 12px;
-  background-color: #f8fafc;
-  border-radius: 8px;
-  border: 1px solid #e5e7eb;
-}
-
-.metodo-label {
-  font-size: 12px;
-  color: #64748b;
-  margin-bottom: 8px;
-  font-weight: 500;
-  display: block;
-}
-
-.metodo-content {
-  display: inline-block;
-}
-
-/* Método simple en móvil */
-.metodo-pago-badge.mobile {
-  padding: 8px 12px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 600;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-
-/* Método mixto en móvil */
-.metodo-pago-mixto-container.mobile {
-  background: white;
-  border: 1px solid #fde68a;
-  border-radius: 8px;
-  padding: 12px;
-  width: 100%;
-}
-
-.metodo-pago-header.mobile {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-.metodo-pago-icono {
-  font-size: 18px;
-}
-
-.metodo-pago-titulo {
-  font-weight: 600;
-  color: #92400e;
-  font-size: 14px;
-}
-
-/* Fechas en móvil */
-.abono-fechas-mobile {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 16px;
-  padding: 12px;
-  background-color: #f8fafc;
-  border-radius: 8px;
-}
-
-.abono-fecha-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.abono-fecha-label {
-  font-size: 13px;
-  color: #64748b;
-  font-weight: 500;
-}
-
-.abono-fecha-valor {
-  font-size: 13px;
-  color: #1e293b;
-  font-weight: 600;
-  font-family: 'SF Mono', 'Monaco', monospace;
-}
-
-/* Acciones en móvil */
-.abono-actions-mobile {
-  display: flex;
-  gap: 12px;
-  padding-top: 16px;
-  border-top: 1px solid #f1f5f9;
-}
-
-.abono-action-btn {
-  flex: 1;
-  padding: 12px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  border: none;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: all 0.2s;
-}
-
-.abono-action-btn.editar {
-  background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
-  color: #1e40af;
-  border: 1px solid #bfdbfe;
-}
-
-.abono-action-btn.editar:hover:not(:disabled) {
-  background: linear-gradient(135deg, #bfdbfe 0%, #93c5fd 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(29, 78, 216, 0.15);
-}
-
-.abono-action-btn.editar:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.abono-action-btn.eliminar {
-  background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-  color: #dc2626;
-  border: 1px solid #fecaca;
-}
-
-.abono-action-btn.eliminar:hover {
-  background: linear-gradient(135deg, #fecaca 0%, #fca5a5 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.15);
-}
-
-/* Mensajes de carga y sin datos */
-.cargando-mensaje, .sin-registros {
-  padding: 60px 20px;
-  text-align: center;
-  color: #64748b;
-}
-
-.cargando-mensaje {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 15px;
-}
-
+/* Spinner */
 .spinner {
-  width: 40px;
-  height: 40px;
-  border: 4px solid #f1f5f9;
-  border-top: 4px solid #10b981;
+  width: 32px; /* REDUCIDO */
+  height: 32px; /* REDUCIDO */
+  border: 3px solid #f1f5f9;
+  border-top: 3px solid #10b981;
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 0 auto;
@@ -770,30 +517,31 @@
   margin-bottom: 20px;
 }
 
-/* Resumen desktop */
+/* RESUMEN DESKTOP - SIN ESTADÍSTICAS DE MONTO */
 .resumen-abonos {
   display: flex;
-  justify-content: space-between;
-  padding: 20px;
+  justify-content: flex-start;
+  gap: 40px;
+  padding: 16px 20px;
   background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
   border-top: 1px solid #a7f3d0;
   flex-wrap: wrap;
-  gap: 15px;
 }
 
 .resumen-item {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
 }
 
 .resumen-item span {
-  font-size: 14px;
+  font-size: 12px;
   color: #065f46;
+  font-weight: 500;
 }
 
 .resumen-item strong {
-  font-size: 16px;
+  font-size: 18px;
   color: #065f46;
   font-weight: 700;
 }
@@ -839,7 +587,34 @@
   display: none;
 }
 
-/* RESPONSIVE */
+/* ============ RESPONSIVE ============ */
+@media (max-width: 1200px) {
+  .tabla-abonos {
+    min-width: 950px; /* AÚN MÁS PEQUEÑO PARA PANTALLAS MEDIANAS */
+  }
+  
+  .tabla-abonos .columna-cliente { min-width: 130px; }
+  .tabla-abonos .columna-producto { min-width: 150px; }
+  .tabla-abonos .columna-metodo { min-width: 180px; }
+}
+
+@media (max-width: 1024px) {
+  .tabla-scroll-container {
+    margin: 0 -10px;
+    padding: 0 10px;
+  }
+  
+  .tabla-abonos {
+    min-width: 900px;
+  }
+  
+  .tabla-abonos th,
+  .tabla-abonos td {
+    padding: 10px 10px;
+    font-size: 12px;
+  }
+}
+
 @media (max-width: 768px) {
   .desktop-only {
     display: none !important;
@@ -863,6 +638,7 @@
   
   .tabla-mobile-view {
     display: block;
+    padding: 16px;
   }
   
   .abono-card-mobile {
@@ -879,7 +655,10 @@
   }
   
   .abono-actions-mobile {
-    flex-direction: column;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    flex-direction: row;
   }
   
   .resumen-mobile {
@@ -904,120 +683,38 @@
   .resumen-mobile-item:last-child {
     grid-column: span 2;
   }
-}
-
-/* Para tablets */
-@media (min-width: 769px) and (max-width: 1024px) {
-  .tabla-abonos {
-    min-width: 1100px;
-  }
   
-  .tabla-abonos th,
-  .tabla-abonos td {
-    padding: 14px 16px;
-    font-size: 13px;
-  }
-  
-  .tabla-abonos .columna-cliente {
-    min-width: 150px;
-  }
-  
-  .tabla-abonos .columna-producto {
-    min-width: 180px;
-  }
-}
-
-/* AGREGAR AL FINAL DEL ARCHIVO TablaAbonos.css */
-
-/* Botón imprimir */
-.accion-btn.accion-imprimir {
-  background-color: #fef3c7;
-  color: #92400e;
-  border: 1px solid #fde68a;
-}
-
-.accion-btn.accion-imprimir:hover {
-  background-color: #fde68a;
-  transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(146, 64, 14, 0.1);
-}
-
-/* En móvil */
-.abono-action-btn.imprimir {
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  color: #92400e;
-  border: 1px solid #fde68a;
-}
-
-.abono-action-btn.imprimir:hover {
-  background: linear-gradient(135deg, #fde68a 0%, #fcd34d 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 8px rgba(146, 64, 14, 0.15);
-}
-
-/* Ajuste de acciones container para 3 botones */
-.tabla-abonos .acciones-container {
-  display: flex;
-  gap: 6px;
-  justify-content: flex-start;
-  flex-wrap: wrap;
-}
-
-.tabla-abonos .accion-btn {
-  padding: 6px;
-  width: 32px;
-  height: 32px;
-}
-
-/* Para móvil - 3 botones en fila */
-.abono-actions-mobile {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  padding-top: 16px;
-  border-top: 1px solid #f1f5f9;
-}
-
-@media (max-width: 480px) {
   .abono-actions-mobile {
     grid-template-columns: 1fr;
   }
 }
 
-
-/* Banco entre corchetes - DEBAJO DEL MÉTODO */
-.metodo-pago-banco-corchetes {
-  display: block;
-  font-size: 11px;
-  color: inherit;
-  opacity: 0.9;
-  background: rgba(255, 255, 255, 0.4);
-  padding: 3px 8px;
-  border-radius: 12px;
-  margin-top: 4px;
-  font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 150px;
-  font-weight: 500;
-  border: 1px solid rgba(0,0,0,0.05);
+/* Para tablets */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .tabla-abonos {
+    min-width: 900px;
+  }
+  
+  .tabla-abonos th,
+  .tabla-abonos td {
+    padding: 12px 12px;
+    font-size: 12px;
+  }
+  
+  .tabla-abonos .columna-cliente {
+    min-width: 140px;
+  }
+  
+  .tabla-abonos .columna-producto {
+    min-width: 160px;
+  }
+  
+  .tabla-abonos .columna-metodo {
+    min-width: 190px;
+  }
 }
 
-/* Para método mixto */
-.detalle-banco-corchetes {
-  display: inline-block;
-  font-size: 10px;
-  color: #4b5563;
-  background: #f3f4f6;
-  padding: 2px 8px;
-  border-radius: 12px;
-  margin-left: 8px;
-  font-family: 'SF Mono', 'Monaco', 'Courier New', monospace;
-  border: 1px solid #e5e7eb;
-}
-
-/* Ajuste para móvil */
+/* Ajustes para método mixto en móvil */
 @media (max-width: 768px) {
   .metodo-pago-banco-corchetes {
     max-width: 120px;
@@ -1028,5 +725,9 @@
   .detalle-banco-corchetes {
     font-size: 9px;
     padding: 2px 6px;
+  }
+  
+  .metodo-pago-mixto-container {
+    max-width: 100%;
   }
 }
