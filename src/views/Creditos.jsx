@@ -67,12 +67,13 @@ const Creditos = () => {
       if (errorProductos) throw errorProductos
       setProductos(productosData || [])
       
-      // Cargar ventas a crédito
+      // Cargar ventas a crédito CON ABONOS
       const { data: creditosData, error: errorCreditos } = await supabase
         .from('ventas_credito')
         .select(`
           *,
-          productos (*)
+          productos (*),
+          abonos_credito (*)
         `)
         .order('fecha', { ascending: false })
       
@@ -151,6 +152,96 @@ const Creditos = () => {
   const handleCreditoEliminado = () => {
     cargarDatos()
     setShowEliminarModal(false)
+  }
+
+  // 🖨️ FUNCIÓN PARA GENERAR TICKET DE CRÉDITO (VARIOS PRODUCTOS)
+  const generarContenidoTicketCredito = (credito) => {
+    const centrar = (texto) => {
+      const ancho = 32
+      const espacios = Math.max(0, Math.floor((ancho - texto.length) / 2))
+      return " ".repeat(espacios) + texto
+    }
+
+    const linea = () => "--------------------------------"
+
+    const formatFecha = (fechaISO) => {
+      if (!fechaISO) return ''
+      const fechaUTC = new Date(fechaISO)
+      const fechaNic = new Date(fechaUTC.getTime() - (6 * 60 * 60 * 1000))
+
+      const d = fechaNic.getDate().toString().padStart(2, '0')
+      const m = (fechaNic.getMonth() + 1).toString().padStart(2, '0')
+      const y = fechaNic.getFullYear()
+
+      let h = fechaNic.getHours()
+      const min = fechaNic.getMinutes().toString().padStart(2, '0')
+      const ampm = h >= 12 ? 'p.m.' : 'a.m.'
+
+      h = h % 12
+      h = h ? h.toString().padStart(2, '0') : '12'
+
+      return `${d}/${m}/${y} ${h}:${min} ${ampm}`
+    }
+
+    const cliente = credito.nombre_cliente || 'Cliente'
+    const total = parseFloat(credito.total || 0).toFixed(2)
+    const fechaInicio = formatFecha(credito.fecha_inicio) || 'Sin fecha'
+    const fechaFin = formatFecha(credito.fecha_fin) || 'Sin fecha'
+
+    // Obtener abonos de este crédito
+    const abonos = credito.abonos_credito || []
+    const totalAbonado = abonos.reduce((sum, a) => sum + parseFloat(a.monto || 0), 0).toFixed(2)
+    const saldoPendiente = credito.saldo_pendiente?.toFixed(2) || total
+
+    return `
+${centrar("ARELYS SALON")}
+${centrar("8354-3180")}
+${linea()}
+     TICKET DE CRÉDITO
+${linea()}
+CLIENTE:
+${cliente}
+${linea()}
+FECHA DE COMPRA:
+${fechaInicio}
+FECHA DE VENCIMIENTO:
+${fechaFin}
+${linea()}
+PRODUCTOS:
+${credito.productos?.nombre || 'Producto'} x${credito.cantidad || 1}
+Precio: C$${parseFloat(credito.precio_unitario || 0).toFixed(2)}
+Subtotal: C$${(parseFloat(credito.cantidad || 1) * parseFloat(credito.precio_unitario || 0)).toFixed(2)}
+${linea()}
+TOTAL CRÉDITO: C$${total}
+${linea()}
+RESUMEN DE ABONOS:
+${abonos.length === 0 ? '  No hay abonos registrados' : ''}` +
+(abonos.map((a, i) => {
+  const fechaAbono = formatFecha(a.fecha)
+  const monto = parseFloat(a.monto || 0).toFixed(2)
+  return `\n${i+1}. ${fechaAbono.split(' ')[0]}`
+})(abonos).join('')) + `
+${linea()}
+TOTAL ABONADO: C$${totalAbonado}
+SALDO PENDIENTE: C$${saldoPendiente}
+${linea()}
+${centrar("GRACIAS POR SU COMPRA")}
+${centrar("Conserve este comprobante")}
+
+\n\n\n\n
+`
+  }
+
+  // 🖨️ FUNCIÓN PARA IMPRIMIR TICKET DE CRÉDITO
+  const imprimirTicketCredito = (credito) => {
+    try {
+      const contenido = generarContenidoTicketCredito(credito)
+      const encoded = encodeURIComponent(contenido)
+      window.location.href = `rawbt:${encoded}`
+    } catch (error) {
+      console.error('Error al imprimir:', error)
+      alert('Error al imprimir ticket de crédito')
+    }
   }
 
   // Función para determinar estado del crédito
@@ -462,6 +553,7 @@ const Creditos = () => {
         loading={loading}
         onEditar={handleEditarCredito}
         onEliminar={handleEliminarCredito}
+        onImprimir={imprimirTicketCredito} // 🖨️ PASAR FUNCIÓN DE IMPRIMIR
         getEstadoCredito={getEstadoCredito}
       />
 
