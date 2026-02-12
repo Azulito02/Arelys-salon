@@ -115,78 +115,93 @@ const Ventas = () => {
   // GENERAR CONTENIDO DEL TICKET - CON VARIOS PRODUCTOS
   // ==============================================
 
-  const generarContenidoTicket = (venta) => {
-    const centrar = (texto) => {
-      const ancho = 32
-      const espacios = Math.max(0, Math.floor((ancho - texto.length) / 2))
-      return " ".repeat(espacios) + texto
-    }
+// ==============================================
+// GENERAR CONTENIDO DEL TICKET - CORREGIDO
+// ==============================================
 
-    const linea = () => "--------------------------------"
+const generarContenidoTicket = (venta) => {
+  const centrar = (texto) => {
+    const ancho = 32
+    const espacios = Math.max(0, Math.floor((ancho - texto.length) / 2))
+    return " ".repeat(espacios) + texto
+  }
 
-    const formatFecha = (fechaISO) => {
-      const fecha = fechaISO ? new Date(fechaISO) : new Date()
-      const fechaNic = new Date(fecha.getTime() - (6 * 60 * 60 * 1000))
+  const linea = () => "--------------------------------"
 
-      const d = fechaNic.getDate().toString().padStart(2, '0')
-      const m = (fechaNic.getMonth() + 1).toString().padStart(2, '0')
-      const y = fechaNic.getFullYear()
+  const formatFecha = (fechaISO) => {
+    const fecha = fechaISO ? new Date(fechaISO) : new Date()
+    const fechaNic = new Date(fecha.getTime() - (6 * 60 * 60 * 1000))
 
-      let h = fechaNic.getHours()
-      const min = fechaNic.getMinutes().toString().padStart(2, '0')
-      const ampm = h >= 12 ? 'p.m.' : 'a.m.'
+    const d = fechaNic.getDate().toString().padStart(2, '0')
+    const m = (fechaNic.getMonth() + 1).toString().padStart(2, '0')
+    const y = fechaNic.getFullYear()
 
-      h = h % 12
-      h = h ? h.toString().padStart(2, '0') : '12'
+    let h = fechaNic.getHours()
+    const min = fechaNic.getMinutes().toString().padStart(2, '0')
+    const ampm = h >= 12 ? 'p.m.' : 'a.m.'
 
-      return `${d}/${m}/${y} ${h}:${min} ${ampm}`
-    }
+    h = h % 12
+    h = h ? h.toString().padStart(2, '0') : '12'
 
-    // ==============================================
-    // AGRUPAR PRODUCTOS DE LA MISMA VENTA
-    // ==============================================
+    return `${d}/${m}/${y} ${h}:${min} ${ampm}`
+  }
+
+  // 🔴🔴🔴 CORREGIDO: AGRUPAR POR FECHA COMPLETA (incluyendo minutos)
+  // 🔴🔴🔴 ESTE ES EL PROBLEMA - NO ESTABAS AGRUPANDO BIEN
+  const productosDeEstaVenta = ventas.filter(v => {
+    // Comparar fecha COMPLETA (incluyendo hora y minuto)
+    const fechaVenta = new Date(v.fecha).getTime()
+    const fechaActual = new Date(venta.fecha).getTime()
     
-    // Buscar TODOS los productos de la misma venta
-    const productosDeEstaVenta = ventas.filter(v => 
-      v.id === venta.id || // Si es la misma venta
-      (v.fecha === venta.fecha && v.total === venta.total) // O misma fecha y total
-    )
-
-    const fecha = formatFecha(venta.fecha)
-    const numeroVenta = venta.id
-      ? venta.id.substring(0, 8).toUpperCase()
-      : "00000000"
-
-    // ==============================================
-    // CALCULAR TOTALES
-    // ==============================================
+    // Misma fecha (mismo día, misma hora, mismo minuto)
+    const mismaFecha = Math.abs(fechaVenta - fechaActual) < 1000 // 1 segundo de tolerancia
     
-    let totalGeneral = 0
-    let efectivoTotal = 0
-    let tarjetaTotal = 0
-    let transferenciaTotal = 0
-    let metodoPago = venta.metodo_pago || "efectivo"
+    // Mismo método de pago y mismo total aproximado
+    const mismoMetodo = v.metodo_pago === venta.metodo_pago
+    const mismoTotal = Math.abs(Number(v.total || 0) - Number(venta.total || 0)) < 0.01
+    
+    return mismaFecha && mismoMetodo && mismoTotal
+  })
 
-    productosDeEstaVenta.forEach(v => {
-      totalGeneral += Number(v.total || 0)
-      
-      if (v.metodo_pago === "efectivo") {
-        efectivoTotal += Number(v.efectivo || v.total || 0)
-      } else if (v.metodo_pago === "tarjeta") {
-        tarjetaTotal += Number(v.tarjeta || v.total || 0)
-      } else if (v.metodo_pago === "transferencia") {
-        transferenciaTotal += Number(v.transferencia || v.total || 0)
-      } else if (v.metodo_pago === "mixto") {
-        efectivoTotal += Number(v.efectivo || 0)
-        tarjetaTotal += Number(v.tarjeta || 0)
-        transferenciaTotal += Number(v.transferencia || 0)
-      }
-    })
+  // Si no encuentra productos con ese filtro, usar solo el producto actual
+  const productosTicket = productosDeEstaVenta.length > 0 
+    ? productosDeEstaVenta 
+    : [venta]
 
-    const recibidoTotal = efectivoTotal + tarjetaTotal + transferenciaTotal
-    const vuelto = Number(venta.vuelto || 0)
+  const fecha = formatFecha(venta.fecha)
+  const numeroVenta = venta.id
+    ? venta.id.substring(0, 8).toUpperCase()
+    : "00000000"
 
-    let contenido = `
+  // ==============================================
+  // CALCULAR TOTALES
+  // ==============================================
+  
+  let totalGeneral = 0
+  let efectivoTotal = 0
+  let tarjetaTotal = 0
+  let transferenciaTotal = 0
+
+  productosTicket.forEach(v => {
+    totalGeneral += Number(v.total || 0)
+    
+    if (v.metodo_pago === "efectivo") {
+      efectivoTotal += Number(v.efectivo || v.total || 0)
+    } else if (v.metodo_pago === "tarjeta") {
+      tarjetaTotal += Number(v.tarjeta || v.total || 0)
+    } else if (v.metodo_pago === "transferencia") {
+      transferenciaTotal += Number(v.transferencia || v.total || 0)
+    } else if (v.metodo_pago === "mixto") {
+      efectivoTotal += Number(v.efectivo || 0)
+      tarjetaTotal += Number(v.tarjeta || 0)
+      transferenciaTotal += Number(v.transferencia || 0)
+    }
+  })
+
+  const recibidoTotal = efectivoTotal + tarjetaTotal + transferenciaTotal
+  const vuelto = Number(venta.vuelto || 0)
+
+  let contenido = `
 ${centrar("ARELYS SALON")}
 ${centrar("8354-3180")}
 ${centrar("Uno petrol una cuadra al norte media al oeste")}
@@ -195,94 +210,99 @@ TICKET DE VENTA
 ${fecha}
 N°: ${numeroVenta}
 ${linea()}
-PRODUCTOS:
 `
 
-    // ==============================================
-    // LISTAR TODOS LOS PRODUCTOS DE LA VENTA
-    // ==============================================
+  // 🔴🔴🔴 CORREGIDO: LISTAR TODOS LOS PRODUCTOS DE LA VENTA
+  if (productosTicket.length === 1) {
+    // SOLO UN PRODUCTO - Formato simple
+    const v = productosTicket[0]
+    const nombre = v.productos?.nombre || "Producto"
+    const cantidad = v.cantidad || 1
+    const precio = Number(v.precio_unitario || 0).toFixed(2)
     
-    productosDeEstaVenta.forEach((v, index) => {
+    contenido += `PRODUCTO: ${nombre}
+CANTIDAD: ${cantidad}
+PRECIO: C$${precio}
+`
+  } else {
+    // VARIOS PRODUCTOS - Formato listado
+    contenido += `PRODUCTOS:\n`
+    productosTicket.forEach((v, index) => {
       const nombre = v.productos?.nombre || "Producto"
       const cantidad = v.cantidad || 1
       const precio = Number(v.precio_unitario || 0).toFixed(2)
       const subtotal = Number(v.total || 0).toFixed(2)
       
-      contenido += `
-${index + 1}. ${nombre}
-   ${cantidad} x C$${precio} = C$${subtotal}
-`
+      contenido += `${index + 1}. ${nombre}
+   ${cantidad} x C$${precio} = C$${subtotal}\n`
     })
+  }
 
-    contenido += `${linea()}
+  contenido += `${linea()}
 TOTAL       C$${totalGeneral.toFixed(2)}
 `
 
-    // ==============================================
-    // DETALLE DE PAGO (MÉTODO MIXTO)
-    // ==============================================
+  // ==============================================
+  // DETALLE DE PAGO
+  // ==============================================
+  
+  if (efectivoTotal > 0 && tarjetaTotal > 0 || 
+      efectivoTotal > 0 && transferenciaTotal > 0 ||
+      tarjetaTotal > 0 && transferenciaTotal > 0) {
     
-    if (productosDeEstaVenta.some(v => v.metodo_pago === "mixto") || 
-        (efectivoTotal > 0 && tarjetaTotal > 0) || 
-        (efectivoTotal > 0 && transferenciaTotal > 0) ||
-        (tarjetaTotal > 0 && transferenciaTotal > 0)) {
-      
-      contenido += `${linea()}
+    contenido += `${linea()}
 PAGO MIXTO:
 `
-      if (efectivoTotal > 0) {
-        contenido += `   💵 Efectivo: C$${efectivoTotal.toFixed(2)}\n`
-      }
-      if (tarjetaTotal > 0) {
-        const banco = venta.detalles_pago?.banco_tarjeta || ''
-        contenido += `   💳 Tarjeta: C$${tarjetaTotal.toFixed(2)}${banco ? ` [${banco}]` : ''}\n`
-      }
-      if (transferenciaTotal > 0) {
-        const banco = venta.detalles_pago?.banco_transferencia || ''
-        contenido += `   🏦 Transferencia: C$${transferenciaTotal.toFixed(2)}${banco ? ` [${banco}]` : ''}\n`
-      }
-      
-    } else {
-      // MÉTODO SIMPLE
-      let metodoTexto = ""
-      let bancoTexto = ""
-      
-      if (metodoPago === "efectivo") {
-        metodoTexto = "EFECTIVO"
-      } else if (metodoPago === "tarjeta") {
-        metodoTexto = "TARJETA"
-        bancoTexto = venta.detalles_pago?.banco_tarjeta || venta.detalles_pago?.banco || ''
-      } else if (metodoPago === "transferencia") {
-        metodoTexto = "TRANSFERENCIA"
-        bancoTexto = venta.detalles_pago?.banco_transferencia || venta.detalles_pago?.banco || ''
-      }
-      
-      contenido += `${linea()}
+    if (efectivoTotal > 0) {
+      contenido += `   💵 Efectivo: C$${efectivoTotal.toFixed(2)}\n`
+    }
+    if (tarjetaTotal > 0) {
+      const banco = venta.detalles_pago?.banco_tarjeta || ''
+      contenido += `   💳 Tarjeta: C$${tarjetaTotal.toFixed(2)}${banco ? ` [${banco}]` : ''}\n`
+    }
+    if (transferenciaTotal > 0) {
+      const banco = venta.detalles_pago?.banco_transferencia || ''
+      contenido += `   🏦 Transferencia: C$${transferenciaTotal.toFixed(2)}${banco ? ` [${banco}]` : ''}\n`
+    }
+    
+  } else {
+    // MÉTODO SIMPLE
+    let metodoTexto = ""
+    let bancoTexto = ""
+    
+    if (venta.metodo_pago === "efectivo") {
+      metodoTexto = "EFECTIVO"
+    } else if (venta.metodo_pago === "tarjeta") {
+      metodoTexto = "TARJETA"
+      bancoTexto = venta.detalles_pago?.banco_tarjeta || venta.detalles_pago?.banco || ''
+    } else if (venta.metodo_pago === "transferencia") {
+      metodoTexto = "TRANSFERENCIA"
+      bancoTexto = venta.detalles_pago?.banco_transferencia || venta.detalles_pago?.banco || ''
+    }
+    
+    contenido += `${linea()}
 METODO: ${metodoTexto}
 `
-      if (bancoTexto) {
-        contenido += `BANCO: ${bancoTexto}\n`
-      }
-      contenido += `RECIBIDO: C$${recibidoTotal.toFixed(2)}\n`
+    if (bancoTexto) {
+      contenido += `BANCO: ${bancoTexto}\n`
     }
+  }
 
-    // ==============================================
-    // VUELTO
-    // ==============================================
-    
-    if (vuelto > 0) {
-      contenido += `VUELTO:  C$${vuelto.toFixed(2)}\n`
-    }
+  contenido += `RECIBIDO: C$${recibidoTotal.toFixed(2)}
+`
 
-    contenido += `${linea()}
+  if (vuelto > 0) {
+    contenido += `VUELTO:  C$${vuelto.toFixed(2)}\n`
+  }
+
+  contenido += `${linea()}
 ${centrar("GRACIAS POR SU COMPRA")}
 ${centrar("VUELVA PRONTO")}
 
 \n\n\n\n\n`
 
-    return contenido
-  }
-
+  return contenido
+}
   // ==============================================
   // FALLBACK PARA COPIAR CONTENIDO
   // ==============================================
