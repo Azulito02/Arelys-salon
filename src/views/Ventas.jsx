@@ -191,7 +191,7 @@ const generarContenidoTicket = (venta) => {
   const vuelto = Number(venta.vuelto || 0).toFixed(2)
 
   return `
-${centrar("ARELYZ SALON")}
+${centrar("ARELYS SALON")}
 ${centrar("8354'3180")}
 ${centrar("Uno petrol una cuadra al norte media al oeste")}
 ${linea()}
