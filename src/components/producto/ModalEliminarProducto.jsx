@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react'
-import './ModalEliminarProducto.css' // <-- Asegúrate de importar este CSS
+import './ModalEliminarProducto.css'
 
 const ModalEliminarProducto = ({ isOpen, onClose, onConfirm, producto }) => {
   const [isDeleting, setIsDeleting] = useState(false)
+  const [error, setError] = useState('')
   
+  // ✅ LIMPIAR TODO CUANDO SE CIERRA EL MODAL
   useEffect(() => {
     if (!isOpen) {
       setIsDeleting(false)
+      setError('')
     }
   }, [isOpen])
 
@@ -14,25 +17,42 @@ const ModalEliminarProducto = ({ isOpen, onClose, onConfirm, producto }) => {
 
   const handleConfirm = async () => {
     setIsDeleting(true)
+    setError('')
+    
     try {
       await onConfirm()
-      // El cierre lo maneja el componente padre
+      // Si todo sale bien, el padre debe cerrar el modal
     } catch (error) {
       console.error('Error al eliminar producto:', error)
-      alert('Error al eliminar el producto')
-      setIsDeleting(false)
+      
+      // ✅ DETECTAR ERROR DE CLAVE FORÁNEA
+      let mensajeError = ''
+      if (error.message?.includes('foreign key constraint') || 
+          error.message?.includes('ventas_credito') ||
+          error.code === '23503') {
+        mensajeError = '❌ No se puede eliminar este producto porque tiene ventas o créditos asociados.'
+      } else {
+        mensajeError = error.message || 'Error al eliminar el producto'
+      }
+      
+      setError(mensajeError)
+      setIsDeleting(false) // ✅ IMPORTANTE: Desactivar el estado de carga
     }
   }
 
   const handleClose = (e) => {
-    e.stopPropagation()
-    if (!isDeleting) {
-      onClose()
-    }
+    e?.stopPropagation()
+    // ✅ SIEMPRE PERMITIR CERRAR, SIN IMPORTAR EL ESTADO
+    setError('')
+    setIsDeleting(false)
+    onClose()
   }
 
   const handleOverlayClick = (e) => {
-    if (e.target === e.currentTarget && !isDeleting) {
+    if (e.target === e.currentTarget) {
+      // ✅ SIEMPRE PERMITIR CERRAR HACIENDO CLICK FUERA
+      setError('')
+      setIsDeleting(false)
       onClose()
     }
   }
@@ -45,7 +65,7 @@ const ModalEliminarProducto = ({ isOpen, onClose, onConfirm, producto }) => {
           <button 
             onClick={handleClose}
             className="modal-cerrar"
-            disabled={isDeleting}
+            disabled={false} // ✅ NUNCA DESHABILITAR EL BOTÓN DE CERRAR
             type="button"
             aria-label="Cerrar modal"
           >
@@ -54,9 +74,7 @@ const ModalEliminarProducto = ({ isOpen, onClose, onConfirm, producto }) => {
         </div>
         
         <div className="modal-body">
-          <div className="advertencia-icono">
-            ⚠️
-          </div>
+          <div className="advertencia-icono">⚠️</div>
           
           <h4 className="advertencia-titulo">
             ¿Estás seguro de eliminar este producto?
@@ -64,22 +82,8 @@ const ModalEliminarProducto = ({ isOpen, onClose, onConfirm, producto }) => {
           
           <div className="producto-info">
             <div className="info-item">
-              <span className="info-label">Nombre:</span>
-              <span className="info-valor">{producto.nombre}</span>
-            </div>
-            
-            <div className="info-item">
-              <span className="info-label">Categoría:</span>
-              <span className="info-valor">
-                {producto.categoria || 'General'}
-              </span>
-            </div>
-            
-            <div className="info-item">
               <span className="info-label">Descripción:</span>
-              <span className="info-valor">
-                {producto.descripcion || 'Sin descripción'}
-              </span>
+              <span className="info-valor">{producto.descripcion || 'Sin descripción'}</span>
             </div>
             
             <div className="info-item">
@@ -92,38 +96,69 @@ const ModalEliminarProducto = ({ isOpen, onClose, onConfirm, producto }) => {
             </div>
           </div>
           
-          <div className="advertencia-mensaje">
-            Esta acción no se puede deshacer. El producto será eliminado permanentemente.
-          </div>
+          {/* ✅ MOSTRAR ERROR SI EXISTE */}
+          {error ? (
+            <div style={{
+              backgroundColor: '#fee2e2',
+              border: '1px solid #fecaca',
+              borderRadius: '8px',
+              padding: '16px',
+              marginTop: '20px',
+              color: '#dc2626',
+              textAlign: 'center',
+              fontWeight: '500'
+            }}>
+              {error}
+            </div>
+          ) : (
+            <div className="advertencia-mensaje">
+              Esta acción no se puede deshacer. El producto será eliminado permanentemente.
+            </div>
+          )}
         </div>
         
         <div className="modal-footer">
           <button
             onClick={handleClose}
             className="boton-secundario"
-            disabled={isDeleting}
+            disabled={false} // ✅ NUNCA DESHABILITAR
             type="button"
           >
             Cancelar
           </button>
-          <button
-            onClick={handleConfirm}
-            className="boton-peligro"
-            disabled={isDeleting}
-            type="button"
-          >
-            {isDeleting ? (
-              <>
-                <span className="spinner"></span>
-                Eliminando...
-              </>
-            ) : (
-              <>
-                <span className="boton-icono">🗑️</span>
-                Sí, eliminar producto
-              </>
-            )}
-          </button>
+          
+          {error ? (
+            <button
+              onClick={handleClose}
+              style={{
+                backgroundColor: '#3b82f6',
+                color: 'white',
+                border: 'none',
+                padding: '10px 24px',
+                borderRadius: '8px',
+                fontWeight: '600',
+                cursor: 'pointer'
+              }}
+            >
+              Entendido
+            </button>
+          ) : (
+            <button
+              onClick={handleConfirm}
+              className="boton-peligro"
+              disabled={isDeleting}
+              type="button"
+            >
+              {isDeleting ? (
+                <>
+                  <span className="spinner"></span>
+                  Eliminando...
+                </>
+              ) : (
+                'Sí, eliminar producto'
+              )}
+            </button>
+          )}
         </div>
       </div>
     </div>
