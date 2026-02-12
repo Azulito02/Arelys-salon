@@ -3,48 +3,49 @@
   <head>
     <meta charset="UTF-8" />
     
-    <!-- FAVICON - Cambiamos vite.svg por tu logo -->
-    <link rel="icon" type="image/png" href="/logo.png" />
-    <link rel="shortcut icon" href="/logo.png" type="image/x-icon" />
+    <!-- FAVICON -->
+    <link rel="icon" type="image/jpeg" href="/logo.jpg" />
+    <link rel="shortcut icon" href="/logo.jpg" type="image/jpeg" />
     
-    <!-- PWA Manifest -->
+    <!-- PWA MANIFEST - ESTO ES LO QUE HACE QUE APAREZCA EL ÍCONO DE INSTALACIÓN -->
     <link rel="manifest" href="/manifest.webmanifest" />
     
-    <!-- ESTA ES LA LÍNEA CRÍTICA PARA PREVENIR ZOOM -->
+    <!-- META TAGS PARA PWA -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    
-    <!-- Para iOS - PWA específico -->
+    <meta name="theme-color" content="#d97706" />
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Arelys Salon">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Arelys Salon">
+    <meta name="description" content="Sistema de gestión de inventario y ventas para salón de belleza">
     
-    <!-- Iconos para iOS cuando se instala -->
+    <!-- ICONOS PARA iOS -->
     <link rel="apple-touch-icon" href="/pwa-192x192.png">
     <link rel="apple-touch-icon" sizes="152x152" href="/pwa-152x152.png">
     <link rel="apple-touch-icon" sizes="167x167" href="/pwa-167x167.png">
     <link rel="apple-touch-icon" sizes="180x180" href="/pwa-180x180.png">
     
-    <!-- Pantalla de inicio para iOS -->
-    <link rel="apple-touch-startup-image" href="/splash.png">
-    
-    <!-- Para Android -->
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#d97706">
-    
-    <!-- Para Windows -->
+    <!-- WINDOWS -->
     <meta name="msapplication-TileColor" content="#d97706">
     <meta name="msapplication-TileImage" content="/pwa-144x144.png">
+    <meta name="msapplication-config" content="none" />
     
-    <!-- Meta tags generales -->
-    <meta name="application-name" content="Arelys Salon">
-    <meta name="description" content="Sistema de gestión para salón de belleza - Transforma tu estilo, resalta tu belleza">
-    
-    <title>ARELY Z SALON - Transforma tu estilo, resalta tu belleza</title>
+    <title>Arelys Salon - Sistema de Gestión</title>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
     
-    <!-- Service Worker se registra automáticamente con VitePWA -->
+    <!-- REGISTRO MANUAL DEL SERVICE WORKER (POR SI ACASO) -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(err => {
+            console.log('Service Worker registration failed:', err);
+          });
+        });
+      }
+    </script>
   </body>
 </html>
