@@ -111,16 +111,8 @@ const Ventas = () => {
     }
   }
 
-  // ==============================================
-  // GENERAR CONTENIDO DEL TICKET - CON VARIOS PRODUCTOS
-  // ==============================================
-
 // ==============================================
-// GENERAR CONTENIDO DEL TICKET - CORREGIDO
-// ==============================================
-
-// ==============================================
-// GENERAR CONTENIDO DEL TICKET - CORREGIDO (IGUAL QUE CRÉDITOS)
+// GENERAR CONTENIDO DEL TICKET - VUELTO CORREGIDO
 // ==============================================
 
 const generarContenidoTicket = (venta) => {
@@ -150,8 +142,7 @@ const generarContenidoTicket = (venta) => {
     return `${d}/${m}/${y} ${h}:${min} ${ampm}`
   }
 
-  // 🔴 CORREGIDO: AGRUPAR POR TRANSACCIÓN COMPLETA (NO POR PRODUCTO)
-  // Buscar TODAS las ventas que ocurrieron en el MISMO SEGUNDO
+  // Agrupar TODAS las ventas de la MISMA transacción (mismo segundo)
   const fechaVentaOriginal = new Date(venta.fecha).getTime()
   
   const productosDeEstaVenta = ventas.filter(v => {
@@ -178,7 +169,8 @@ const generarContenidoTicket = (venta) => {
   let efectivoTotal = 0
   let tarjetaTotal = 0
   let transferenciaTotal = 0
-  let vueltoTotal = 0
+  let vueltoTransaccion = 0
+  let recibidoTotal = 0
 
   productosTicket.forEach(v => {
     totalGeneral += Number(v.total || 0)
@@ -196,13 +188,19 @@ const generarContenidoTicket = (venta) => {
       transferenciaTotal += Number(v.transferencia || 0)
     }
     
-    // Usar el vuelto del primer producto (todos deben tener el mismo)
-    if (vueltoTotal === 0 && v.vuelto) {
-      vueltoTotal = Number(v.vuelto || 0)
+    // 🔴 CORREGIDO: Si este producto tiene vuelto, lo guardamos
+    // PERO SOLO UNO, porque todos deben tener el mismo vuelto
+    if (v.vuelto && vueltoTransaccion === 0) {
+      vueltoTransaccion = Number(v.vuelto || 0)
     }
   })
 
-  const recibidoTotal = efectivoTotal + tarjetaTotal + transferenciaTotal
+  recibidoTotal = efectivoTotal + tarjetaTotal + transferenciaTotal
+
+  // 🔴 CORREGIDO: Si el vuelto sigue siendo 0 pero hay diferencia, calcularlo
+  if (vueltoTransaccion === 0 && recibidoTotal > totalGeneral) {
+    vueltoTransaccion = recibidoTotal - totalGeneral
+  }
 
   let contenido = `
 ${centrar("ARELYS SALON")}
@@ -252,7 +250,7 @@ TOTAL:      C$${totalGeneral.toFixed(2)}
 `
 
   // ==============================================
-  // DETALLE DE PAGO - IGUAL QUE CRÉDITOS
+  // DETALLE DE PAGO
   // ==============================================
   
   const esMixto = (efectivoTotal > 0 && tarjetaTotal > 0) || 
@@ -274,9 +272,6 @@ PAGO MIXTO:
       const banco = productosTicket[0]?.detalles_pago?.banco_transferencia || ''
       contenido += `   🏦 Transfer:   C$${transferenciaTotal.toFixed(2)}${banco ? ` [${banco}]` : ''}\n`
     }
-    contenido += `${linea()}
-RECIBIDO:   C$${recibidoTotal.toFixed(2)}
-`
   } else {
     // MÉTODO SIMPLE
     let metodoTexto = ""
@@ -302,13 +297,15 @@ ${icono} METODO: ${metodoTexto}
     if (bancoTexto) {
       contenido += `   BANCO: ${bancoTexto}\n`
     }
-    contenido += `${linea()}
-RECIBIDO:   C$${recibidoTotal.toFixed(2)}
-`
   }
 
-  if (vueltoTotal > 0) {
-    contenido += `VUELTO:     C$${vueltoTotal.toFixed(2)}\n`
+  // 🔴 CORREGIDO: SIEMPRE mostrar recibido y vuelto (como en créditos)
+  contenido += `${linea()}
+RECIBIDO:   C$${recibidoTotal.toFixed(2)}
+`
+
+  if (vueltoTransaccion > 0) {
+    contenido += `VUELTO:     C$${vueltoTransaccion.toFixed(2)}\n`
   }
 
   contenido += `${linea()}
@@ -319,6 +316,7 @@ ${centrar("VUELVA PRONTO")}
 
   return contenido
 }
+
   // ==============================================
   // FALLBACK PARA COPIAR CONTENIDO
   // ==============================================
