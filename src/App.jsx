@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Routes, Route, Navigate } from "react-router-dom"; // Elimina BrowserRouter
+import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "./views/Login";
 import RutasProtegidas from "./RutasProtegidas";
 import Inicio from "./views/Inicio";
@@ -10,6 +10,8 @@ import Creditos from "./views/Creditos";
 import Abonos from "./views/Abonos";
 import Gastos from "./views/Gastos";
 import Arqueos from "./views/Arqueos";
+import BotonInstalar from "./components/BotonInstalar"; // Importar botón de instalación
+import "./App.css"; // Asegúrate de importar App.css
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(null);
@@ -32,45 +34,49 @@ export default function App() {
   if (isAuthenticated === null) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-amber-600"></div>
       </div>
     );
   }
 
   return (
-    // SIN BrowserRouter aquí
-    <Routes>
-      {/* Ruta pública */}
-      <Route 
-        path="/" 
-        element={
-          isAuthenticated ? 
-            <Navigate to="/inicio" replace /> : 
-            <Login onLogin={handleLogin} />
-        } 
-      />
+    <>
+      {/* Botón de instalación PWA - Solo visible cuando está autenticado */}
+      {isAuthenticated && <BotonInstalar />}
+      
+      <Routes>
+        {/* Ruta pública */}
+        <Route 
+          path="/" 
+          element={
+            isAuthenticated ? 
+              <Navigate to="/inicio" replace /> : 
+              <Login onLogin={handleLogin} />
+          } 
+        />
 
-      {/* Rutas protegidas */}
-      <Route 
-        element={
-          <RutasProtegidas 
-            onLogout={handleLogout}
-            isAuthenticated={isAuthenticated}
-          />
-        }
-      >
-        <Route path="/inicio" element={<Inicio />} />
-        <Route path="/productos" element={<Productos />} />
-        <Route path="/inventario" element={<Inventario />} />
-        <Route path="/ventas" element={<Ventas />} />
-        <Route path="/creditos" element={<Creditos />} />
-        <Route path="/abonos" element={<Abonos />} />
-        <Route path="/gastos" element={<Gastos />} />
-        <Route path="/arqueos" element={<Arqueos />} />
-      </Route>
+        {/* Rutas protegidas */}
+        <Route 
+          element={
+            <RutasProtegidas 
+              onLogout={handleLogout}
+              isAuthenticated={isAuthenticated}
+            />
+          }
+        >
+          <Route path="/inicio" element={<Inicio />} />
+          <Route path="/productos" element={<Productos />} />
+          <Route path="/inventario" element={<Inventario />} />
+          <Route path="/ventas" element={<Ventas />} />
+          <Route path="/creditos" element={<Creditos />} />
+          <Route path="/abonos" element={<Abonos />} />
+          <Route path="/gastos" element={<Gastos />} />
+          <Route path="/arqueos" element={<Arqueos />} />
+        </Route>
 
-      {/* Ruta para manejar rutas no encontradas */}
-      <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+        {/* Ruta para manejar rutas no encontradas */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
   );
 }

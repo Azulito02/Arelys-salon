@@ -2,22 +2,49 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    
+    <!-- FAVICON - Cambiamos vite.svg por tu logo -->
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <link rel="shortcut icon" href="/logo.png" type="image/x-icon" />
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.webmanifest" />
     
     <!-- ESTA ES LA LÍNEA CRÍTICA PARA PREVENIR ZOOM -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     
-    <!-- Para iOS - previene comportamientos no deseados -->
+    <!-- Para iOS - PWA específico -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Arelys Salon">
+    
+    <!-- Iconos para iOS cuando se instala -->
+    <link rel="apple-touch-icon" href="/pwa-192x192.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/pwa-152x152.png">
+    <link rel="apple-touch-icon" sizes="167x167" href="/pwa-167x167.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/pwa-180x180.png">
+    
+    <!-- Pantalla de inicio para iOS -->
+    <link rel="apple-touch-startup-image" href="/splash.png">
     
     <!-- Para Android -->
     <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#d97706">
     
-    <title>ARELY Z SALON - Sistema de Gestión</title>
+    <!-- Para Windows -->
+    <meta name="msapplication-TileColor" content="#d97706">
+    <meta name="msapplication-TileImage" content="/pwa-144x144.png">
+    
+    <!-- Meta tags generales -->
+    <meta name="application-name" content="Arelys Salon">
+    <meta name="description" content="Sistema de gestión para salón de belleza - Transforma tu estilo, resalta tu belleza">
+    
+    <title>ARELY Z SALON - Transforma tu estilo, resalta tu belleza</title>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
+    
+    <!-- Service Worker se registra automáticamente con VitePWA -->
   </body>
 </html>
