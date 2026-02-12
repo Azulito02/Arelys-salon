@@ -4,12 +4,15 @@ import './ModalAgregarAbono.css'
 
 const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
   const [formData, setFormData] = useState({
-    venta_credito_id: '',
+    cliente_nombre: '',
     metodo_pago: 'efectivo'
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [vuelto, setVuelto] = useState(0)
+  
+  // Lista de clientes con saldo pendiente
+  const [clientesConSaldo, setClientesConSaldo] = useState([])
 
   // Bancos disponibles
   const bancosDisponibles = [
@@ -32,11 +35,47 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
   const [bancoTarjeta, setBancoTarjeta] = useState('')
   const [bancoTransferencia, setBancoTransferencia] = useState('')
 
+  // Agrupar créditos por cliente al cargar
+  useEffect(() => {
+    if (creditos && creditos.length > 0) {
+      const clientesMap = {}
+      
+      creditos.forEach(credito => {
+        const clienteNombre = credito.nombre_cliente
+        const saldo = credito.saldo_pendiente !== undefined 
+          ? credito.saldo_pendiente 
+          : credito.total || 0
+        
+        if (saldo <= 0) return // Solo clientes con saldo pendiente
+        
+        if (!clientesMap[clienteNombre]) {
+          clientesMap[clienteNombre] = {
+            nombre: clienteNombre,
+            saldoTotal: 0,
+            creditos: [],
+            totalCreditos: 0,
+            productos: new Set()
+          }
+        }
+        
+        clientesMap[clienteNombre].creditos.push(credito)
+        clientesMap[clienteNombre].saldoTotal += saldo
+        clientesMap[clienteNombre].totalCreditos += parseFloat(credito.total || 0)
+        clientesMap[clienteNombre].productos.add(credito.productos?.nombre || 'Producto')
+      })
+      
+      // Ordenar clientes alfabéticamente
+      const clientesArray = Object.values(clientesMap)
+      clientesArray.sort((a, b) => a.nombre.localeCompare(b.nombre))
+      setClientesConSaldo(clientesArray)
+    }
+  }, [creditos])
+
   // Resetear datos al abrir el modal
   useEffect(() => {
     if (isOpen) {
       setFormData({
-        venta_credito_id: '',
+        cliente_nombre: '',
         metodo_pago: 'efectivo'
       })
       setBanco('')
@@ -55,20 +94,16 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
 
   // Calcular vuelto automáticamente
   useEffect(() => {
-    const creditoSeleccionado = creditos.find(c => c.id === formData.venta_credito_id)
-    if (creditoSeleccionado) {
-      const saldoDisponible = creditoSeleccionado.saldo_pendiente !== undefined 
-        ? creditoSeleccionado.saldo_pendiente 
-        : creditoSeleccionado.total || 0
-      
-      // Si el monto pagado es MAYOR al monto del abono, calcular vuelto
-      // Para abonos, el monto debe ser igual o mayor al monto del abono seleccionado
-      // PERO si el monto es mayor, calculamos vuelto
-      const montoAbono = Math.min(montoTotal, saldoDisponible)
-      const vueltoCalculado = montoTotal > montoAbono ? montoTotal - montoAbono : 0
-      setVuelto(vueltoCalculado)
+    if (formData.cliente_nombre) {
+      const clienteSeleccionado = clientesConSaldo.find(c => c.nombre === formData.cliente_nombre)
+      if (clienteSeleccionado) {
+        const saldoDisponible = clienteSeleccionado.saldoTotal || 0
+        const montoAbono = Math.min(montoTotal, saldoDisponible)
+        const vueltoCalculado = montoTotal > montoAbono ? montoTotal - montoAbono : 0
+        setVuelto(vueltoCalculado)
+      }
     }
-  }, [montoTotal, formData.venta_credito_id, creditos])
+  }, [montoTotal, formData.cliente_nombre, clientesConSaldo])
 
   // Calcular total cuando cambia el método de pago
   useEffect(() => {
@@ -92,14 +127,8 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
 
   if (!isOpen) return null
 
-  const creditoSeleccionado = creditos.find(c => c.id === formData.venta_credito_id)
-  
-  // Calcular saldo disponible (saldo_pendiente si existe, sino total)
-  const saldoDisponible = creditoSeleccionado?.saldo_pendiente !== undefined 
-    ? creditoSeleccionado.saldo_pendiente 
-    : creditoSeleccionado?.total || 0
-
-  // Monto del abono (el mínimo entre el monto pagado y el saldo disponible)
+  const clienteSeleccionado = clientesConSaldo.find(c => c.nombre === formData.cliente_nombre)
+  const saldoDisponible = clienteSeleccionado?.saldoTotal || 0
   const montoAbono = Math.min(montoTotal, saldoDisponible)
 
   // Métodos de pago
@@ -112,7 +141,6 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
 
   // Función para Abono Completo (exacto)
   const handleAbonoCompleto = () => {
-    // Establecer el monto igual al saldo disponible
     if (formData.metodo_pago === 'efectivo') {
       setEfectivo(saldoDisponible)
     } else if (formData.metodo_pago === 'tarjeta') {
@@ -120,17 +148,15 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
     } else if (formData.metodo_pago === 'transferencia') {
       setTransferencia(saldoDisponible)
     } else if (formData.metodo_pago === 'mixto') {
-      // Para mixto, poner todo en efectivo como default
       setEfectivo(saldoDisponible)
       setTarjeta(0)
       setTransferencia(0)
     }
   }
 
-  // Función para Pago Excedente (ejemplo: pagar con 1000 para abonar 500)
+  // Función para Pago Excedente
   const handlePagoConVuelto = (montoRedondo) => {
     if (formData.metodo_pago === 'efectivo') {
-      // Ejemplo: si saldo es 470, pagar con 500
       const montoAPagar = Math.ceil(saldoDisponible / montoRedondo) * montoRedondo
       setEfectivo(montoAPagar)
     }
@@ -139,18 +165,11 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     
-    if (!formData.venta_credito_id || montoAbono <= 0) {
-      setError('Por favor selecciona un crédito y ingresa un monto válido')
+    if (!formData.cliente_nombre || montoAbono <= 0) {
+      setError('Por favor selecciona un cliente y ingresa un monto válido')
       return
     }
 
-    // Validar que haya al menos un monto positivo para el abono
-    if (montoAbono <= 0) {
-      setError('El monto del abono debe ser mayor a 0')
-      return
-    }
-
-    // Validar que NO se pague menos del monto del abono (solo permitir igual o mayor)
     if (montoTotal < montoAbono) {
       setError(`El pago ($${montoTotal.toFixed(2)}) es menor al monto del abono ($${montoAbono.toFixed(2)})`)
       return
@@ -167,7 +186,6 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
       return
     }
 
-    // Validar bancos para método mixto
     if (formData.metodo_pago === 'mixto') {
       if (tarjeta > 0 && !bancoTarjeta) {
         setError('Selecciona un banco para el pago con tarjeta en método mixto')
@@ -179,60 +197,84 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
       }
     }
 
-    // Validar que no exceda el saldo disponible (aunque ya lo limitamos con Math.min)
-    if (montoAbono > saldoDisponible) {
-      setError(`El monto del abono ($${montoAbono.toFixed(2)}) no puede ser mayor al saldo disponible ($${saldoDisponible.toFixed(2)})`)
-      return
-    }
-
     setLoading(true)
     setError('')
 
     try {
-      // Preparar datos para insertar
-      const abonoData = {
-        venta_credito_id: formData.venta_credito_id,
-        monto: montoAbono, // Guardamos el monto REAL del abono (no el total pagado)
-        metodo_pago: formData.metodo_pago,
-        efectivo: efectivo,
-        tarjeta: tarjeta,
-        transferencia: transferencia,
-        vuelto: vuelto // Guardamos el vuelto si lo hubo
+      // OBTENER TODOS LOS CRÉDITOS DEL CLIENTE CON SALDO PENDIENTE
+      const creditosDelCliente = creditos.filter(c => 
+        c.nombre_cliente === formData.cliente_nombre && 
+        c.saldo_pendiente > 0
+      )
+
+      if (creditosDelCliente.length === 0) {
+        throw new Error('No hay créditos pendientes para este cliente')
       }
 
-      // Agregar banco según el método de pago
-      if (formData.metodo_pago === 'tarjeta' || formData.metodo_pago === 'transferencia') {
-        abonoData.banco = banco
-      } else if (formData.metodo_pago === 'mixto') {
-        // Para mixto, guardamos ambos bancos en un campo JSON
-        const bancosMixto = {
-          tarjeta: bancoTarjeta || null,
-          transferencia: bancoTransferencia || null
+      // ORDENAR CRÉDITOS (los más antiguos primero)
+      creditosDelCliente.sort((a, b) => new Date(a.fecha) - new Date(b.fecha))
+
+      let saldoRestante = montoAbono
+      const abonosCreados = []
+
+      // DISTRIBUIR EL ABONO ENTRE TODOS LOS CRÉDITOS DEL CLIENTE
+      for (const credito of creditosDelCliente) {
+        if (saldoRestante <= 0) break
+
+        const saldoCredito = credito.saldo_pendiente
+        const montoParaEsteCredito = Math.min(saldoCredito, saldoRestante)
+
+        if (montoParaEsteCredito > 0) {
+          // Crear abono para este crédito
+          const abonoData = {
+            venta_credito_id: credito.id,
+            monto: montoParaEsteCredito,
+            metodo_pago: formData.metodo_pago,
+            efectivo: formData.metodo_pago === 'efectivo' || formData.metodo_pago === 'mixto' ? montoParaEsteCredito : 0,
+            tarjeta: formData.metodo_pago === 'tarjeta' ? montoParaEsteCredito : 0,
+            transferencia: formData.metodo_pago === 'transferencia' ? montoParaEsteCredito : 0,
+            vuelto: 0
+          }
+
+          // Agregar banco según el método de pago
+          if (formData.metodo_pago === 'tarjeta' || formData.metodo_pago === 'transferencia') {
+            abonoData.banco = banco
+          } else if (formData.metodo_pago === 'mixto') {
+            const bancosMixto = {
+              tarjeta: bancoTarjeta || null,
+              transferencia: bancoTransferencia || null
+            }
+            abonoData.banco = JSON.stringify(bancosMixto)
+          }
+
+          abonosCreados.push(abonoData)
+          saldoRestante -= montoParaEsteCredito
         }
-        abonoData.banco = JSON.stringify(bancosMixto)
       }
 
-      console.log('Guardando abono:', abonoData)
+      console.log('📝 Abonos a crear:', abonosCreados)
+
+      // INSERTAR TODOS LOS ABONOS
       const { error: supabaseError } = await supabase
         .from('abonos_credito')
-        .insert([abonoData])
+        .insert(abonosCreados)
       
       if (supabaseError) throw supabaseError
-      
-      // Actualizar también el saldo en ventas_credito (por si acaso el trigger no funciona)
-      const nuevoSaldo = saldoDisponible - montoAbono
-      const { error: updateError } = await supabase
-        .from('ventas_credito')
-        .update({ 
-          saldo_pendiente: nuevoSaldo 
-        })
-        .eq('id', formData.venta_credito_id)
-      
-      if (updateError) console.log('Error actualizando saldo:', updateError)
-      
+
+      // ACTUALIZAR SALDOS DE CADA CRÉDITO
+      for (const abono of abonosCreados) {
+        const credito = creditosDelCliente.find(c => c.id === abono.venta_credito_id)
+        const nuevoSaldo = credito.saldo_pendiente - abono.monto
+        
+        await supabase
+          .from('ventas_credito')
+          .update({ saldo_pendiente: Math.max(0, nuevoSaldo) })
+          .eq('id', abono.venta_credito_id)
+      }
+
       // Reset form
       setFormData({
-        venta_credito_id: '',
+        cliente_nombre: '',
         metodo_pago: 'efectivo'
       })
       setBanco('')
@@ -247,13 +289,12 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
       onClose()
     } catch (err) {
       console.error('Error agregando abono:', err)
-      setError('Error al registrar el abono. Por favor intenta de nuevo.')
+      setError(err.message || 'Error al registrar el abono. Por favor intenta de nuevo.')
     } finally {
       setLoading(false)
     }
   }
 
-  // Manejar cambio en método de pago simple
   const handleMetodoSimpleChange = (metodo, value) => {
     const valor = parseFloat(value) || 0
     
@@ -300,74 +341,73 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
               </div>
             )}
             
+            {/* ✅ SELECT DE CLIENTES - SIN BUSCADOR */}
             <div className="form-grupo">
               <label className="form-label">
-                Crédito *
+                Seleccionar Cliente *
               </label>
               <select
-                value={formData.venta_credito_id}
+                value={formData.cliente_nombre}
                 onChange={(e) => {
-                  setFormData({...formData, venta_credito_id: e.target.value})
+                  setFormData({...formData, cliente_nombre: e.target.value})
                   setError('')
                 }}
                 className="form-select"
                 disabled={loading}
               >
-                <option value="">Selecciona un crédito</option>
-                {creditos.map((credito) => (
-                  <option key={credito.id} value={credito.id}>
-                    {credito.nombre_cliente} - {credito.productos?.nombre} 
-                    {credito.saldo_pendiente !== undefined 
-                      ? ` (Saldo: $${credito.saldo_pendiente.toFixed(2)} de $${credito.total.toFixed(2)})`
-                      : ` (Total: $${credito.total})`
-                    }
+                <option value="">-- Selecciona un cliente --</option>
+                {clientesConSaldo.map((cliente) => (
+                  <option key={cliente.nombre} value={cliente.nombre}>
+                    {cliente.nombre} - Saldo: ${cliente.saldoTotal.toFixed(2)} ({cliente.creditos.length} crédito{cliente.creditos.length !== 1 ? 's' : ''})
                   </option>
                 ))}
               </select>
+              {clientesConSaldo.length === 0 && (
+                <p className="text-sm text-red-500 mt-1">
+                  No hay clientes con saldo pendiente
+                </p>
+              )}
             </div>
             
-            {/* Información del crédito seleccionado */}
-            {creditoSeleccionado && (
+            {/* Información del cliente seleccionado */}
+            {clienteSeleccionado && (
               <div className="credito-info-actualizado">
                 <div className="credito-detalles-actualizado">
                   <div className="detalle-item-actualizado">
                     <span>Cliente:</span>
-                    <strong>{creditoSeleccionado.nombre_cliente}</strong>
+                    <strong>{clienteSeleccionado.nombre}</strong>
                   </div>
                   <div className="detalle-item-actualizado">
-                    <span>Producto:</span>
-                    <strong>{creditoSeleccionado.productos?.nombre || 'No especificado'}</strong>
+                    <span>Créditos activos:</span>
+                    <strong>{clienteSeleccionado.creditos.length}</strong>
                   </div>
                   <div className="detalle-item-actualizado">
-                    <span>Total crédito:</span>
-                    <strong>${parseFloat(creditoSeleccionado.total).toFixed(2)}</strong>
+                    <span>Productos:</span>
+                    <strong>{Array.from(clienteSeleccionado.productos).slice(0, 3).join(', ')}</strong>
                   </div>
                   <div className="detalle-item-actualizado">
-                    <span>Saldo disponible:</span>
-                    <strong className={saldoDisponible > 0 ? 'text-green-600' : 'text-gray-600'}>
-                      ${saldoDisponible.toFixed(2)}
-                      {saldoDisponible <= 0 && ' (Pagado)'}
-                    </strong>
+                    <span>Total créditos:</span>
+                    <strong>${clienteSeleccionado.totalCreditos.toFixed(2)}</strong>
                   </div>
                   <div className="detalle-item-actualizado">
-                    <span>Fecha fin:</span>
-                    <strong>
-                      {new Date(creditoSeleccionado.fecha_fin).toLocaleDateString('es-MX')}
+                    <span>Saldo total pendiente:</span>
+                    <strong className="text-green-600">
+                      ${clienteSeleccionado.saldoTotal.toFixed(2)}
                     </strong>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* SECCIÓN DE ABONO CON BOTÓN ABONO COMPLETO Y VUELTO */}
-            {creditoSeleccionado && saldoDisponible > 0 && (
+            {/* SECCIÓN DE ABONO */}
+            {clienteSeleccionado && saldoDisponible > 0 && (
               <div className="total-section">
                 <div className="total-container">
                   <div className="total-info">
                     <div className="total-label-container">
                       <span className="total-label">ABONO A REALIZAR:</span>
                       <div className="total-calculation">
-                        Saldo disponible: ${saldoDisponible.toFixed(2)}
+                        Saldo total pendiente: ${saldoDisponible.toFixed(2)}
                       </div>
                     </div>
                     <div className="total-amount-container">
@@ -377,9 +417,9 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
                           type="button" 
                           onClick={handleAbonoCompleto}
                           className="btn-pago-completo"
-                          title="Establecer el monto exacto del saldo"
+                          title="Pagar el saldo total pendiente"
                         >
-                          Abono Exacto
+                          Pagar Todo
                         </button>
                         {formData.metodo_pago === 'efectivo' && (
                           <div className="pago-con-vuelto-buttons">
@@ -387,7 +427,6 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
                               type="button" 
                               onClick={() => handlePagoConVuelto(100)}
                               className="btn-pago-vuelto"
-                              title="Abonar con $100"
                             >
                               Con $100
                             </button>
@@ -395,7 +434,6 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
                               type="button" 
                               onClick={() => handlePagoConVuelto(500)}
                               className="btn-pago-vuelto"
-                              title="Abonar con $500"
                             >
                               Con $500
                             </button>
@@ -405,7 +443,6 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
                     </div>
                   </div>
                   
-                  {/* Información de Vuelto */}
                   {vuelto > 0 && (
                     <div className="vuelto-section">
                       <div className="vuelto-info">
@@ -445,12 +482,12 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
               </div>
             </div>
 
-            {/* Para métodos simples (efectivo, tarjeta, transferencia) */}
-            {formData.metodo_pago !== 'mixto' && creditoSeleccionado && saldoDisponible > 0 && (
+            {/* Para métodos simples */}
+            {formData.metodo_pago !== 'mixto' && clienteSeleccionado && saldoDisponible > 0 && (
               <div className="form-grupo">
                 <label className="form-label">
-                  Monto Recibido **
-                  {formData.metodo_pago === 'efectivo' && <span className="hint-text"> (puede ser mayor al abono)</span>}
+                  Monto a Pagar **
+                  {formData.metodo_pago === 'efectivo' && <span className="hint-text"> (puede ser mayor al saldo)</span>}
                 </label>
                 <div className="input-group-monto">
                   <span className="monto-simbolo">$</span>
@@ -467,26 +504,10 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
                     disabled={loading || saldoDisponible <= 0}
                   />
                 </div>
-                {saldoDisponible > 0 && (
-                  <p className="text-sm text-gray-500 mt-1">
-                    Máximo abono: ${saldoDisponible.toFixed(2)}
-                  </p>
-                )}
-                {formData.metodo_pago === 'efectivo' && vuelto > 0 && (
-                  <div className="vuelto-mini">
-                    <span className="vuelto-mini-label">Vuelto a dar: </span>
-                    <span className="vuelto-mini-amount">${vuelto.toFixed(2)}</span>
-                  </div>
-                )}
-                {saldoDisponible <= 0 && (
-                  <p className="text-sm text-red-500 mt-1">
-                    Este crédito ya está pagado completamente
-                  </p>
-                )}
               </div>
             )}
 
-            {/* Banco para tarjeta o transferencia simple */}
+            {/* Banco para tarjeta o transferencia */}
             {(formData.metodo_pago === 'tarjeta' || formData.metodo_pago === 'transferencia') && (
               <div className="form-grupo">
                 <label className="form-label">
@@ -500,7 +521,6 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
                   }}
                   className="form-select"
                   disabled={loading}
-                  required={formData.metodo_pago === 'tarjeta' || formData.metodo_pago === 'transferencia'}
                 >
                   <option value="">Selecciona un banco</option>
                   {bancosDisponibles.map((bancoItem) => (
@@ -513,7 +533,7 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
             )}
 
             {/* Montos y bancos para método mixto */}
-            {formData.metodo_pago === 'mixto' && creditoSeleccionado && saldoDisponible > 0 && (
+            {formData.metodo_pago === 'mixto' && clienteSeleccionado && saldoDisponible > 0 && (
               <div className="montos-mixtos-container">
                 <h4 className="montos-mixtos-titulo">Distribución del Pago:</h4>
                 <div className="montos-mixtos-grid">
@@ -537,7 +557,7 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
                           setError('')
                         }}
                         className="form-input-monto"
-                        disabled={loading || saldoDisponible <= 0}
+                        disabled={loading}
                       />
                     </div>
                   </div>
@@ -562,7 +582,7 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
                           setError('')
                         }}
                         className="form-input-monto"
-                        disabled={loading || saldoDisponible <= 0}
+                        disabled={loading}
                       />
                     </div>
                     {tarjeta > 0 && (
@@ -606,7 +626,7 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
                           setError('')
                         }}
                         className="form-input-monto"
-                        disabled={loading || saldoDisponible <= 0}
+                        disabled={loading}
                       />
                     </div>
                     {transferencia > 0 && (
@@ -646,18 +666,12 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
                       <span className="resumen-mixto-valor">${vuelto.toFixed(2)}</span>
                     </div>
                   )}
-                  <div className="resumen-mixto-item">
-                    <span className="resumen-mixto-label">Nuevo saldo:</span>
-                    <span className={`resumen-mixto-valor ${saldoDisponible - montoAbono > 0 ? 'text-orange-500' : 'text-green-600'}`}>
-                      ${(saldoDisponible - montoAbono).toFixed(2)}
-                    </span>
-                  </div>
                 </div>
               </div>
             )}
 
             {/* Validación de pago */}
-            {creditoSeleccionado && saldoDisponible > 0 && (
+            {clienteSeleccionado && saldoDisponible > 0 && (
               <div className={`validacion-total ${montoTotal >= montoAbono ? 'validacion-ok' : 'validacion-error'}`}>
                 {montoTotal === montoAbono ? (
                   <div className="validacion-mensaje validacion-ok">
@@ -672,31 +686,30 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
                 ) : (
                   <div className="validacion-mensaje validacion-error">
                     <span className="validacion-icono">⚠</span>
-                    Pago insuficiente. Faltan: ${(montoAbono - montoTotal).toFixed(2)} para abonar ${montoAbono.toFixed(2)}
+                    Pago insuficiente. Faltan: ${(montoAbono - montoTotal).toFixed(2)}
                   </div>
                 )}
               </div>
             )}
 
-            {/* Separador visual */}
             <div className="separador-modal"></div>
 
             {/* Resumen del Abono */}
             <div className="resumen-abono-container">
               <h4 className="resumen-abono-titulo">Resumen del Abono</h4>
               
-              {creditoSeleccionado ? (
+              {clienteSeleccionado ? (
                 <div className="resumen-detalles">
                   <div className="resumen-item">
                     <span className="resumen-label">Cliente:</span>
-                    <span className="resumen-valor">{creditoSeleccionado.nombre_cliente}</span>
+                    <span className="resumen-valor">{clienteSeleccionado.nombre}</span>
                   </div>
                   <div className="resumen-item">
-                    <span className="resumen-label">Producto:</span>
-                    <span className="resumen-valor">{creditoSeleccionado.productos?.nombre || 'No especificado'}</span>
+                    <span className="resumen-label">Créditos a abonar:</span>
+                    <span className="resumen-valor">{clienteSeleccionado.creditos.length}</span>
                   </div>
                   <div className="resumen-item">
-                    <span className="resumen-label">Saldo actual:</span>
+                    <span className="resumen-label">Saldo total actual:</span>
                     <span className="resumen-valor">${saldoDisponible.toFixed(2)}</span>
                   </div>
                   
@@ -714,56 +727,6 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
                     </span>
                   </div>
                   
-                  {/* Mostrar banco según método */}
-                  {formData.metodo_pago === 'tarjeta' && banco && (
-                    <div className="resumen-item">
-                      <span className="resumen-label">Banco (tarjeta):</span>
-                      <span className="resumen-valor">{banco}</span>
-                    </div>
-                  )}
-                  
-                  {formData.metodo_pago === 'transferencia' && banco && (
-                    <div className="resumen-item">
-                      <span className="resumen-label">Banco (transferencia):</span>
-                      <span className="resumen-valor">{banco}</span>
-                    </div>
-                  )}
-                  
-                  {/* Mostrar distribución para mixto */}
-                  {formData.metodo_pago === 'mixto' ? (
-                    <>
-                      <div className="resumen-item">
-                        <span className="resumen-label">Efectivo:</span>
-                        <span className="resumen-valor">${efectivo.toFixed(2)}</span>
-                      </div>
-                      {tarjeta > 0 && (
-                        <div className="resumen-item">
-                          <span className="resumen-label">Tarjeta:</span>
-                          <span className="resumen-valor">
-                            ${tarjeta.toFixed(2)} {bancoTarjeta && `(${bancoTarjeta})`}
-                          </span>
-                        </div>
-                      )}
-                      {transferencia > 0 && (
-                        <div className="resumen-item">
-                          <span className="resumen-label">Transferencia:</span>
-                          <span className="resumen-valor">
-                            ${transferencia.toFixed(2)} {bancoTransferencia && `(${bancoTransferencia})`}
-                          </span>
-                        </div>
-                      )}
-                    </>
-                  ) : (
-                    <div className="resumen-item">
-                      <span className="resumen-label">Monto recibido:</span>
-                      <span className="resumen-valor">
-                        ${montoTotal.toFixed(2)}
-                        {formData.metodo_pago === 'tarjeta' && banco && ` (${banco})`}
-                        {formData.metodo_pago === 'transferencia' && banco && ` (${banco})`}
-                      </span>
-                    </div>
-                  )}
-                  
                   <div className="resumen-item resumen-total">
                     <span className="resumen-label">Abono a realizar:</span>
                     <span className="resumen-valor-total">
@@ -771,8 +734,8 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
                     </span>
                   </div>
                   <div className="resumen-item">
-                    <span className="resumen-label">Nuevo saldo:</span>
-                    <span className={`resumen-valor ${saldoDisponible - montoAbono > 0 ? 'text-orange-500 font-semibold' : 'text-green-600 font-semibold'}`}>
+                    <span className="resumen-label">Nuevo saldo total:</span>
+                    <span className={`resumen-valor ${saldoDisponible - montoAbono > 0 ? 'text-orange-500' : 'text-green-600'}`}>
                       ${(saldoDisponible - montoAbono).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                       {saldoDisponible - montoAbono <= 0 && ' (¡Pagado!)'}
                     </span>
@@ -780,7 +743,7 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
                 </div>
               ) : (
                 <div className="resumen-vacio">
-                  <p className="texto-resumen-vacio">Selecciona un crédito para ver el resumen</p>
+                  <p className="texto-resumen-vacio">Selecciona un cliente para ver el resumen</p>
                 </div>
               )}
             </div>
@@ -798,12 +761,12 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
             <button
               type="submit"
               className="btn-primario-abono"
-              disabled={loading || montoAbono <= 0 || montoTotal < montoAbono}
+              disabled={loading || !clienteSeleccionado || montoAbono <= 0 || montoTotal < montoAbono}
             >
               {loading ? (
                 <>
                   <div className="spinner-pequeno"></div>
-                  Registrando...
+                  Procesando abono...
                 </>
               ) : (
                 <>
