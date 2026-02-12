@@ -195,6 +195,10 @@ VUELTO  C$${vuelto}
 ${linea()}
 ${centrar("GRACIAS POR SU COMPRA")}
 
+
+
+
+\n\n\n\n\n
 `
 }
   // ==============================================
