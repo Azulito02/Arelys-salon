@@ -166,132 +166,169 @@ const Creditos = () => {
     setShowEliminarModal(false)
   }
 
-  // 🖨️ FUNCIÓN PARA GENERAR TICKET DE CRÉDITO (VARIOS PRODUCTOS)
-  const generarContenidoTicketCredito = (credito) => {
-    try {
-      const centrar = (texto) => {
-        const ancho = 32
-        const espacios = Math.max(0, Math.floor((ancho - texto.length) / 2))
-        return " ".repeat(espacios) + texto
+// 🖨️ FUNCIÓN PARA GENERAR TICKET DE CRÉDITO - POR CLIENTE (TODOS LOS PRODUCTOS)
+const generarContenidoTicketCredito = (credito) => {
+  try {
+    const centrar = (texto) => {
+      const ancho = 32
+      const espacios = Math.max(0, Math.floor((ancho - texto.length) / 2))
+      return " ".repeat(espacios) + texto
+    }
+
+    const linea = () => "--------------------------------"
+
+    const formatFecha = (fechaISO) => {
+      if (!fechaISO) return ''
+      try {
+        const fechaUTC = new Date(fechaISO)
+        const fechaNic = new Date(fechaUTC.getTime() - (6 * 60 * 60 * 1000))
+
+        const d = fechaNic.getDate().toString().padStart(2, '0')
+        const m = (fechaNic.getMonth() + 1).toString().padStart(2, '0')
+        const y = fechaNic.getFullYear()
+
+        let h = fechaNic.getHours()
+        const min = fechaNic.getMinutes().toString().padStart(2, '0')
+        const ampm = h >= 12 ? 'p.m.' : 'a.m.'
+
+        h = h % 12
+        h = h ? h.toString().padStart(2, '0') : '12'
+
+        return `${d}/${m}/${y} ${h}:${min} ${ampm}`
+      } catch (e) {
+        return fechaISO
       }
+    }
 
-      const linea = () => "--------------------------------"
+    if (!credito) {
+      console.error('❌ Crédito no válido')
+      return 'Error: Crédito no válido'
+    }
 
-      const formatFecha = (fechaISO) => {
-        if (!fechaISO) return ''
-        try {
-          const fechaUTC = new Date(fechaISO)
-          const fechaNic = new Date(fechaUTC.getTime() - (6 * 60 * 60 * 1000))
+    // ✅ OBTENER TODOS LOS CRÉDITOS DEL MISMO CLIENTE
+    const creditosDelCliente = creditos.filter(c => 
+      c.nombre_cliente?.toLowerCase().trim() === credito.nombre_cliente?.toLowerCase().trim()
+    )
 
-          const d = fechaNic.getDate().toString().padStart(2, '0')
-          const m = (fechaNic.getMonth() + 1).toString().padStart(2, '0')
-          const y = fechaNic.getFullYear()
+    const cliente = credito.nombre_cliente || 'Cliente'
+    const fechaInicio = credito.fecha_inicio ? formatFecha(credito.fecha_inicio) : 'Sin fecha'
+    const fechaFin = credito.fecha_fin ? formatFecha(credito.fecha_fin) : 'Sin fecha'
 
-          let h = fechaNic.getHours()
-          const min = fechaNic.getMinutes().toString().padStart(2, '0')
-          const ampm = h >= 12 ? 'p.m.' : 'a.m.'
+    // ✅ CALCULAR TOTALES GENERALES DEL CLIENTE
+    let totalGeneralCliente = 0
+    let saldoGeneralCliente = 0
+    let totalAbonadoCliente = 0
 
-          h = h % 12
-          h = h ? h.toString().padStart(2, '0') : '12'
+    creditosDelCliente.forEach(c => {
+      totalGeneralCliente += parseFloat(c.total || 0)
+      saldoGeneralCliente += parseFloat(c.saldo_pendiente || 0)
+      
+      const abonos = c.abonos_credito || []
+      totalAbonadoCliente += abonos.reduce((sum, a) => sum + parseFloat(a.monto || 0), 0)
+    })
 
-          return `${d}/${m}/${y} ${h}:${min} ${ampm}`
-        } catch (e) {
-          return fechaISO
-        }
-      }
-
-      if (!credito) {
-        console.error('❌ Crédito no válido')
-        return 'Error: Crédito no válido'
-      }
-
-      const cliente = credito.nombre_cliente || 'Cliente'
-      const total = parseFloat(credito.total || 0).toFixed(2)
-      const fechaInicio = credito.fecha_inicio ? formatFecha(credito.fecha_inicio) : 'Sin fecha'
-      const fechaFin = credito.fecha_fin ? formatFecha(credito.fecha_fin) : 'Sin fecha'
-
-      // Obtener abonos de este crédito
-      const abonos = credito.abonos_credito || []
-      const totalAbonado = abonos.reduce((sum, a) => sum + parseFloat(a.monto || 0), 0).toFixed(2)
-      const saldoPendiente = credito.saldo_pendiente?.toFixed(2) || total
-
-      let contenido = `
+    let contenido = `
 ${centrar("ARELYS SALON")}
 ${centrar("8354-3180")}
 ${linea()}
-     TICKET DE CRÉDITO
+     ESTADO DE CUENTA
 ${linea()}
 CLIENTE:
 ${cliente}
 ${linea()}
-FECHA DE COMPRA:
-${fechaInicio}
-FECHA DE VENCIMIENTO:
-${fechaFin}
+FECHA DE IMPRESIÓN:
+${formatFecha(new Date().toISOString())}
 ${linea()}
-PRODUCTO:
-${credito.productos?.nombre || 'Producto'} x${credito.cantidad || 1}
-Precio: C$${parseFloat(credito.precio_unitario || 0).toFixed(2)}
-Subtotal: C$${(parseFloat(credito.cantidad || 1) * parseFloat(credito.precio_unitario || 0)).toFixed(2)}
+RESUMEN GENERAL:
+Total Créditos: ${creditosDelCliente.length}
+Monto Total:    C$${totalGeneralCliente.toFixed(2)}
+Total Abonado:  C$${totalAbonadoCliente.toFixed(2)}
+Saldo Actual:   C$${saldoGeneralCliente.toFixed(2)}
 ${linea()}
-TOTAL CRÉDITO: C$${total}
-${linea()}
+DETALLE POR PRODUCTO:
+`
+
+    // ✅ LISTAR CADA PRODUCTO DEL CLIENTE
+    creditosDelCliente.forEach((c, index) => {
+      const producto = c.productos?.nombre || 'Producto'
+      const cantidad = c.cantidad || 1
+      const precio = parseFloat(c.precio_unitario || 0).toFixed(2)
+      const subtotal = parseFloat(c.total || 0).toFixed(2)
+      const saldo = parseFloat(c.saldo_pendiente || 0).toFixed(2)
+      
+      const abonos = c.abonos_credito || []
+      const abonado = abonos.reduce((sum, a) => sum + parseFloat(a.monto || 0), 0).toFixed(2)
+
+      contenido += `
+${index + 1}. ${producto}
+   Cant: ${cantidad} x C$${precio}
+   Total: C$${subtotal}
+   Abonado: C$${abonado}
+   Saldo: C$${saldo}
+${linea()}`
+    })
+
+    // ✅ AGREGAR HISTORIAL DE ABONOS (TODOS LOS ABONOS DEL CLIENTE)
+    const todosLosAbonos = creditosDelCliente
+      .flatMap(c => c.abonos_credito || [])
+      .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
+
+    contenido += `
 HISTORIAL DE ABONOS:
 `
 
-      if (abonos.length === 0) {
-        contenido += '  No hay abonos registrados\n'
-      } else {
-        abonos.forEach((a, i) => {
-          const fechaAbono = a.fecha ? formatFecha(a.fecha).split(' ')[0] : 'Sin fecha'
-          const monto = parseFloat(a.monto || 0).toFixed(2)
-          contenido += `${i+1}. ${fechaAbono} - C$${monto}\n`
-        })
-      }
+    if (todosLosAbonos.length === 0) {
+      contenido += '  No hay abonos registrados\n'
+    } else {
+      todosLosAbonos.forEach((a, i) => {
+        const fechaAbono = a.fecha ? formatFecha(a.fecha).split(' ')[0] : 'Sin fecha'
+        const monto = parseFloat(a.monto || 0).toFixed(2)
+        
+        // Buscar a qué producto pertenece este abono
+        const creditoOrigen = creditosDelCliente.find(c => c.id === a.venta_credito_id)
+        const productoOrigen = creditoOrigen?.productos?.nombre || 'Producto'
+        
+        contenido += `${i+1}. ${fechaAbono} - C$${monto} (${productoOrigen})\n`
+      })
+    }
 
-      contenido += `${linea()}
-TOTAL ABONADO: C$${totalAbonado}
-SALDO PENDIENTE: C$${saldoPendiente}
-${linea()}
-${centrar("GRACIAS POR SU COMPRA")}
+    contenido += `${linea()}
+${centrar("GRACIAS POR SU CONFIANZA")}
 ${centrar("Conserve este comprobante")}
 
 \n\n\n\n`
 
-      return contenido
-    } catch (error) {
-      console.error('❌ Error generando ticket:', error)
-      return 'Error al generar el ticket'
-    }
+    return contenido
+  } catch (error) {
+    console.error('❌ Error generando ticket:', error)
+    return 'Error al generar el ticket'
   }
+}
 
-  // 🖨️ FUNCIÓN PARA IMPRIMIR TICKET DE CRÉDITO
-  const imprimirTicketCredito = (credito) => {
-    console.log('🖨️ Imprimiendo crédito:', credito?.id)
+// 🖨️ FUNCIÓN PARA IMPRIMIR TICKET DE CRÉDITO - POR CLIENTE
+const imprimirTicketCredito = (credito) => {
+  console.log('🖨️ Imprimiendo estado de cuenta para cliente:', credito?.nombre_cliente)
+  
+  try {
+    const contenido = generarContenidoTicketCredito(credito)
+    console.log('📄 Contenido generado')
     
-    try {
-      const contenido = generarContenidoTicketCredito(credito)
-      console.log('📄 Contenido generado:', contenido)
-      
-      const encoded = encodeURIComponent(contenido)
-      
-      // Intentar con rawbt
-      if (navigator.userAgent.includes('Android')) {
-        window.location.href = `rawbt:${encoded}`
-      } else {
-        // Fallback para Windows/Desktop
-        const ventana = window.open('', '_blank')
-        ventana.document.write(`<pre>${contenido}</pre>`)
-        ventana.document.close()
-        ventana.print()
-      }
-      
-    } catch (error) {
-      console.error('❌ Error al imprimir:', error)
-      alert('Error al imprimir ticket de crédito. Ver consola para detalles.')
+    const encoded = encodeURIComponent(contenido)
+    
+    if (navigator.userAgent.includes('Android')) {
+      window.location.href = `rawbt:${encoded}`
+    } else {
+      const ventana = window.open('', '_blank')
+      ventana.document.write(`<pre>${contenido}</pre>`)
+      ventana.document.close()
+      ventana.print()
     }
+    
+  } catch (error) {
+    console.error('❌ Error al imprimir:', error)
+    alert('Error al imprimir estado de cuenta')
   }
-
+}
   // Función para determinar estado del crédito
   const getEstadoCredito = (credito) => {
     if (credito.saldo_pendiente === 0) {
