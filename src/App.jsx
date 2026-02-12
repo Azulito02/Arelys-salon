@@ -10,7 +10,7 @@ import Creditos from "./views/Creditos";
 import Abonos from "./views/Abonos";
 import Gastos from "./views/Gastos";
 import Arqueos from "./views/Arqueos";
-import BotonInstalar from "./components/BotonInstalar"; // ✅ IMPORTAR
+
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(null);
@@ -39,8 +39,6 @@ export default function App() {
 
   return (
     <>
-      {/* ✅ BOTÓN DE INSTALAR - AHORA SÍ SE VA A VER */}
-      {isAuthenticated && <BotonInstalar />} {/* ✅ BOTÓN FLOTANTE */}
       
       <Routes>
         <Route 

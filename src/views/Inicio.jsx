@@ -13,8 +13,6 @@ const Inicio = () => {
   })
   const [loadingEstadisticas, setLoadingEstadisticas] = useState(true)
   
-  // ✅ ESTADO PARA PWA - MOVIDO AQUÍ (ARRIBA DE TODO)
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
 
   useEffect(() => {
     const loaderShown = sessionStorage.getItem("loaderShown")
@@ -122,20 +120,6 @@ const Inicio = () => {
       setLoadingEstadisticas(false)
     }
   }
-
-  // ✅ FUNCIÓN PARA INSTALAR - MOVIDA AQUÍ
-  const instalarApp = async () => {
-    if (!deferredPrompt) {
-      alert('Para instalar en iOS: usa "Compartir" > "Agregar a pantalla de inicio"');
-      return;
-    }
-    
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') {
-      setDeferredPrompt(null);
-    }
-  };
 
   const usuario = JSON.parse(localStorage.getItem('usuarioArelyz'))
   
