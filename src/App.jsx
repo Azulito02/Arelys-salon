@@ -10,7 +10,7 @@ import Creditos from "./views/Creditos";
 import Abonos from "./views/Abonos";
 import Gastos from "./views/Gastos";
 import Arqueos from "./views/Arqueos";
-
+import ReportesMensuales from "./views/ReportesMensuales"; // ✅ IMPORTAR
 
 export default function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(null);
@@ -66,6 +66,7 @@ export default function App() {
           <Route path="/abonos" element={<Abonos />} />
           <Route path="/gastos" element={<Gastos />} />
           <Route path="/arqueos" element={<Arqueos />} />
+          <Route path="/reportes" element={<ReportesMensuales />} /> {/* ✅ NUEVA RUTA */}
         </Route>
 
         <Route path="*" element={<Navigate to="/" replace />} />

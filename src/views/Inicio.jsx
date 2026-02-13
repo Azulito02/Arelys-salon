@@ -13,7 +13,6 @@ const Inicio = () => {
   })
   const [loadingEstadisticas, setLoadingEstadisticas] = useState(true)
   
-  // ✅ 1. FALTABA ESTA DECLARACIÓN - useState para deferredPrompt
   const [deferredPrompt, setDeferredPrompt] = useState(null);
 
   useEffect(() => {
@@ -29,7 +28,6 @@ const Inicio = () => {
     }
   }, [])
 
-  // ✅ 2. EFECTO PARA PWA
   useEffect(() => {
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
@@ -47,10 +45,8 @@ const Inicio = () => {
     return () => clearInterval(intervalo)
   }, [])
 
-  // ✅ 3. FUNCIÓN PARA INSTALAR - FALTABA COMPLETAMENTE
   const instalarApp = async () => {
     if (!deferredPrompt) {
-      // Solo mostramos mensaje en iOS, no en Windows
       if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
         alert('Para instalar en iOS: usa "Compartir" > "Agregar a pantalla de inicio"');
       }
@@ -210,6 +206,15 @@ const Inicio = () => {
       icon: '🧮',
       color: '#6366f1',
       ruta: '/arqueos',
+      roles: ['administrador', 'cajero']
+    },
+    // ✅ NUEVO BOTÓN DE REPORTES MENSUALES
+    {
+      id: 'reportes',
+      label: 'Reportes',
+      icon: '📊',
+      color: '#8b5cf6',
+      ruta: '/reportes',
       roles: ['administrador', 'cajero']
     }
   ]

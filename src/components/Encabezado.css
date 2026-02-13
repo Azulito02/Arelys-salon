@@ -71,7 +71,8 @@
   gap: 8px;
   flex: 1;
   justify-content: center;
-  max-width: 600px;
+  max-width: 700px;
+  flex-wrap: wrap;
 }
 
 .ruta-btn {
@@ -89,6 +90,7 @@
   gap: 6px;
   white-space: nowrap;
   flex-shrink: 0;
+  position: relative;
 }
 
 .ruta-btn:hover {
@@ -104,10 +106,34 @@
 
 .ruta-btn.mas-btn {
   background: rgba(255, 255, 255, 0.05);
+  position: relative;
 }
 
 .ruta-btn.mas-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(59, 130, 246, 0.15);
+}
+
+.ruta-btn.mas-btn.activo {
+  background: rgba(59, 130, 246, 0.2);
+  color: #60a5fa;
+}
+
+.badge-cantidad {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  background: var(--accent-color);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border: 1px solid white;
 }
 
 .ruta-icono {
@@ -222,7 +248,116 @@
   transform: rotate(-45deg) translate(5px, -5px);
 }
 
-/* Menú lateral móvil y menú "Más" */
+/* ========== MENÚ "MÁS" PARA ESCRITORIO ========== */
+.menu-mas-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1001;
+  animation: fadeIn 0.2s ease;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+  padding-top: 70px;
+  padding-right: 20px;
+}
+
+.menu-mas-contenido {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  width: 280px;
+  max-width: 90%;
+  animation: slideDown 0.2s ease;
+  overflow: hidden;
+}
+
+.menu-mas-header {
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  color: var(--text-color);
+  padding: 15px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.menu-mas-header h4 {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.menu-mas-cerrar {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: var(--text-color);
+  font-size: 20px;
+  cursor: pointer;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  transition: var(--transition);
+}
+
+.menu-mas-cerrar:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+.menu-mas-rutas {
+  padding: 10px 0;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.menu-mas-ruta-btn {
+  width: 100%;
+  background: transparent;
+  color: var(--secondary-color);
+  border: none;
+  padding: 15px 20px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  text-align: left;
+  border-left: 4px solid transparent;
+}
+
+.menu-mas-ruta-btn:hover {
+  background: rgba(59, 130, 246, 0.05);
+  color: var(--accent-color);
+}
+
+.menu-mas-ruta-btn.activa {
+  background: rgba(59, 130, 246, 0.1);
+  color: var(--accent-color);
+  border-left-color: var(--accent-color);
+  font-weight: 600;
+}
+
+.menu-mas-ruta-icono {
+  font-size: 18px;
+  width: 24px;
+  text-align: center;
+}
+
+.menu-mas-ruta-texto {
+  flex: 1;
+}
+
+/* ========== MENÚ LATERAL MÓVIL ========== */
 .menu-lateral-overlay {
   position: fixed;
   top: 0;
@@ -235,12 +370,8 @@
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 .menu-lateral-contenido {
@@ -258,11 +389,18 @@
 }
 
 @keyframes slideIn {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes slideDown {
   from {
-    transform: translateX(100%);
+    opacity: 0;
+    transform: translateY(-20px);
   }
   to {
-    transform: translateX(0);
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
@@ -414,15 +552,18 @@
 }
 
 /* Scrollbar personalizado */
-.menu-lateral-rutas::-webkit-scrollbar {
+.menu-lateral-rutas::-webkit-scrollbar,
+.menu-mas-rutas::-webkit-scrollbar {
   width: 4px;
 }
 
-.menu-lateral-rutas::-webkit-scrollbar-track {
+.menu-lateral-rutas::-webkit-scrollbar-track,
+.menu-mas-rutas::-webkit-scrollbar-track {
   background: rgba(255, 255, 255, 0.05);
 }
 
-.menu-lateral-rutas::-webkit-scrollbar-thumb {
+.menu-lateral-rutas::-webkit-scrollbar-thumb,
+.menu-mas-rutas::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.2);
   border-radius: 2px;
 }
@@ -443,6 +584,10 @@
   
   .logo-texto {
     font-size: 16px;
+  }
+  
+  .menu-mas-overlay {
+    display: none;
   }
 }
 
@@ -466,7 +611,7 @@
 
 @media (min-width: 1200px) and (max-width: 1399px) {
   .rutas-menu {
-    gap: 10px;
+    gap: 8px;
   }
   
   .ruta-btn {
@@ -475,6 +620,20 @@
 }
 
 @media (min-width: 1400px) {
+  .rutas-menu {
+    gap: 12px;
+  }
+  
+  .ruta-btn {
+    padding: 8px 14px;
+  }
+  
+  .ruta-texto {
+    font-size: 13px;
+  }
+}
+
+@media (min-width: 1600px) {
   .rutas-menu {
     gap: 15px;
   }

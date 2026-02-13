@@ -9,12 +9,12 @@ const Encabezado = ({ onLogout }) => {
   const [esMovil, setEsMovil] = useState(window.innerWidth <= 1024)
   const [anchoPantalla, setAnchoPantalla] = useState(window.innerWidth)
   const menuRef = useRef(null)
+  const masBtnRef = useRef(null)
   
   const usuario = JSON.parse(localStorage.getItem('usuarioArelyz'))
   
   if (!usuario) return null
   
-  // Detectar cambio de tamaño de pantalla
   useEffect(() => {
     const handleResize = () => {
       const width = window.innerWidth
@@ -29,10 +29,13 @@ const Encabezado = ({ onLogout }) => {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
   
-  // Cerrar menú al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (menuAbierto && menuRef.current && !menuRef.current.contains(e.target)) {
+      if (menuAbierto && 
+          menuRef.current && 
+          !menuRef.current.contains(e.target) &&
+          masBtnRef.current && 
+          !masBtnRef.current.contains(e.target)) {
         setMenuAbierto(false)
       }
     }
@@ -41,7 +44,6 @@ const Encabezado = ({ onLogout }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [menuAbierto])
   
-  // Cerrar menú al cambiar de ruta
   useEffect(() => {
     setMenuAbierto(false)
   }, [location.pathname])
@@ -54,75 +56,94 @@ const Encabezado = ({ onLogout }) => {
     navigate('/')
   }
 
-  // Definir las rutas disponibles según el rol
+  // Rutas ordenadas por prioridad
   const rutas = [
     {
       id: 'inicio',
       label: '🏠 Inicio',
       ruta: '/inicio',
-      roles: ['administrador', 'cajero', 'vendedor']
-    },
-    {
-      id: 'productos',
-      label: '📦 Productos',
-      ruta: '/productos',
-      roles: ['administrador']
-    },
-    {
-      id: 'inventario',
-      label: '📊 Inventario',
-      ruta: '/inventario',
-      roles: ['administrador', 'cajero']
+      roles: ['administrador', 'cajero', 'vendedor'],
+      prioridad: 1
     },
     {
       id: 'ventas',
       label: '💰 Ventas',
       ruta: '/ventas',
-      roles: ['administrador', 'cajero', 'vendedor']
+      roles: ['administrador', 'cajero', 'vendedor'],
+      prioridad: 2
     },
     {
       id: 'creditos',
       label: '💳 Créditos',
       ruta: '/creditos',
-      roles: ['administrador', 'cajero']
+      roles: ['administrador', 'cajero'],
+      prioridad: 3
+    },
+    {
+      id: 'inventario',
+      label: '📊 Inventario',
+      ruta: '/inventario',
+      roles: ['administrador', 'cajero'],
+      prioridad: 4
+    },
+    {
+      id: 'productos',
+      label: '📦 Productos',
+      ruta: '/productos',
+      roles: ['administrador'],
+      prioridad: 5
     },
     {
       id: 'abonos',
       label: '💵 Abonos',
       ruta: '/abonos',
-      roles: ['administrador', 'cajero']
+      roles: ['administrador', 'cajero'],
+      prioridad: 6
     },
     {
       id: 'gastos',
       label: '📉 Gastos',
       ruta: '/gastos',
-      roles: ['administrador']
+      roles: ['administrador'],
+      prioridad: 7
     },
     {
       id: 'arqueos',
       label: '🧮 Arqueos',
       ruta: '/arqueos',
-      roles: ['administrador', 'cajero']
+      roles: ['administrador', 'cajero'],
+      prioridad: 8
+    },
+    {
+      id: 'reportes',
+      label: '📊 Reportes',
+      ruta: '/reportes',
+      roles: ['administrador', 'cajero'],
+      prioridad: 9
     }
   ]
 
-  // Filtrar rutas según el rol del usuario
-  const rutasFiltradas = rutas.filter(ruta => 
-    ruta.roles.includes(usuario.rol?.toLowerCase() || 'administrador')
-  )
+  // Filtrar rutas según el rol
+  const rutasFiltradas = rutas
+    .filter(ruta => ruta.roles.includes(usuario.rol?.toLowerCase() || 'administrador'))
+    .sort((a, b) => a.prioridad - b.prioridad)
 
-  // Calcular cuántos botones caben según el ancho de pantalla
+  // Calcular cuántos botones caben según el ancho
   const calcularBotonesVisibles = () => {
     if (esMovil) return []
     
-    if (anchoPantalla >= 1400) return rutasFiltradas.slice(0, 5) // Pantallas muy grandes
-    if (anchoPantalla >= 1200) return rutasFiltradas.slice(0, 4) // Pantallas grandes
-    if (anchoPantalla >= 1025) return rutasFiltradas.slice(0, 3) // Pantallas medianas
-    
-    return rutasFiltradas.slice(0, 2) // Por defecto
+    if (anchoPantalla >= 1600) return 6
+    if (anchoPantalla >= 1400) return 5
+    if (anchoPantalla >= 1200) return 4
+    if (anchoPantalla >= 1025) return 3
+    return 2
   }
   
-  const rutasParaMostrar = calcularBotonesVisibles()
+  const cantidadVisibles = calcularBotonesVisibles()
+  
+  // Separar rutas en principales y el resto
+  const rutasPrincipales = rutasFiltradas.slice(0, cantidadVisibles)
+  const rutasRestantes = rutasFiltradas.slice(cantidadVisibles)
 
   return (
     <nav className="encabezado">
@@ -136,11 +157,12 @@ const Encabezado = ({ onLogout }) => {
           <span className="logo-texto">Arelyz Salon</span>
         </div>
         
-        {/* Menú de escritorio (solo para pantallas grandes) */}
+        {/* Menú de escritorio */}
         {!esMovil && (
           <div className="encabezado-menu-desktop">
             <div className="rutas-menu">
-              {rutasParaMostrar.map((ruta) => (
+              {/* Rutas principales */}
+              {rutasPrincipales.map((ruta) => (
                 <button
                   key={ruta.id}
                   className={`ruta-btn ${location.pathname === ruta.ruta ? 'activa' : ''}`}
@@ -152,15 +174,19 @@ const Encabezado = ({ onLogout }) => {
                 </button>
               ))}
               
-              {/* Botón "Más" si hay más rutas disponibles */}
-              {rutasFiltradas.length > rutasParaMostrar.length && (
+              {/* Botón "Más" con las rutas restantes */}
+              {rutasRestantes.length > 0 && (
                 <button
-                  className="ruta-btn mas-btn"
-                  onClick={() => setMenuAbierto(true)}
+                  ref={masBtnRef}
+                  className={`ruta-btn mas-btn ${menuAbierto ? 'activo' : ''}`}
+                  onClick={() => setMenuAbierto(!menuAbierto)}
                   title="Más opciones"
                 >
                   <span className="ruta-icono">⋯</span>
                   <span className="ruta-texto">Más</span>
+                  {rutasRestantes.length > 0 && (
+                    <span className="badge-cantidad">{rutasRestantes.length}</span>
+                  )}
                 </button>
               )}
             </div>
@@ -186,7 +212,7 @@ const Encabezado = ({ onLogout }) => {
           </div>
         )}
         
-        {/* Menú hamburguesa para móvil/tablet */}
+        {/* Menú hamburguesa para móvil */}
         {esMovil && (
           <div className="encabezado-menu-movil" ref={menuRef}>
             <div 
@@ -202,8 +228,40 @@ const Encabezado = ({ onLogout }) => {
         )}
       </div>
       
-      {/* Menú lateral móvil y menú "Más" para escritorio */}
-      {menuAbierto && (
+      {/* Menú "Más" para escritorio */}
+      {!esMovil && menuAbierto && rutasRestantes.length > 0 && (
+        <div className="menu-mas-overlay" onClick={() => setMenuAbierto(false)}>
+          <div className="menu-mas-contenido" ref={menuRef} onClick={(e) => e.stopPropagation()}>
+            <div className="menu-mas-header">
+              <h4>Más opciones ({rutasRestantes.length})</h4>
+              <button 
+                className="menu-mas-cerrar"
+                onClick={() => setMenuAbierto(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="menu-mas-rutas">
+              {rutasRestantes.map((ruta) => (
+                <button
+                  key={ruta.id}
+                  className={`menu-mas-ruta-btn ${location.pathname === ruta.ruta ? 'activa' : ''}`}
+                  onClick={() => {
+                    navigate(ruta.ruta)
+                    setMenuAbierto(false)
+                  }}
+                >
+                  <span className="menu-mas-ruta-icono">{ruta.label.split(' ')[0]}</span>
+                  <span className="menu-mas-ruta-texto">{ruta.label.split(' ').slice(1).join(' ')}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Menú lateral móvil */}
+      {esMovil && menuAbierto && (
         <div className="menu-lateral-overlay">
           <div className="menu-lateral-contenido" ref={menuRef}>
             <div className="menu-lateral-header">
@@ -222,7 +280,6 @@ const Encabezado = ({ onLogout }) => {
                 <button 
                   className="menu-cerrar-btn"
                   onClick={() => setMenuAbierto(false)}
-                  title="Cerrar menú"
                 >
                   ✕
                 </button>
@@ -234,14 +291,13 @@ const Encabezado = ({ onLogout }) => {
                 <button
                   key={ruta.id}
                   className={`menu-ruta-btn ${location.pathname === ruta.ruta ? 'activa' : ''}`}
-                  onClick={() => navigate(ruta.ruta)}
+                  onClick={() => {
+                    navigate(ruta.ruta)
+                    setMenuAbierto(false)
+                  }}
                 >
-                  <span className="menu-ruta-icono">
-                    {ruta.label.split(' ')[0]}
-                  </span>
-                  <span className="menu-ruta-texto">
-                    {ruta.label.split(' ').slice(1).join(' ')}
-                  </span>
+                  <span className="menu-ruta-icono">{ruta.label.split(' ')[0]}</span>
+                  <span className="menu-ruta-texto">{ruta.label.split(' ').slice(1).join(' ')}</span>
                 </button>
               ))}
             </div>

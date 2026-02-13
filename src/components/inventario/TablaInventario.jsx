@@ -4,28 +4,25 @@ import './TablaInventario.css'
 const TablaInventario = ({ inventario, loading, onEditar, onEliminar }) => {
   const [busqueda, setBusqueda] = useState('')
 
-  // ✅ FUNCIÓN ESTÁNDAR PARA TODAS LAS FECHAS (MISMA EN TODA LA APP)
+    // Función para formatear fecha con hora Nicaragua
   const formatFechaNicaragua = (fechaISO) => {
     if (!fechaISO) return 'Fecha no disponible';
     
-    try {
-      const fecha = new Date(fechaISO);
-      
-      const dia = fecha.getDate().toString().padStart(2, '0');
-      const mes = (fecha.getMonth() + 1).toString().padStart(2, '0');
-      const año = fecha.getFullYear();
-      
-      let horas = fecha.getHours();
-      const minutos = fecha.getMinutes().toString().padStart(2, '0');
-      const ampm = horas >= 12 ? 'p.m.' : 'a.m.';
-      
-      horas = horas % 12;
-      horas = horas ? horas.toString().padStart(2, '0') : '12';
-      
-      return `${dia}/${mes}/${año}, ${horas}:${minutos} ${ampm}`;
-    } catch (e) {
-      return fechaISO;
-    }
+    const fechaUTC = new Date(fechaISO);
+    const fechaNicaragua = new Date(fechaUTC.getTime() - (6 * 60 * 60 * 1000));
+    
+    const dia = fechaNicaragua.getDate().toString().padStart(2, '0');
+    const mes = (fechaNicaragua.getMonth() + 1).toString().padStart(2, '0');
+    const año = fechaNicaragua.getFullYear();
+    
+    let horas = fechaNicaragua.getHours();
+    const minutos = fechaNicaragua.getMinutes().toString().padStart(2, '0');
+    const ampm = horas >= 12 ? 'p.m.' : 'a.m.';
+    
+    horas = horas % 12;
+    horas = horas ? horas.toString().padStart(2, '0') : '12';
+    
+    return `${dia}/${mes}/${año}, ${horas}:${minutos} ${ampm}`;
   };
 
   // ✅ FILTRAR POR BÚSQUEDA - CÓDIGO DE BARRAS
