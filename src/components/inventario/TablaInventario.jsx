@@ -4,9 +4,9 @@ import './TablaInventario.css'
 const TablaInventario = ({ inventario, loading, onEditar, onEliminar }) => {
   const [busqueda, setBusqueda] = useState('')
 
-    // Función para formatear fecha con hora Nicaragua
-  const formatFechaNicaragua = (fechaISO) => {
-    if (!fechaISO) return 'Fecha no disponible';
+  // ✅ Función para formatear SOLO fecha (sin hora)
+  const formatSoloFecha = (fechaISO) => {
+    if (!fechaISO) return 'No disponible';
     
     const fechaUTC = new Date(fechaISO);
     const fechaNicaragua = new Date(fechaUTC.getTime() - (6 * 60 * 60 * 1000));
@@ -15,15 +15,29 @@ const TablaInventario = ({ inventario, loading, onEditar, onEliminar }) => {
     const mes = (fechaNicaragua.getMonth() + 1).toString().padStart(2, '0');
     const año = fechaNicaragua.getFullYear();
     
-    let horas = fechaNicaragua.getHours();
-    const minutos = fechaNicaragua.getMinutes().toString().padStart(2, '0');
-    const ampm = horas >= 12 ? 'p.m.' : 'a.m.';
-    
-    horas = horas % 12;
-    horas = horas ? horas.toString().padStart(2, '0') : '12';
-    
-    return `${dia}/${mes}/${año}, ${horas}:${minutos} ${ampm}`;
+    return `${dia}/${mes}/${año}`;
   };
+
+  
+    // Función para formatear fecha COMPLETA (con hora) - SIN ajuste
+    const formatFechaCompleta = (fechaISO) => {
+      if (!fechaISO) return 'No disponible';
+      
+      const fecha = new Date(fechaISO);
+      
+      const dia = fecha.getDate().toString().padStart(2, '0');
+      const mes = (fecha.getMonth() + 1).toString().padStart(2, '0');
+      const año = fecha.getFullYear();
+      
+      let horas = fecha.getHours();
+      const minutos = fecha.getMinutes().toString().padStart(2, '0');
+      const ampm = horas >= 12 ? 'p.m.' : 'a.m.';
+      
+      horas = horas % 12;
+      horas = horas ? horas.toString().padStart(2, '0') : '12';
+      
+      return `${dia}/${mes}/${año}, ${horas}:${minutos} ${ampm}`;
+    };
 
   // ✅ FILTRAR POR BÚSQUEDA - CÓDIGO DE BARRAS
   const inventarioFiltrado = busqueda.trim() 
@@ -104,14 +118,14 @@ const TablaInventario = ({ inventario, loading, onEditar, onEliminar }) => {
             <div className="inventario-fecha-item">
               <span className="inventario-fecha-label">Registro:</span>
               <span className="inventario-fecha-valor">
-                {formatFechaNicaragua(item.fecha)}
+                {formatSoloFecha(item.fecha)}  {/* ← SIN hora */}
               </span>
             </div>
             <div className="inventario-fecha-item">
               <span className="inventario-fecha-label">Editado:</span>
               <span className="inventario-fecha-valor">
                 {item.fecha_edicion 
-                  ? formatFechaNicaragua(item.fecha_edicion)
+                  ? formatFechaCompleta(item.fecha_edicion)  
                   : 'No editado'}
               </span>
             </div>
@@ -277,11 +291,11 @@ const TablaInventario = ({ inventario, loading, onEditar, onEliminar }) => {
                         </span>
                       </td>
                       <td className="celda-fecha">
-                        {formatFechaNicaragua(item.fecha)}
+                        {formatSoloFecha(item.fecha)}  {/* ← SIN hora */}
                       </td>
                       <td className="celda-fecha-edicion">
                         {item.fecha_edicion 
-                          ? formatFechaNicaragua(item.fecha_edicion)
+                          ? formatFechaCompleta(item.fecha_edicion)  
                           : 'No editado'}
                       </td>
                       <td className="celda-precio">
