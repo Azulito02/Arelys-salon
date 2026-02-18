@@ -51,21 +51,25 @@ const Arqueos = () => {
       fechaDesde.setHours(0, 0, 0, 0)
       const fechaHasta = new Date()
       
-      // Obtener SOLO abonos NO procesados en arqueo
-      const [ventasResp, creditosResp, abonosResp, gastosResp] = await Promise.all([
-        supabase.from('ventas').select('*').gte('fecha', fechaDesde.toISOString()),
-        supabase.from('ventas_credito').select('*').gte('fecha', fechaDesde.toISOString()),
-        supabase.from('abonos_credito').select('*')
-          .gte('fecha', fechaDesde.toISOString())
-          .is('procesado_en_arqueo', false),
-        supabase.from('gastos').select('*').gte('fecha', fechaDesde.toISOString())
-      ])
-      
+      // CORREGIDO: Gastos con filtro de procesado
+    const [ventasResp, creditosResp, abonosResp, gastosResp] = await Promise.all([
+      supabase.from('ventas').select('*').gte('fecha', fechaDesde.toISOString()),
+      supabase.from('ventas_credito').select('*').gte('fecha', fechaDesde.toISOString()),
+      supabase.from('abonos_credito').select('*')
+        .gte('fecha', fechaDesde.toISOString())
+        .is('procesado_en_arqueo', false),
+      supabase.from('gastos').select('*')
+        .gte('fecha', fechaDesde.toISOString())
+        .eq('procesado_en_arqueo', false)  // ← ¡NUEVO!
+    ])
       const ventas = ventasResp.data || []
       const creditos = creditosResp.data || []
       const abonos = abonosResp.data || []
       const gastos = gastosResp.data || []
-      
+
+      console.log('📊 Gastos pendientes hoy:', gastos.length) // Debería ser 1 si hiciste un gasto hoy
+    
+
       // ============ CALCULAR VENTAS POR MÉTODO DE PAGO ============
       let totalVentasEfectivo = 0
       let totalVentasTarjeta = 0

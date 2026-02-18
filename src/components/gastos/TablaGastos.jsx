@@ -89,7 +89,7 @@ const TablaGastos = ({ gastos, loading, onEditar, onEliminar }) => {
             <div className="gasto-descripcion">{gasto.descripcion}</div>
           </div>
           <span className="gasto-monto-mobile">
-            -${parseFloat(gasto.monto).toFixed(2)}
+            -C${parseFloat(gasto.monto).toFixed(2)}
           </span>
         </div>
         
@@ -101,12 +101,6 @@ const TablaGastos = ({ gastos, loading, onEditar, onEliminar }) => {
             </span>
           </div>
           
-          <div className="gasto-detail-item">
-            <span className="gasto-detail-label">Fecha Simple</span>
-            <span className="gasto-detail-value">
-              {formatSoloFecha(gasto.fecha)}
-            </span>
-          </div>
         </div>
         
         <div className="gasto-actions-mobile">
@@ -222,7 +216,7 @@ const TablaGastos = ({ gastos, loading, onEditar, onEliminar }) => {
                 <th className="columna-descripcion">Descripción</th>
                 <th className="columna-monto">Monto</th>
                 <th className="columna-fecha">Fecha Registro</th>
-                <th className="columna-fecha-simple">Fecha Simple</th>
+                
                 <th className="columna-acciones">Acciones</th>
               </tr>
             </thead>
@@ -256,9 +250,7 @@ const TablaGastos = ({ gastos, loading, onEditar, onEliminar }) => {
                     <td className="celda-fecha">
                       {formatFechaNicaragua(gasto.fecha)}
                     </td>
-                    <td className="celda-fecha-simple">
-                      {formatSoloFecha(gasto.fecha)}
-                    </td>
+                    
                     <td className="celda-acciones">
                       <div className="acciones-container">
                         <button
