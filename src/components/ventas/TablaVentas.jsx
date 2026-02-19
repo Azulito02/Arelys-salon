@@ -84,7 +84,7 @@ const renderMetodoPagoConBanco = (venta) => {
         <div style={{ marginTop: '8px', width: '100%', paddingLeft: '8px', borderLeft: '2px solid rgba(107, 33, 168, 0.3)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
             <span>💵 Efectivo</span>
-            <span style={{ fontWeight: '600' }}>${efectivo.toFixed(2)}</span>
+            <span style={{ fontWeight: '600' }}>C${efectivo.toFixed(2)}</span>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
             <span>
@@ -164,14 +164,14 @@ const renderMetodoPagoConBanco = (venta) => {
           <div className="venta-detail-item">
             <span className="venta-detail-label">Precio Unit.</span>
             <span className="venta-detail-value">
-              ${venta.precio_unitario?.toFixed(2) || '0.00'}
+              C${venta.precio_unitario?.toFixed(2) || '0.00'}
             </span>
           </div>
           
           <div className="venta-detail-item">
             <span className="venta-detail-label">Total</span>
             <span className="venta-detail-value total">
-              ${venta.total?.toFixed(2) || '0.00'}
+              C${venta.total?.toFixed(2) || '0.00'}
             </span>
           </div>
         </div>
@@ -300,12 +300,12 @@ const renderMetodoPagoConBanco = (venta) => {
                     </td>
                     <td className="celda-precio">
                       <div className="precio-venta">
-                        ${venta.precio_unitario?.toFixed(2) || '0.00'}
+                        C${venta.precio_unitario?.toFixed(2) || '0.00'}
                       </div>
                     </td>
                     <td className="celda-total">
                       <div className="total-venta">
-                        <strong>${venta.total?.toFixed(2) || '0.00'}</strong>
+                        <strong>C${venta.total?.toFixed(2) || '0.00'}</strong>
                       </div>
                     </td>
                     <td className="celda-acciones">
@@ -380,7 +380,7 @@ const renderMetodoPagoConBanco = (venta) => {
             <div className="resumen-item">
               <span>Total ventas:</span>
               <strong>
-                ${ventas.reduce((sum, venta) => sum + (venta.total || 0), 0).toFixed(2)}
+                C${ventas.reduce((sum, venta) => sum + (venta.total || 0), 0).toFixed(2)}
               </strong>
             </div>
           </div>
@@ -402,7 +402,7 @@ const renderMetodoPagoConBanco = (venta) => {
             <div className="resumen-mobile-item">
               <span className="resumen-mobile-label">Total</span>
               <span className="resumen-mobile-value">
-                ${resumenMobile.totalValor.toFixed(2)}
+                C${resumenMobile.totalValor.toFixed(2)}
               </span>
             </div>
           </div>

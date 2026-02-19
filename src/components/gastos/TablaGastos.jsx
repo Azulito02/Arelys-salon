@@ -244,7 +244,7 @@ const TablaGastos = ({ gastos, loading, onEditar, onEliminar }) => {
                     </td>
                     <td className="celda-monto">
                       <span className="monto-negativo">
-                        -${parseFloat(gasto.monto).toFixed(2)}
+                        -C${parseFloat(gasto.monto).toFixed(2)}
                       </span>
                     </td>
                     <td className="celda-fecha">
@@ -297,13 +297,13 @@ const TablaGastos = ({ gastos, loading, onEditar, onEliminar }) => {
             <div className="resumen-item">
               <span>Total monto:</span>
               <strong className="total-monto-negativo">
-                -${gastosFiltrados.reduce((sum, gasto) => sum + parseFloat(gasto.monto), 0).toFixed(2)}
+                -C${gastosFiltrados.reduce((sum, gasto) => sum + parseFloat(gasto.monto), 0).toFixed(2)}
               </strong>
             </div>
             <div className="resumen-item">
               <span>Gasto promedio:</span>
               <strong>
-                ${(gastosFiltrados.reduce((sum, gasto) => sum + parseFloat(gasto.monto), 0) / gastosFiltrados.length).toFixed(2)}
+                C${(gastosFiltrados.reduce((sum, gasto) => sum + parseFloat(gasto.monto), 0) / gastosFiltrados.length).toFixed(2)}
               </strong>
             </div>
             <div className="resumen-item">
@@ -325,13 +325,13 @@ const TablaGastos = ({ gastos, loading, onEditar, onEliminar }) => {
             <div className="resumen-mobile-item">
               <span className="resumen-mobile-label">Total</span>
               <span className="resumen-mobile-value total-monto-negativo">
-                -${resumenMobile.totalMonto.toFixed(2)}
+                -C${resumenMobile.totalMonto.toFixed(2)}
               </span>
             </div>
             <div className="resumen-mobile-item">
               <span className="resumen-mobile-label">Promedio</span>
               <span className="resumen-mobile-value">
-                ${resumenMobile.promedio.toFixed(2)}
+                C${resumenMobile.promedio.toFixed(2)}
               </span>
             </div>
           </div>

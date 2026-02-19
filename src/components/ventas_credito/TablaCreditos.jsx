@@ -216,21 +216,21 @@ const TablaCreditos = ({
             <div className="credito-detail-item">
               <span className="credito-detail-label">Precio Unit.</span>
               <span className="credito-detail-value">
-                ${parseFloat(credito.precio_unitario || 0).toFixed(2)}
+                C${parseFloat(credito.precio_unitario || 0).toFixed(2)}
               </span>
             </div>
             
             <div className="credito-detail-item">
               <span className="credito-detail-label">Total</span>
               <span className="credito-detail-value total">
-                ${parseFloat(credito.total || 0).toFixed(2)}
+                C${parseFloat(credito.total || 0).toFixed(2)}
               </span>
             </div>
             
             <div className="credito-detail-item">
               <span className="credito-detail-label">Saldo Pendiente</span>
               <span className="credito-detail-value saldo">
-                ${(credito.saldo_pendiente || 0).toFixed(2)}
+                C${(credito.saldo_pendiente || 0).toFixed(2)}
               </span>
             </div>
           </div>
@@ -433,11 +433,11 @@ const TablaCreditos = ({
                           </span>
                         </td>
                         <td className="celda-total">
-                          <strong>${(datos.totalGeneral || 0).toFixed(2)}</strong>
+                          <strong>C${(datos.totalGeneral || 0).toFixed(2)}</strong>
                         </td>
                         <td className="celda-saldo">
                           <span className={`badge-saldo ${datos.saldoGeneral > 0 ? 'pendiente' : 'pagado'}`}>
-                            ${(datos.saldoGeneral || 0).toFixed(2)}
+                            C${(datos.saldoGeneral || 0).toFixed(2)}
                           </span>
                         </td>
                         <td colSpan="5">
@@ -474,16 +474,16 @@ const TablaCreditos = ({
                               </span>
                             </td>
                             <td className="celda-precio">
-                              ${parseFloat(credito.precio_unitario || 0).toFixed(2)}
+                              C${parseFloat(credito.precio_unitario || 0).toFixed(2)}
                             </td>
                             <td className="celda-total">
                               <strong>
-                                ${parseFloat(credito.total || 0).toFixed(2)}
+                                C${parseFloat(credito.total || 0).toFixed(2)}
                               </strong>
                             </td>
                             <td className="celda-saldo">
                               <span className={`badge-saldo ${(credito.saldo_pendiente || 0) > 0 ? 'pendiente' : 'pagado'}`}>
-                                ${(credito.saldo_pendiente || 0).toFixed(2)}
+                                C${(credito.saldo_pendiente || 0).toFixed(2)}
                               </span>
                             </td>
                             <td className="celda-fecha">
@@ -592,7 +592,7 @@ const TablaCreditos = ({
             <div className="resumen-mobile-item">
               <span className="resumen-mobile-label">Saldo Pendiente</span>
               <span className="resumen-mobile-value saldo-total-pendiente">
-                ${resumenMobile.totalSaldo.toFixed(2)}
+                C${resumenMobile.totalSaldo.toFixed(2)}
               </span>
             </div>
           </div>

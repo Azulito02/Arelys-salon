@@ -223,7 +223,7 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
           producto_categoria: producto.categoria,
           producto_codigo: producto.codigo_barras
         }
-        console.log(`✅ [CRÉDITO] Producto ${index} actualizado con precio: $${precioAsignar}`)
+        console.log(`✅ [CRÉDITO] Producto ${index} actualizado con precio: C$${precioAsignar}`)
       }
     } else if (campo === 'cantidad') {
       const nuevaCantidad = Math.max(1, parseInt(valor) || 1)
@@ -337,7 +337,7 @@ const decrementarCantidad = (index) => {
     setBusquedaManual('')
     setMostrarResultadosManual(false)
     setIndiceBuscando(null)
-    console.log(`✅ [CRÉDITO] Producto manual seleccionado para índice ${index} con precio: $${precioAsignar}`)
+    console.log(`✅ [CRÉDITO] Producto manual seleccionado para índice ${index} con precio: C$${precioAsignar}`)
   }
 
   // Iniciar búsqueda manual para un producto específico
@@ -594,7 +594,7 @@ const decrementarCantidad = (index) => {
                           )}
                         </div>
                         <div className="resultado-info">
-                          <span className="resultado-precio">${obtenerPrecioProducto(producto).toFixed(2)}</span>
+                          <span className="resultado-precio">C${obtenerPrecioProducto(producto).toFixed(2)}</span>
                           {producto.codigo_barras && (
                             <span className="resultado-codigo">📟 {producto.codigo_barras}</span>
                           )}
@@ -658,7 +658,7 @@ const decrementarCantidad = (index) => {
                               )}
                               {producto.precio_unitario > 0 && (
                                 <div className="producto-info-precio">
-                                  <small>Precio: ${producto.precio_unitario.toFixed(2)}</small>
+                                  <small>Precio: C${producto.precio_unitario.toFixed(2)}</small>
                                 </div>
                               )}
                             </div>
@@ -693,7 +693,7 @@ const decrementarCantidad = (index) => {
                                         )}
                                       </div>
                                       <div className="resultado-info">
-                                        <span className="resultado-precio">${obtenerPrecioProducto(p).toFixed(2)}</span>
+                                        <span className="resultado-precio">C${obtenerPrecioProducto(p).toFixed(2)}</span>
                                         {p.codigo_barras && (
                                           <span className="resultado-codigo">📟 {p.codigo_barras}</span>
                                         )}
@@ -755,7 +755,7 @@ const decrementarCantidad = (index) => {
                           <div className="producto-subtotal">
                             <label>Subtotal</label>
                             <div className="subtotal-valor">
-                              ${calcularTotalProducto(producto).toFixed(2)}
+                              C${calcularTotalProducto(producto).toFixed(2)}
                             </div>
                           </div>
                         </div>
@@ -827,7 +827,7 @@ const decrementarCantidad = (index) => {
                 <div className="resumen-item resumen-total">
                   <span className="resumen-label">Total a Crédito:</span>
                   <span className="resumen-valor-total">
-                    ${calcularTotalGeneral().toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    C${calcularTotalGeneral().toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="resumen-item">

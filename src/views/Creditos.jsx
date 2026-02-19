@@ -475,7 +475,7 @@ const imprimirTicketCredito = (credito) => {
           <div className="resumen-card-content">
             <span className="resumen-card-label">MONTO TOTAL</span>
             <strong className="resumen-card-value">
-              ${resumen.totalMonto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+              C${resumen.totalMonto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
             </strong>
           </div>
           <div className="resumen-card-icon">
@@ -490,7 +490,7 @@ const imprimirTicketCredito = (credito) => {
           <div className="resumen-card-content">
             <span className="resumen-card-label">SALDO PENDIENTE</span>
             <strong className="resumen-card-value saldo-pendiente-total">
-              ${resumen.totalSaldoPendiente.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+              C${resumen.totalSaldoPendiente.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
             </strong>
           </div>
           <div className="resumen-card-icon">

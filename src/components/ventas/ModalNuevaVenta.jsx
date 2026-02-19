@@ -332,7 +332,7 @@ const ModalNuevaVenta = ({
     }
 
     if (totalPagos < totalGeneral) {
-      setError(`El pago ($${totalPagos.toFixed(2)}) es menor al total ($${totalGeneral.toFixed(2)})`)
+      setError(`El pago (C${totalPagos.toFixed(2)}) es menor al total (C${totalGeneral.toFixed(2)})`)
       return
     }
 
@@ -545,7 +545,7 @@ const ModalNuevaVenta = ({
                           )}
                         </div>
                         <div className="resultado-info">
-                          <span className="resultado-precio">${obtenerPrecioProducto(producto).toFixed(2)}</span>
+                          <span className="resultado-precio">C${obtenerPrecioProducto(producto).toFixed(2)}</span>
                           {producto.codigo_barras && (
                             <span className="resultado-codigo">📟 {producto.codigo_barras}</span>
                           )}
@@ -614,7 +614,7 @@ const ModalNuevaVenta = ({
                               )}
                               {producto.precio_unitario > 0 && (
                                 <div className="producto-info-precio">
-                                  <small>Precio: ${producto.precio_unitario.toFixed(2)}</small>
+                                  <small>Precio: C${producto.precio_unitario.toFixed(2)}</small>
                                 </div>
                               )}
                             </div>
@@ -649,7 +649,7 @@ const ModalNuevaVenta = ({
                                         )}
                                       </div>
                                       <div className="resultado-info">
-                                        <span className="resultado-precio">${obtenerPrecioProducto(p).toFixed(2)}</span>
+                                        <span className="resultado-precio">C${obtenerPrecioProducto(p).toFixed(2)}</span>
                                         {p.codigo_barras && (
                                           <span className="resultado-codigo">📟 {p.codigo_barras}</span>
                                         )}
@@ -696,7 +696,7 @@ const ModalNuevaVenta = ({
                           <div>
                             <label>Precio Unit.</label>
                             <div className="input-group-precio">
-                              <span className="precio-simbolo">$</span>
+                              <span className="precio-simbolo">C$</span>
                               <input
                                 type="number"
                                 min="0.01"
@@ -712,7 +712,7 @@ const ModalNuevaVenta = ({
                           <div className="producto-subtotal">
                             <label>Subtotal</label>
                             <div className="subtotal-valor">
-                              ${calcularTotalProducto(producto).toFixed(2)}
+                              C${calcularTotalProducto(producto).toFixed(2)}
                             </div>
                           </div>
                         </div>
@@ -734,7 +734,7 @@ const ModalNuevaVenta = ({
                     </div>
                   </div>
                   <div className="total-amount-container">
-                    <span className="total-amount">${totalGeneral.toFixed(2)}</span>
+                    <span className="total-amount">C${totalGeneral.toFixed(2)}</span>
                     <div className="pago-buttons-container">
                       <button 
                         type="button" 
@@ -752,42 +752,42 @@ const ModalNuevaVenta = ({
                             onClick={() => handlePagoConVuelto(10)}
                             className="btn-pago-vuelto"
                           >
-                            Con $10
+                            Con C$10
                           </button>
                           <button 
                             type="button" 
                             onClick={() => handlePagoConVuelto(50)}
                             className="btn-pago-vuelto"
                           >
-                            Con $50
+                            Con C$50
                           </button>
                           <button 
                             type="button" 
                             onClick={() => handlePagoConVuelto(100)}
                             className="btn-pago-vuelto"
                           >
-                            Con $100
+                            Con C$100
                           </button>
                           <button 
                             type="button" 
                             onClick={() => handlePagoConVuelto(200)}
                             className="btn-pago-vuelto"
                           >
-                            Con $200
+                            Con C$200
                           </button>
                           <button 
                             type="button" 
                             onClick={() => handlePagoConVuelto(500)}
                             className="btn-pago-vuelto"
                           >
-                            Con $500
+                            Con C$500
                           </button>
                           <button 
                             type="button" 
                             onClick={() => handlePagoConVuelto(1000)}
                             className="btn-pago-vuelto"
                           >
-                            Con $1000
+                            Con C$1000
                           </button>
                         </div>
                       )}
@@ -800,10 +800,10 @@ const ModalNuevaVenta = ({
                   <div className="vuelto-section">
                     <div className="vuelto-info">
                       <span className="vuelto-label">VUELTO:</span>
-                      <span className="vuelto-amount">${vuelto.toFixed(2)}</span>
+                      <span className="vuelto-amount">C${vuelto.toFixed(2)}</span>
                     </div>
                     <div className="vuelto-detalle">
-                      Se pagó ${totalPagos.toFixed(2)} - Total ${totalGeneral.toFixed(2)}
+                      Se pagó C${totalPagos.toFixed(2)} - Total C${totalGeneral.toFixed(2)}
                     </div>
                   </div>
                 )}
@@ -820,7 +820,7 @@ const ModalNuevaVenta = ({
                   <button
                     key={metodo.value}
                     type="button"
-                    className={`metodo-pago-btn ${metodoPago === metodo.value ? 'metodo-pago-seleccionado' : ''}`}
+                    className={`metodo-pago-btn C${metodoPago === metodo.value ? 'metodo-pago-seleccionado' : ''}`}
                     onClick={() => {
                       setMetodoPago(metodo.value)
                       setError('')
@@ -842,7 +842,7 @@ const ModalNuevaVenta = ({
                   {metodoPago === 'efectivo' && <span className="hint-text"> (puede ser mayor al total)</span>}
                 </label>
                 <div className="input-group-precio">
-                  <span className="precio-simbolo">$</span>
+                  <span className="precio-simbolo">C$</span>
                   <input
                     type="number"
                     step="0.01"
@@ -859,7 +859,7 @@ const ModalNuevaVenta = ({
                 {metodoPago === 'efectivo' && vuelto > 0 && (
                   <div className="vuelto-mini">
                     <span className="vuelto-mini-label">Vuelto a dar: </span>
-                    <span className="vuelto-mini-amount">${vuelto.toFixed(2)}</span>
+                    <span className="vuelto-mini-amount">C${vuelto.toFixed(2)}</span>
                   </div>
                 )}
               </div>
@@ -903,7 +903,7 @@ const ModalNuevaVenta = ({
                       Efectivo:
                     </label>
                     <div className="input-group-precio">
-                      <span className="precio-simbolo">$</span>
+                      <span className="precio-simbolo">C$</span>
                       <input
                         type="number"
                         min="0"
@@ -927,7 +927,7 @@ const ModalNuevaVenta = ({
                       Tarjeta:
                     </label>
                     <div className="input-group-precio">
-                      <span className="precio-simbolo">$</span>
+                      <span className="precio-simbolo">C$</span>
                       <input
                         type="number"
                         min="0"
@@ -955,7 +955,7 @@ const ModalNuevaVenta = ({
                       >
                         <option value="">Banco para tarjeta</option>
                         {bancosDisponibles.map((bancoItem) => (
-                          <option key={`tarjeta-${bancoItem}`} value={bancoItem}>
+                          <option key={`tarjeta-C${bancoItem}`} value={bancoItem}>
                             {bancoItem}
                           </option>
                         ))}
@@ -970,7 +970,7 @@ const ModalNuevaVenta = ({
                       Transferencia:
                     </label>
                     <div className="input-group-precio">
-                      <span className="precio-simbolo">$</span>
+                      <span className="precio-simbolo">C</span>
                       <input
                         type="number"
                         min="0"
@@ -998,7 +998,7 @@ const ModalNuevaVenta = ({
                       >
                         <option value="">Banco para transferencia</option>
                         {bancosDisponibles.map((bancoItem) => (
-                          <option key={`transferencia-${bancoItem}`} value={bancoItem}>
+                          <option key={`transferencia-C${bancoItem}`} value={bancoItem}>
                             {bancoItem}
                           </option>
                         ))}
@@ -1010,22 +1010,22 @@ const ModalNuevaVenta = ({
                 <div className="resumen-mixto">
                   <div className="resumen-mixto-item">
                     <span className="resumen-mixto-label">Total venta:</span>
-                    <span className="resumen-mixto-valor">${totalGeneral.toFixed(2)}</span>
+                    <span className="resumen-mixto-valor">C${totalGeneral.toFixed(2)}</span>
                   </div>
                   <div className="resumen-mixto-item">
                     <span className="resumen-mixto-label">Total pagos:</span>
-                    <span className="resumen-mixto-valor">${totalPagos.toFixed(2)}</span>
+                    <span className="resumen-mixto-valor">C${totalPagos.toFixed(2)}</span>
                   </div>
                   {diferencia > 0 && (
                     <div className="resumen-mixto-item resumen-vuelto">
                       <span className="resumen-mixto-label">Vuelto:</span>
-                      <span className="resumen-mixto-valor">${diferencia.toFixed(2)}</span>
+                      <span className="resumen-mixto-valor">C${diferencia.toFixed(2)}</span>
                     </div>
                   )}
                   {diferencia < 0 && (
                     <div className="resumen-mixto-item resumen-error">
                       <span className="resumen-mixto-label">Falta:</span>
-                      <span className="resumen-mixto-valor">${Math.abs(diferencia).toFixed(2)}</span>
+                      <span className="resumen-mixto-valor">C${Math.abs(diferencia).toFixed(2)}</span>
                     </div>
                   )}
                 </div>
@@ -1033,7 +1033,7 @@ const ModalNuevaVenta = ({
             )}
 
             {/* Validación de pago */}
-            <div className={`validacion-total ${diferencia >= 0 ? 'validacion-ok' : 'validacion-error'}`}>
+            <div className={`validacion-total C${diferencia >= 0 ? 'validacion-ok' : 'validacion-error'}`}>
               {diferencia === 0 ? (
                 <div className="validacion-mensaje validacion-ok">
                   <span className="validacion-icono">✓</span>
@@ -1042,12 +1042,12 @@ const ModalNuevaVenta = ({
               ) : diferencia > 0 ? (
                 <div className="validacion-mensaje validacion-vuelto">
                   <span className="validacion-icono">🔄</span>
-                  Pago completo. Vuelto: ${vuelto.toFixed(2)}
+                  Pago completo. Vuelto: C${vuelto.toFixed(2)}
                 </div>
               ) : (
                 <div className="validacion-mensaje validacion-error">
                   <span className="validacion-icono">⚠</span>
-                  Pago insuficiente. Faltan: ${Math.abs(diferencia).toFixed(2)}
+                  Pago insuficiente. Faltan: C${Math.abs(diferencia).toFixed(2)}
                 </div>
               )}
             </div>

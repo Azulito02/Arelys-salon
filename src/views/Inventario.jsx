@@ -292,7 +292,7 @@ const Inventario = () => {
           <div className="resumen-card-content">
             <span className="resumen-card-label">VALOR TOTAL</span>
             <strong className="resumen-card-value">
-              ${resumen.valorTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+              C${resumen.valorTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
             </strong>
           </div>
           <div className="resumen-card-icon">

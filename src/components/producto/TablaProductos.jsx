@@ -110,7 +110,7 @@ const TablaProductos = ({ productos, loading, onEditar, onEliminar }) => {
             </span>
           </div>
           <div className="producto-card-precio">
-            ${formatPrecio(producto.precio)}
+            C${formatPrecio(producto.precio)}
           </div>
         </div>
         
@@ -309,7 +309,7 @@ const TablaProductos = ({ productos, loading, onEditar, onEliminar }) => {
                     </td>
                     <td className="celda-precio">
                       <div className="producto-precio">
-                        ${formatPrecio(producto.precio)}
+                        C${formatPrecio(producto.precio)}
                       </div>
                     </td>
                     <td className="celda-acciones">

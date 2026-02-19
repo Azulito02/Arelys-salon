@@ -102,14 +102,14 @@ const TablaInventario = ({ inventario, loading, onEditar, onEliminar }) => {
             <div className="inventario-detail-item">
               <span className="inventario-detail-label">Precio Unit.</span>
               <span className="inventario-detail-value">
-                ${item.productos?.precio?.toFixed(2) || '0.00'}
+                C${item.productos?.precio?.toFixed(2) || '0.00'}
               </span>
             </div>
             
             <div className="inventario-detail-item">
               <span className="inventario-detail-label">Total</span>
               <span className="inventario-detail-value total">
-                ${total.toFixed(2)}
+                C${total.toFixed(2)}
               </span>
             </div>
           </div>
@@ -299,11 +299,11 @@ const TablaInventario = ({ inventario, loading, onEditar, onEliminar }) => {
                           : 'No editado'}
                       </td>
                       <td className="celda-precio">
-                        ${item.productos?.precio?.toFixed(2) || '0.00'}
+                        C${item.productos?.precio?.toFixed(2) || '0.00'}
                       </td>
                       <td className="celda-total">
                         <strong>
-                          ${total.toFixed(2)}
+                          C${total.toFixed(2)}
                         </strong>
                       </td>
                       <td className="celda-acciones">
@@ -359,7 +359,7 @@ const TablaInventario = ({ inventario, loading, onEditar, onEliminar }) => {
             <div className="resumen-item">
               <span>Valor total:</span>
               <strong>
-                ${inventarioFiltrado.reduce((sum, item) => 
+                C${inventarioFiltrado.reduce((sum, item) => 
                   sum + ((item.productos?.precio || 0) * item.entrada), 0
                 ).toFixed(2)}
               </strong>
@@ -377,7 +377,7 @@ const TablaInventario = ({ inventario, loading, onEditar, onEliminar }) => {
             <div className="resumen-mobile-item">
               <span className="resumen-mobile-label">Valor Total</span>
               <span className="resumen-mobile-value">
-                ${resumenMobile.totalValor.toFixed(2)}
+                C${resumenMobile.totalValor.toFixed(2)}
               </span>
             </div>
           </div>

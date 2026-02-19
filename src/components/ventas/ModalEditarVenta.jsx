@@ -213,7 +213,7 @@ const ModalEditarVenta = ({
 
     // Validar que los montos coincidan con el total
     if (Math.abs(totalPagos - total) > 0.01) {
-      setError(`El total de pagos ($${totalPagos.toFixed(2)}) no coincide con el total de la venta ($${total.toFixed(2)})`)
+      setError(`El total de pagos (C$${totalPagos.toFixed(2)}) no coincide con el total de la venta (C$${total.toFixed(2)})`)
       return
     }
 
@@ -307,8 +307,8 @@ const ModalEditarVenta = ({
       try {
         const bancosMixto = JSON.parse(venta.banco)
         const info = []
-        if (bancosMixto.tarjeta) info.push(`Tarjeta: ${bancosMixto.tarjeta}`)
-        if (bancosMixto.transferencia) info.push(`Transferencia: ${bancosMixto.transferencia}`)
+        if (bancosMixto.tarjeta) info.push(`Tarjeta: C${bancosMixto.tarjeta}`)
+        if (bancosMixto.transferencia) info.push(`Transferencia: C${bancosMixto.transferencia}`)
         return info.length > 0 ? info.join(', ') : 'No especificado'
       } catch {
         return venta.banco
@@ -381,13 +381,13 @@ const ModalEditarVenta = ({
                 <div className="resumen-item">
                   <span className="resumen-label">Precio unitario:</span>
                   <span className="resumen-valor">
-                    <strong>${venta.precio_unitario?.toFixed(2) || '0.00'}</strong>
+                    <strong>C${venta.precio_unitario?.toFixed(2) || '0.00'}</strong>
                   </span>
                 </div>
                 <div className="resumen-item">
                   <span className="resumen-label">Total:</span>
                   <span className="resumen-valor-total">
-                    ${montoAnterior.toFixed(2)}
+                    C${montoAnterior.toFixed(2)}
                   </span>
                 </div>
                 <div className="resumen-item">
@@ -405,19 +405,19 @@ const ModalEditarVenta = ({
                 {venta.efectivo > 0 && (
                   <div className="resumen-item">
                     <span className="resumen-label">Efectivo:</span>
-                    <span className="resumen-valor">${parseFloat(venta.efectivo || 0).toFixed(2)}</span>
+                    <span className="resumen-valor">C${parseFloat(venta.efectivo || 0).toFixed(2)}</span>
                   </div>
                 )}
                 {venta.tarjeta > 0 && (
                   <div className="resumen-item">
                     <span className="resumen-label">Tarjeta:</span>
-                    <span className="resumen-valor">${parseFloat(venta.tarjeta || 0).toFixed(2)}</span>
+                    <span className="resumen-valor">C${parseFloat(venta.tarjeta || 0).toFixed(2)}</span>
                   </div>
                 )}
                 {venta.transferencia > 0 && (
                   <div className="resumen-item">
                     <span className="resumen-label">Transferencia:</span>
-                    <span className="resumen-valor">${parseFloat(venta.transferencia || 0).toFixed(2)}</span>
+                    <span className="resumen-valor">C${parseFloat(venta.transferencia || 0).toFixed(2)}</span>
                   </div>
                 )}
                 <div className="resumen-item">
@@ -464,8 +464,8 @@ const ModalEditarVenta = ({
                 <option value="">Selecciona un producto</option>
                 {productos.map((producto) => (
                   <option key={producto.id} value={producto.id}>
-                    {producto.nombre} - ${producto.precio?.toFixed(2)}
-                    {producto.categoria && ` (${producto.categoria})`}
+                    {producto.nombre} - C${producto.precio?.toFixed(2)}
+                    {producto.categoria && ` (C${producto.categoria})`}
                   </option>
                 ))}
               </select>
@@ -519,7 +519,7 @@ const ModalEditarVenta = ({
                 Nuevo Precio Unitario *
               </label>
               <div className="input-group-precio">
-                <span className="precio-simbolo">$</span>
+                <span className="precio-simbolo">C$</span>
                 <input
                   type="number"
                   min="0.01"
@@ -547,7 +547,7 @@ const ModalEditarVenta = ({
                   <button
                     key={metodo.value}
                     type="button"
-                    className={`metodo-pago-btn ${metodoPago === metodo.value ? 'metodo-pago-seleccionado' : ''}`}
+                    className={`metodo-pago-btn C${metodoPago === metodo.value ? 'metodo-pago-seleccionado' : ''}`}
                     onClick={() => {
                       setMetodoPago(metodo.value)
                       setError('')
@@ -568,7 +568,7 @@ const ModalEditarVenta = ({
                   Monto a Pagar *
                 </label>
                 <div className="input-group-precio">
-                  <span className="precio-simbolo">$</span>
+                  <span className="precio-simbolo">C$</span>
                   <input
                     type="number"
                     step="0.01"
@@ -623,7 +623,7 @@ const ModalEditarVenta = ({
                       Efectivo:
                     </label>
                     <div className="input-group-precio">
-                      <span className="precio-simbolo">$</span>
+                      <span className="precio-simbolo">C$</span>
                       <input
                         type="number"
                         min="0"
@@ -647,7 +647,7 @@ const ModalEditarVenta = ({
                       Tarjeta:
                     </label>
                     <div className="input-group-precio">
-                      <span className="precio-simbolo">$</span>
+                      <span className="precio-simbolo">C$</span>
                       <input
                         type="number"
                         min="0"
@@ -675,7 +675,7 @@ const ModalEditarVenta = ({
                       >
                         <option value="">Banco para tarjeta</option>
                         {bancosDisponibles.map((bancoItem) => (
-                          <option key={`tarjeta-${bancoItem}`} value={bancoItem}>
+                          <option key={`tarjeta-C${bancoItem}`} value={bancoItem}>
                             {bancoItem}
                           </option>
                         ))}
@@ -690,7 +690,7 @@ const ModalEditarVenta = ({
                       Transferencia:
                     </label>
                     <div className="input-group-precio">
-                      <span className="precio-simbolo">$</span>
+                      <span className="precio-simbolo">C$</span>
                       <input
                         type="number"
                         min="0"
@@ -718,7 +718,7 @@ const ModalEditarVenta = ({
                       >
                         <option value="">Banco para transferencia</option>
                         {bancosDisponibles.map((bancoItem) => (
-                          <option key={`transferencia-${bancoItem}`} value={bancoItem}>
+                          <option key={`transferencia-C${bancoItem}`} value={bancoItem}>
                             {bancoItem}
                           </option>
                         ))}
@@ -730,15 +730,15 @@ const ModalEditarVenta = ({
                 <div className="resumen-mixto">
                   <div className="resumen-mixto-item">
                     <span className="resumen-mixto-label">Total venta:</span>
-                    <span className="resumen-mixto-valor">${total.toFixed(2)}</span>
+                    <span className="resumen-mixto-valor">C${total.toFixed(2)}</span>
                   </div>
                   <div className="resumen-mixto-item">
                     <span className="resumen-mixto-label">Total pagos:</span>
-                    <span className="resumen-mixto-valor">${totalPagos.toFixed(2)}</span>
+                    <span className="resumen-mixto-valor">C${totalPagos.toFixed(2)}</span>
                   </div>
-                  <div className={`resumen-mixto-item ${Math.abs(total - totalPagos) < 0.01 ? 'resumen-correcto' : 'resumen-error'}`}>
+                  <div className={`resumen-mixto-item C${Math.abs(total - totalPagos) < 0.01 ? 'resumen-correcto' : 'resumen-error'}`}>
                     <span className="resumen-mixto-label">Diferencia:</span>
-                    <span className="resumen-mixto-valor">${(total - totalPagos).toFixed(2)}</span>
+                    <span className="resumen-mixto-valor">C${(total - totalPagos).toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -756,7 +756,7 @@ const ModalEditarVenta = ({
                   </div>
                   <div className="resumen-item">
                     <span className="resumen-label">Precio unitario:</span>
-                    <span className="resumen-valor">${formData.precio_unitario.toFixed(2)}</span>
+                    <span className="resumen-valor">C${formData.precio_unitario.toFixed(2)}</span>
                   </div>
                   <div className="resumen-item">
                     <span className="resumen-label">Cantidad:</span>
@@ -764,7 +764,7 @@ const ModalEditarVenta = ({
                   </div>
                   <div className="resumen-item resumen-total">
                     <span className="resumen-label">Nuevo total:</span>
-                    <span className="resumen-valor-total">${total.toFixed(2)}</span>
+                    <span className="resumen-valor-total">C${total.toFixed(2)}</span>
                   </div>
                   <div className="resumen-item">
                     <span className="resumen-label">Método de pago:</span>
@@ -793,13 +793,13 @@ const ModalEditarVenta = ({
                     <>
                       <div className="resumen-item">
                         <span className="resumen-label">Efectivo:</span>
-                        <span className="resumen-valor">${efectivo.toFixed(2)}</span>
+                        <span className="resumen-valor">C${efectivo.toFixed(2)}</span>
                       </div>
                       {tarjeta > 0 && (
                         <div className="resumen-item">
                           <span className="resumen-label">Tarjeta:</span>
                           <span className="resumen-valor">
-                            ${tarjeta.toFixed(2)} {bancoTarjeta && `(${bancoTarjeta})`}
+                            C${tarjeta.toFixed(2)} {bancoTarjeta && `(C${bancoTarjeta})`}
                           </span>
                         </div>
                       )}
@@ -807,7 +807,7 @@ const ModalEditarVenta = ({
                         <div className="resumen-item">
                           <span className="resumen-label">Transferencia:</span>
                           <span className="resumen-valor">
-                            ${transferencia.toFixed(2)} {bancoTransferencia && `(${bancoTransferencia})`}
+                            C${transferencia.toFixed(2)} {bancoTransferencia && `(C${bancoTransferencia})`}
                           </span>
                         </div>
                       )}
@@ -816,9 +816,9 @@ const ModalEditarVenta = ({
                     <div className="resumen-item">
                       <span className="resumen-label">Monto:</span>
                       <span className="resumen-valor">
-                        ${totalPagos.toFixed(2)}
-                        {metodoPago === 'tarjeta' && banco && ` (${banco})`}
-                        {metodoPago === 'transferencia' && banco && ` (${banco})`}
+                        C${totalPagos.toFixed(2)}
+                        {metodoPago === 'tarjeta' && banco && ` (C${banco})`}
+                        {metodoPago === 'transferencia' && banco && ` (C${banco})`}
                       </span>
                     </div>
                   )}
@@ -826,7 +826,7 @@ const ModalEditarVenta = ({
                   <div className="resumen-item diferencia-item">
                     <span className="resumen-label">Diferencia con original:</span>
                     <span className={`diferencia-valor ${total > montoAnterior ? 'diferencia-positiva' : 'diferencia-negativa'}`}>
-                      ${(total - montoAnterior).toFixed(2)}
+                      C${(total - montoAnterior).toFixed(2)}
                     </span>
                   </div>
                 </div>

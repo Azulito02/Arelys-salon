@@ -229,15 +229,15 @@ const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, produc
               </div>
               <div className="info-item-actual">
                 <span className="info-label-actual">Total anterior:</span>
-                <span className="info-valor-actual">${totalAnterior.toFixed(2)}</span>
+                <span className="info-valor-actual">C${totalAnterior.toFixed(2)}</span>
               </div>
               <div className="info-item-actual">
                 <span className="info-label-actual">Total abonado:</span>
-                <span className="info-valor-actual">${totalAbonado.toFixed(2)}</span>
+                <span className="info-valor-actual">C${totalAbonado.toFixed(2)}</span>
               </div>
               <div className="info-item-actual">
                 <span className="info-label-actual">Saldo pendiente:</span>
-                <span className="info-valor-actual">${(credito.saldo_pendiente || 0).toFixed(2)}</span>
+                <span className="info-valor-actual">C${nuevoSaldoPendiente.toFixed(2)}</span>
               </div>
               <div className="info-item-actual">
                 <span className="info-label-actual">Estado actual:</span>
@@ -308,7 +308,7 @@ const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, produc
                           )}
                         </div>
                         <div className="resultado-info">
-                          <span className="resultado-precio">${(producto.precio || producto.precio_venta || 0).toFixed(2)}</span>
+                          <span className="resultado-precio">C${(producto.precio || producto.precio_venta || 0).toFixed(2)}</span>
                           {producto.codigo_barras && (
                             <span className="resultado-codigo">📟 {producto.codigo_barras}</span>
                           )}
@@ -334,7 +334,7 @@ const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, produc
                 <div className="producto-detalles-actualizado">
                   <div className="detalle-item-actualizado">
                     <span>Precio unitario:</span>
-                    <strong>${productoSeleccionado.precio?.toFixed(2) || '0.00'}</strong>
+                    <strong>C${productoSeleccionado.precio?.toFixed(2) || '0.00'}</strong>
                   </div>
                   <div className="detalle-item-actualizado">
                     <span>Categoría:</span>
@@ -415,33 +415,33 @@ const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, produc
               <div className="resumen-detalles">
                 <div className="resumen-item">
                   <span className="resumen-label">Total anterior:</span>
-                  <span className="resumen-valor">${totalAnterior.toFixed(2)}</span>
+                  <span className="resumen-valor">C${totalAnterior.toFixed(2)}</span>
                 </div>
                 <div className="resumen-item">
                   <span className="resumen-label">Total nuevo:</span>
-                  <span className="resumen-valor">${totalNuevo.toFixed(2)}</span>
+                  <span className="resumen-valor">C${totalNuevo.toFixed(2)}</span>
                 </div>
                 <div className="resumen-item resumen-diferencia">
                   <span className="resumen-label">Diferencia en total:</span>
                   <span className={`resumen-valor ${diferencia > 0 ? 'diferencia-positiva' : diferencia < 0 ? 'diferencia-negativa' : ''}`}>
-                    ${diferencia.toFixed(2)}
+                    C${diferencia.toFixed(2)}
                   </span>
                 </div>
                 <div className="resumen-item">
                   <span className="resumen-label">Total abonado:</span>
-                  <span className="resumen-valor">${totalAbonado.toFixed(2)}</span>
+                  <span className="resumen-valor">C${totalAbonado.toFixed(2)}</span>
                 </div>
                 <div className="resumen-item">
                   <span className="resumen-label">Nuevo saldo pendiente:</span>
                   <span className={`resumen-valor ${nuevoSaldoPendiente > 0 ? 'diferencia-negativa' : 'diferencia-positiva'}`}>
-                    ${nuevoSaldoPendiente > 0 ? nuevoSaldoPendiente.toFixed(2) : '0.00'}
+                    C${nuevoSaldoPendiente > 0 ? nuevoSaldoPendiente.toFixed(2) : '0.00'}
                     {nuevoSaldoPendiente <= 0 && ' (¡Pagado!)'}
                   </span>
                 </div>
                 <div className="resumen-item resumen-total">
                   <span className="resumen-label">Total actualizado:</span>
                   <span className="resumen-valor-total">
-                    ${totalNuevo.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    C${totalNuevo.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
                 <div className="resumen-item">
@@ -461,12 +461,12 @@ const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, produc
                   <strong>Importante:</strong> Este crédito tiene {abonos.length} abono(s) registrado(s) por un total de ${totalAbonado.toFixed(2)}.
                   {diferencia > 0 && (
                     <div className="advertencia-detalle">
-                      El saldo pendiente aumentará de ${(credito.saldo_pendiente || 0).toFixed(2)} a ${nuevoSaldoPendiente.toFixed(2)}.
+                      El saldo pendiente aumentará de C${(credito.saldo_pendiente || 0).toFixed(2)} a C${nuevoSaldoPendiente.toFixed(2)}.
                     </div>
                   )}
                   {diferencia < 0 && (
                     <div className="advertencia-detalle">
-                      El saldo pendiente disminuirá de ${(credito.saldo_pendiente || 0).toFixed(2)} a ${nuevoSaldoPendiente > 0 ? nuevoSaldoPendiente.toFixed(2) : '0.00'}.
+                      El saldo pendiente disminuirá de C${(credito.saldo_pendiente || 0).toFixed(2)} a C${nuevoSaldoPendiente > 0 ? nuevoSaldoPendiente.toFixed(2) : '0.00'}.
                     </div>
                   )}
                 </div>
