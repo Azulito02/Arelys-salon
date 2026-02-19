@@ -126,7 +126,7 @@ const ModalAgregarProductos = ({ isOpen, onClose, onSave }) => {
           <div className="campo-formulario">
             <div className="label-contenedor">
               <label className="label-campo">
-                <strong>Precio ($)*</strong>
+                <strong>Precio (C$)*</strong>
               </label>
             </div>
             <input
