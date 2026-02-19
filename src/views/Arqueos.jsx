@@ -247,7 +247,7 @@ const Arqueos = () => {
       setLoading(true)
       
       // **LLAMAR A LA FUNCIÓN DE ARQUEO ACTUALIZADA**
-      const { data, error } = await supabase.rpc('realizar_arqueo_caja_completa', {
+      const { data, error } = await supabase.rpc('realizar_arqueo_caja', {
         p_efectivo_contado: efectivo,
         p_usuario_nombre: usuario
       })
