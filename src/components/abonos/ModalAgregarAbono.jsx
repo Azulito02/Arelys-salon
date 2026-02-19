@@ -358,7 +358,7 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
                 <option value="">-- Selecciona un cliente --</option>
                 {clientesConSaldo.map((cliente) => (
                   <option key={cliente.nombre} value={cliente.nombre}>
-                    {cliente.nombre} - Saldo: ${cliente.saldoTotal.toFixed(2)} ({cliente.creditos.length} crédito{cliente.creditos.length !== 1 ? 's' : ''})
+                    {cliente.nombre} - Saldo: C${cliente.saldoTotal.toFixed(2)} ({cliente.creditos.length} crédito{cliente.creditos.length !== 1 ? 's' : ''})
                   </option>
                 ))}
               </select>
@@ -387,12 +387,12 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
                   </div>
                   <div className="detalle-item-actualizado">
                     <span>Total créditos:</span>
-                    <strong>${clienteSeleccionado.totalCreditos.toFixed(2)}</strong>
+                    <strong>C${clienteSeleccionado.totalCreditos.toFixed(2)}</strong>
                   </div>
                   <div className="detalle-item-actualizado">
                     <span>Saldo total pendiente:</span>
                     <strong className="text-green-600">
-                      ${clienteSeleccionado.saldoTotal.toFixed(2)}
+                      C${clienteSeleccionado.saldoTotal.toFixed(2)}
                     </strong>
                   </div>
                 </div>
@@ -407,11 +407,11 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
                     <div className="total-label-container">
                       <span className="total-label">ABONO A REALIZAR:</span>
                       <div className="total-calculation">
-                        Saldo total pendiente: ${saldoDisponible.toFixed(2)}
+                        Saldo total pendiente: C${saldoDisponible.toFixed(2)}
                       </div>
                     </div>
                     <div className="total-amount-container">
-                      <span className="total-amount">${montoAbono.toFixed(2)}</span>
+                      <span className="total-amount">C${montoAbono.toFixed(2)}</span>
                       <div className="pago-buttons-container">
                         <button 
                           type="button" 
@@ -428,14 +428,14 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
                               onClick={() => handlePagoConVuelto(100)}
                               className="btn-pago-vuelto"
                             >
-                              Con $100
+                              Con C$100
                             </button>
                             <button 
                               type="button" 
                               onClick={() => handlePagoConVuelto(500)}
                               className="btn-pago-vuelto"
                             >
-                              Con $500
+                              Con C$500
                             </button>
                           </div>
                         )}
@@ -447,10 +447,10 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
                     <div className="vuelto-section">
                       <div className="vuelto-info">
                         <span className="vuelto-label">VUELTO:</span>
-                        <span className="vuelto-amount">${vuelto.toFixed(2)}</span>
+                        <span className="vuelto-amount">C${vuelto.toFixed(2)}</span>
                       </div>
                       <div className="vuelto-detalle">
-                        Se pagó ${montoTotal.toFixed(2)} - Abono ${montoAbono.toFixed(2)}
+                        Se pagó C${montoTotal.toFixed(2)} - Abono C${montoAbono.toFixed(2)}
                       </div>
                     </div>
                   )}
@@ -490,7 +490,7 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
                   {formData.metodo_pago === 'efectivo' && <span className="hint-text"> (puede ser mayor al saldo)</span>}
                 </label>
                 <div className="input-group-monto">
-                  <span className="monto-simbolo">$</span>
+                  <span className="monto-simbolo">C$</span>
                   <input
                     type="number"
                     step="0.01"
@@ -544,7 +544,7 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
                       Efectivo:
                     </label>
                     <div className="input-group-monto">
-                      <span className="monto-simbolo">$</span>
+                      <span className="monto-simbolo">C$</span>
                       <input
                         type="number"
                         min="0"
@@ -569,7 +569,7 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
                       Tarjeta:
                     </label>
                     <div className="input-group-monto">
-                      <span className="monto-simbolo">$</span>
+                      <span className="monto-simbolo">C$</span>
                       <input
                         type="number"
                         min="0"
@@ -613,7 +613,7 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
                       Transferencia:
                     </label>
                     <div className="input-group-monto">
-                      <span className="monto-simbolo">$</span>
+                      <span className="monto-simbolo">C$</span>
                       <input
                         type="number"
                         min="0"
@@ -654,16 +654,16 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
                 <div className="resumen-mixto">
                   <div className="resumen-mixto-item">
                     <span className="resumen-mixto-label">Saldo disponible:</span>
-                    <span className="resumen-mixto-valor">${saldoDisponible.toFixed(2)}</span>
+                    <span className="resumen-mixto-valor">C${saldoDisponible.toFixed(2)}</span>
                   </div>
                   <div className="resumen-mixto-item">
                     <span className="resumen-mixto-label">Total del abono:</span>
-                    <span className="resumen-mixto-valor">${montoAbono.toFixed(2)}</span>
+                    <span className="resumen-mixto-valor">C${montoAbono.toFixed(2)}</span>
                   </div>
                   {vuelto > 0 && (
                     <div className="resumen-mixto-item resumen-vuelto">
                       <span className="resumen-mixto-label">Vuelto:</span>
-                      <span className="resumen-mixto-valor">${vuelto.toFixed(2)}</span>
+                      <span className="resumen-mixto-valor">C${vuelto.toFixed(2)}</span>
                     </div>
                   )}
                 </div>
@@ -676,17 +676,17 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
                 {montoTotal === montoAbono ? (
                   <div className="validacion-mensaje validacion-ok">
                     <span className="validacion-icono">✓</span>
-                    Pago exacto para abono de ${montoAbono.toFixed(2)}
+                    Pago exacto para abono de C${montoAbono.toFixed(2)}
                   </div>
                 ) : montoTotal > montoAbono ? (
                   <div className="validacion-mensaje validacion-vuelto">
                     <span className="validacion-icono">🔄</span>
-                    Pago completo. Vuelto: ${vuelto.toFixed(2)} (Abono: ${montoAbono.toFixed(2)})
+                    Pago completo. Vuelto: C${vuelto.toFixed(2)} (Abono: C${montoAbono.toFixed(2)})
                   </div>
                 ) : (
                   <div className="validacion-mensaje validacion-error">
                     <span className="validacion-icono">⚠</span>
-                    Pago insuficiente. Faltan: ${(montoAbono - montoTotal).toFixed(2)}
+                    Pago insuficiente. Faltan: C${(montoAbono - montoTotal).toFixed(2)}
                   </div>
                 )}
               </div>
@@ -710,13 +710,13 @@ const ModalAgregarAbono = ({ isOpen, onClose, onAbonoAgregado, creditos }) => {
                   </div>
                   <div className="resumen-item">
                     <span className="resumen-label">Saldo total actual:</span>
-                    <span className="resumen-valor">${saldoDisponible.toFixed(2)}</span>
+                    <span className="resumen-valor">C${saldoDisponible.toFixed(2)}</span>
                   </div>
                   
                   {vuelto > 0 && (
                     <div className="resumen-item resumen-vuelto">
                       <span className="resumen-label">Vuelto:</span>
-                      <span className="resumen-valor">${vuelto.toFixed(2)}</span>
+                      <span className="resumen-valor">C${vuelto.toFixed(2)}</span>
                     </div>
                   )}
                   

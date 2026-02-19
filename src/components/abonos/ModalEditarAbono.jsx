@@ -268,7 +268,7 @@ const ModalEditarAbono = ({ isOpen, onClose, onAbonoEditado, abono, creditos }) 
                 <div className="resumen-item">
                   <span className="resumen-label">Monto anterior:</span>
                   <span className="resumen-valor">
-                    <strong>${montoAnterior.toFixed(2)}</strong>
+                    <strong>C${montoAnterior.toFixed(2)}</strong>
                   </span>
                 </div>
                 <div className="resumen-item">
@@ -286,19 +286,19 @@ const ModalEditarAbono = ({ isOpen, onClose, onAbonoEditado, abono, creditos }) 
                 {abono.efectivo > 0 && (
                   <div className="resumen-item">
                     <span className="resumen-label">Efectivo:</span>
-                    <span className="resumen-valor">${parseFloat(abono.efectivo).toFixed(2)}</span>
+                    <span className="resumen-valor">C${parseFloat(abono.efectivo).toFixed(2)}</span>
                   </div>
                 )}
                 {abono.tarjeta > 0 && (
                   <div className="resumen-item">
                     <span className="resumen-label">Tarjeta:</span>
-                    <span className="resumen-valor">${parseFloat(abono.tarjeta).toFixed(2)}</span>
+                    <span className="resumen-valor">C${parseFloat(abono.tarjeta).toFixed(2)}</span>
                   </div>
                 )}
                 {abono.transferencia > 0 && (
                   <div className="resumen-item">
                     <span className="resumen-label">Transferencia:</span>
-                    <span className="resumen-valor">${parseFloat(abono.transferencia).toFixed(2)}</span>
+                    <span className="resumen-valor">C${parseFloat(abono.transferencia).toFixed(2)}</span>
                   </div>
                 )}
                 <div className="resumen-item">
@@ -334,7 +334,7 @@ const ModalEditarAbono = ({ isOpen, onClose, onAbonoEditado, abono, creditos }) 
                 <option value="">Selecciona un crédito</option>
                 {creditos.map((credito) => (
                   <option key={credito.id} value={credito.id}>
-                    {credito.nombre_cliente} - {credito.productos?.nombre} (Total: ${credito.total})
+                    {credito.nombre_cliente} - {credito.productos?.nombre} (Total: C${credito.total})
                   </option>
                 ))}
               </select>
@@ -353,7 +353,7 @@ const ModalEditarAbono = ({ isOpen, onClose, onAbonoEditado, abono, creditos }) 
                   </div>
                   <div className="detalle-item-actualizado">
                     <span>Total crédito:</span>
-                    <strong>${parseFloat(creditoSeleccionado.total).toFixed(2)}</strong>
+                    <strong>C${parseFloat(creditoSeleccionado.total).toFixed(2)}</strong>
                   </div>
                 </div>
               </div>
@@ -390,7 +390,7 @@ const ModalEditarAbono = ({ isOpen, onClose, onAbonoEditado, abono, creditos }) 
                   Nuevo Monto *
                 </label>
                 <div className="input-group-monto">
-                  <span className="monto-simbolo">$</span>
+                  <span className="monto-simbolo">C$</span>
                   <input
                     type="number"
                     step="0.01"
@@ -445,7 +445,7 @@ const ModalEditarAbono = ({ isOpen, onClose, onAbonoEditado, abono, creditos }) 
                       Efectivo:
                     </label>
                     <div className="input-group-monto">
-                      <span className="monto-simbolo">$</span>
+                      <span className="monto-simbolo">C$</span>
                       <input
                         type="number"
                         min="0"
@@ -469,7 +469,7 @@ const ModalEditarAbono = ({ isOpen, onClose, onAbonoEditado, abono, creditos }) 
                       Tarjeta:
                     </label>
                     <div className="input-group-monto">
-                      <span className="monto-simbolo">$</span>
+                      <span className="monto-simbolo">C$</span>
                       <input
                         type="number"
                         min="0"
@@ -512,7 +512,7 @@ const ModalEditarAbono = ({ isOpen, onClose, onAbonoEditado, abono, creditos }) 
                       Transferencia:
                     </label>
                     <div className="input-group-monto">
-                      <span className="monto-simbolo">$</span>
+                      <span className="monto-simbolo">C$</span>
                       <input
                         type="number"
                         min="0"
@@ -552,7 +552,7 @@ const ModalEditarAbono = ({ isOpen, onClose, onAbonoEditado, abono, creditos }) 
                 <div className="resumen-mixto">
                   <div className="resumen-mixto-item">
                     <span className="resumen-mixto-label">Total del abono:</span>
-                    <span className="resumen-mixto-valor">${montoTotal.toFixed(2)}</span>
+                    <span className="resumen-mixto-valor">C${montoTotal.toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -566,7 +566,7 @@ const ModalEditarAbono = ({ isOpen, onClose, onAbonoEditado, abono, creditos }) 
                 <div className="resumen-detalles">
                   <div className="resumen-item">
                     <span className="resumen-label">Monto anterior:</span>
-                    <span className="resumen-valor">${montoAnterior.toFixed(2)}</span>
+                    <span className="resumen-valor">C${montoAnterior.toFixed(2)}</span>
                   </div>
                   <div className="resumen-item">
                     <span className="resumen-label">Método de pago:</span>
@@ -595,7 +595,7 @@ const ModalEditarAbono = ({ isOpen, onClose, onAbonoEditado, abono, creditos }) 
                     <>
                       <div className="resumen-item">
                         <span className="resumen-label">Efectivo:</span>
-                        <span className="resumen-valor">${efectivo.toFixed(2)}</span>
+                        <span className="resumen-valor">C${efectivo.toFixed(2)}</span>
                       </div>
                       {tarjeta > 0 && (
                         <div className="resumen-item">
@@ -628,13 +628,13 @@ const ModalEditarAbono = ({ isOpen, onClose, onAbonoEditado, abono, creditos }) 
                   <div className="resumen-item resumen-total">
                     <span className="resumen-label">Monto actualizado:</span>
                     <span className="resumen-valor-total">
-                      ${montoTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                      C${montoTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                     </span>
                   </div>
                   <div className="resumen-item diferencia-item">
                     <span className="resumen-label">Diferencia con original:</span>
                     <span className={`diferencia-valor ${montoTotal > montoAnterior ? 'diferencia-positiva' : 'diferencia-negativa'}`}>
-                      ${(montoTotal - montoAnterior).toFixed(2)}
+                      C${(montoTotal - montoAnterior).toFixed(2)}
                     </span>
                   </div>
                 </div>

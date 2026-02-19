@@ -461,7 +461,7 @@ const imprimirTicketAbono = (abono) => {
           <div className="resumen-card-content">
             <span className="resumen-card-label">MONTO TOTAL</span>
             <strong className="resumen-card-value">
-              ${resumen.totalMonto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+              C${resumen.totalMonto.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
             </strong>
           </div>
           <div className="resumen-card-icon">
@@ -476,7 +476,7 @@ const imprimirTicketAbono = (abono) => {
           <div className="resumen-card-content">
             <span className="resumen-card-label">EN EFECTIVO</span>
             <strong className="resumen-card-value">
-              ${resumen.porMetodo.efectivo.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+              C${resumen.porMetodo.efectivo.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
             </strong>
           </div>
           <div className="resumen-card-icon">

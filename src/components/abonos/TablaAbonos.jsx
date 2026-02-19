@@ -219,7 +219,7 @@ const TablaAbonos = ({
             padding: '4px 12px',
             borderRadius: '20px'
           }}>
-            ${totalMixto.toFixed(2)}
+            {$totalMixto.toFixed(2)}
           </span>
         </div>
         
@@ -238,7 +238,7 @@ const TablaAbonos = ({
                 <span style={{ fontWeight: '600', color: '#065f46' }}>Efectivo:</span>
               </span>
               <span style={{ fontWeight: '700', color: '#1f2937' }}>
-                ${efectivo.toFixed(2)}
+                C${efectivo.toFixed(2)}
               </span>
             </div>
           )}
@@ -262,7 +262,7 @@ const TablaAbonos = ({
                 )}
               </span>
               <span style={{ fontWeight: '700', color: '#1f2937' }}>
-                ${tarjeta.toFixed(2)}
+                C${tarjeta.toFixed(2)}
               </span>
             </div>
           )}
@@ -284,7 +284,7 @@ const TablaAbonos = ({
                 )}
               </span>
               <span style={{ fontWeight: '700', color: '#1f2937' }}>
-                ${transferencia.toFixed(2)}
+                C${transferencia.toFixed(2)}
               </span>
             </div>
           )}
@@ -389,7 +389,7 @@ const TablaAbonos = ({
           <div className="abono-monto-info">
             <div className="abono-monto-principal">
               <span className="monto-label">Monto Abono:</span>
-              <span className="monto-valor">${montoAbono.toFixed(2)}</span>
+              <span className="monto-valor">C${montoAbono.toFixed(2)}</span>
             </div>
             {creditoInfo?.total > 0 && (
               <div className="abono-porcentaje">
@@ -403,14 +403,14 @@ const TablaAbonos = ({
             <div className="abono-detail-item">
               <span className="abono-detail-label">Total Crédito</span>
               <span className="abono-detail-value total-credito">
-                ${creditoInfo ? parseFloat(creditoInfo.total).toFixed(2) : 'N/A'}
+                C${creditoInfo ? parseFloat(creditoInfo.total).toFixed(2) : 'N/A'}
               </span>
             </div>
             
             <div className="abono-detail-item">
               <span className="abono-detail-label">Saldo Pendiente</span>
               <span className={`abono-detail-value ${creditoInfo?.saldoPendiente === 0 ? 'saldo-cero' : 'saldo-pendiente'}`}>
-                ${creditoInfo ? parseFloat(creditoInfo.saldoPendiente).toFixed(2) : 'N/A'}
+               C${creditoInfo ? parseFloat(creditoInfo.saldoPendiente).toFixed(2) : 'N/A'}
               </span>
             </div>
             
@@ -616,7 +616,7 @@ const TablaAbonos = ({
                       <td className="celda-monto">
                         <div className="monto-abono-info">
                           <strong className="monto-abono">
-                            ${parseFloat(abono.monto).toFixed(2)}
+                            C${parseFloat(abono.monto).toFixed(2)}
                           </strong>
                           {creditoInfo && (
                             <div className="porcentaje-abono">
@@ -629,12 +629,12 @@ const TablaAbonos = ({
                         {creditoInfo ? (
                           <div className="total-credito-info">
                             <strong className="total-credito">
-                              ${parseFloat(creditoInfo.total).toFixed(2)}
+                              C${parseFloat(creditoInfo.total).toFixed(2)}
                             </strong>
                             <div className="detalle-total">
                               {creditoInfo.totalAbonado > 0 && (
                                 <span className="total-abonado">
-                                  ${parseFloat(creditoInfo.totalAbonado).toFixed(2)} abonado
+                                  C${parseFloat(creditoInfo.totalAbonado).toFixed(2)} abonado
                                 </span>
                               )}
                             </div>
@@ -647,7 +647,7 @@ const TablaAbonos = ({
                         {creditoInfo ? (
                           <div className={`saldo-pendiente-info ${creditoInfo.saldoPendiente === 0 ? 'saldo-cero' : 'saldo-pendiente'}`}>
                             <strong className="saldo-monto">
-                              ${parseFloat(creditoInfo.saldoPendiente).toFixed(2)}
+                              C${parseFloat(creditoInfo.saldoPendiente).toFixed(2)}
                             </strong>
                             <div className="progreso-saldo">
                               {creditoInfo.total > 0 && (
