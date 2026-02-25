@@ -43,7 +43,7 @@ const Arqueos = () => {
     }
   }
 
-  const calcularResumenTurno = async () => {
+ const calcularResumenTurno = async () => {
   try {
     setCalculando(true)
     
@@ -233,7 +233,6 @@ const Arqueos = () => {
     setCalculando(false)
   }
 }
-
   const abrirModal = async () => {
     await calcularResumenTurno()
   }
@@ -387,7 +386,7 @@ const Arqueos = () => {
     );
   });
 
-// Exportar UN arqueo a Excel - VERSIÓN CORREGIDA
+// Exportar UN arqueo a Excel - VERSIÓN SIMPLE Y LIMPIA
 const exportarArqueoExcel = async (arqueo) => {
   try {
     setExportando(prev => ({ ...prev, [arqueo.id]: 'excel' }))
@@ -400,57 +399,115 @@ const exportarArqueoExcel = async (arqueo) => {
     
     if (error) throw error
     
-    // Hoja 1: Resumen General
-    const resumenGeneral = [{
-      'FECHA': formatFechaNicaragua(arqueoCompleto.fecha),
-      'USUARIO': arqueoCompleto.usuario || 'Sistema',
-      'PERÍODO DESDE': arqueoCompleto.periodo_desde || '',
-      'PERÍODO HASTA': arqueoCompleto.periodo_hasta || '',
-      'EFECTIVO EN CAJA': `C$${parseFloat(arqueoCompleto.efectivo_en_caja || 0).toFixed(2)}`,
-      'DIFERENCIA': `C$${Math.abs(parseFloat(arqueoCompleto.diferencia_efectivo || 0)).toFixed(2)} ${parseFloat(arqueoCompleto.diferencia_efectivo || 0) > 0 ? 'Sobrante' : parseFloat(arqueoCompleto.diferencia_efectivo || 0) < 0 ? 'Faltante' : 'Exacto'}`,
-    }]
-    
-    // Hoja 2: Ventas por método
+    // ============ HOJA 1: RESUMEN PRINCIPAL ============
+    const resumenPrincipal = [
+      { 'SECCIÓN': 'COMPROBANTE DE ARQUEO', 'VALOR': '', 'DETALLE': '' },
+      { 'SECCIÓN': '', 'VALOR': '', 'DETALLE': '' },
+      { 'SECCIÓN': 'FECHA', 'VALOR': formatFechaNicaragua(arqueoCompleto.fecha), 'DETALLE': '' },
+      { 'SECCIÓN': 'USUARIO', 'VALOR': arqueoCompleto.usuario || 'Sistema', 'DETALLE': '' },
+      { 'SECCIÓN': 'PERÍODO', 'VALOR': `${arqueoCompleto.periodo_desde?.substring(0,10) || 'N/A'} - ${arqueoCompleto.periodo_hasta?.substring(0,10) || 'N/A'}`, 'DETALLE': '' },
+      { 'SECCIÓN': 'ID', 'VALOR': arqueoCompleto.id, 'DETALLE': '' },
+      { 'SECCIÓN': '', 'VALOR': '', 'DETALLE': '' },
+      { 'SECCIÓN': 'RESUMEN FINANCIERO', 'VALOR': '', 'DETALLE': '' },
+      { 'SECCIÓN': 'VENTAS TOTALES', 'VALOR': `C$${parseFloat(arqueoCompleto.total_ventas || 0).toFixed(2)}`, 'DETALLE': '' },
+      { 'SECCIÓN': 'Ventas Crédito', 'VALOR': `C$${parseFloat(arqueoCompleto.total_credito || 0).toFixed(2)}`, 'DETALLE': '' },
+      { 'SECCIÓN': '', 'VALOR': '', 'DETALLE': '' },
+      { 'SECCIÓN': 'EFECTIVO BRUTO', 'VALOR': `C$${parseFloat(arqueoCompleto.total_efectivo || 0).toFixed(2)}`, 'DETALLE': '' },
+      { 'SECCIÓN': 'Bonos en efectivo', 'VALOR': `C$${parseFloat(arqueoCompleto.total_abonos_efectivo || 0).toFixed(2)}`, 'DETALLE': '' },
+      { 'SECCIÓN': 'GASTOS', 'VALOR': `C$${parseFloat(arqueoCompleto.total_gastos || 0).toFixed(2)}`, 'DETALLE': '' },
+      { 'SECCIÓN': '', 'VALOR': '', 'DETALLE': '' },
+      { 'SECCIÓN': 'EFECTIVO EN CAJA', 'VALOR': `C$${parseFloat(arqueoCompleto.efectivo_en_caja || 0).toFixed(2)}`, 'DETALLE': '' },
+    ]
+
+    // Calcular diferencia
+    const diferencia = parseFloat(arqueoCompleto.diferencia_efectivo || 0)
+    if (Math.abs(diferencia) > 0.01) {
+      resumenPrincipal.push({ 
+        'SECCIÓN': 'DIFERENCIA', 
+        'VALOR': `C$${Math.abs(diferencia).toFixed(2)} ${diferencia > 0 ? '(Sobrante)' : '(Faltante)'}`, 
+        'DETALLE': '' 
+      })
+    } else {
+      resumenPrincipal.push({ 
+        'SECCIÓN': 'DIFERENCIA', 
+        'VALOR': 'C$0.00', 
+        'DETALLE': '' 
+      })
+    }
+
+    // ============ HOJA 2: DETALLES ADICIONALES ============
+    const detallesAdicionales = [
+      { 'DESCRIPCIÓN': 'DETALLES ADICIONALES', 'MONTO': '', 'CANTIDAD': '' },
+      { 'DESCRIPCIÓN': '', 'MONTO': '', 'CANTIDAD': '' },
+      { 'DESCRIPCIÓN': 'Ventas eliminadas', 'MONTO': '', 'CANTIDAD': arqueoCompleto.ventas_eliminadas || 0 },
+      { 'DESCRIPCIÓN': 'Gastos eliminados', 'MONTO': '', 'CANTIDAD': arqueoCompleto.gastos_eliminados || 0 },
+      { 'DESCRIPCIÓN': '', 'MONTO': '', 'CANTIDAD': '' },
+      { 'DESCRIPCIÓN': 'ABONOS PROCESADOS', 'MONTO': '', 'CANTIDAD': '' },
+      { 'DESCRIPCIÓN': 'Efectivo', 'MONTO': `C$${parseFloat(arqueoCompleto.total_abonos_efectivo || 0).toFixed(2)}`, 'CANTIDAD': arqueoCompleto.abonos_efectivo_eliminados || 0 },
+      { 'DESCRIPCIÓN': 'Tarjeta', 'MONTO': `C$${parseFloat(arqueoCompleto.total_abonos_tarjeta || 0).toFixed(2)}`, 'CANTIDAD': arqueoCompleto.abonos_tarjeta_eliminados || 0 },
+      { 'DESCRIPCIÓN': 'Transferencia', 'MONTO': `C$${parseFloat(arqueoCompleto.total_abonos_transferencia || 0).toFixed(2)}`, 'CANTIDAD': arqueoCompleto.abonos_transferencia_eliminados || 0 },
+      { 'DESCRIPCIÓN': '', 'MONTO': '', 'CANTIDAD': '' },
+      { 'DESCRIPCIÓN': 'CRÉDITOS MANTENIDOS', 'MONTO': `C$${parseFloat(arqueoCompleto.total_credito || 0).toFixed(2)}`, 'CANTIDAD': arqueoCompleto.creditos_completados_eliminados || 0 },
+    ]
+
+    // ============ HOJA 3: VENTAS POR MÉTODO ============
     const ventasMetodo = [
-      { 'MÉTODO': 'EFECTIVO', 'MONTO': `C$${parseFloat(arqueoCompleto.total_ventas_efectivo || 0).toFixed(2)}`, 'CANTIDAD': arqueoCompleto.ventas_eliminadas || 0 },
-      { 'MÉTODO': 'TARJETA', 'MONTO': `C$${parseFloat(arqueoCompleto.total_ventas_tarjeta || 0).toFixed(2)}`, 'CANTIDAD': 'N/A' },
-      { 'MÉTODO': 'TRANSFERENCIA', 'MONTO': `C$${parseFloat(arqueoCompleto.total_ventas_transferencia || 0).toFixed(2)}`, 'CANTIDAD': 'N/A' },
-      { 'MÉTODO': 'CRÉDITO', 'MONTO': `C$${parseFloat(arqueoCompleto.total_credito || 0).toFixed(2)}`, 'CANTIDAD': arqueoCompleto.creditos_completados_eliminados || 0 },
-      { 'MÉTODO': 'TOTAL VENTAS', 'MONTO': `C$${parseFloat(arqueoCompleto.total_ventas || 0).toFixed(2)}`, 'CANTIDAD': '' }
+      { 'MÉTODO': 'VENTAS POR MÉTODO', 'MONTO': '', 'CANTIDAD': '' },
+      { 'MÉTODO': '', 'MONTO': '', 'CANTIDAD': '' },
+      { 'MÉTODO': 'Efectivo', 'MONTO': `C$${parseFloat(arqueoCompleto.total_ventas_efectivo || 0).toFixed(2)}`, 'CANTIDAD': arqueoCompleto.ventas_eliminadas || 0 },
+      { 'MÉTODO': 'Tarjeta', 'MONTO': `C$${parseFloat(arqueoCompleto.total_ventas_tarjeta || 0).toFixed(2)}`, 'CANTIDAD': 'N/A' },
+      { 'MÉTODO': 'Transferencia', 'MONTO': `C$${parseFloat(arqueoCompleto.total_ventas_transferencia || 0).toFixed(2)}`, 'CANTIDAD': 'N/A' },
+      { 'MÉTODO': 'Crédito', 'MONTO': `C$${parseFloat(arqueoCompleto.total_credito || 0).toFixed(2)}`, 'CANTIDAD': arqueoCompleto.creditos_completados_eliminados || 0 },
+      { 'MÉTODO': '', 'MONTO': '', 'CANTIDAD': '' },
+      { 'MÉTODO': 'TOTAL VENTAS', 'MONTO': `C$${parseFloat(arqueoCompleto.total_ventas || 0).toFixed(2)}`, 'CANTIDAD': '' },
     ]
+
+    // ============ HOJA 4: CÁLCULO DE EFECTIVO ============
+    const efectivoNetoCalculado = (parseFloat(arqueoCompleto.total_efectivo || 0) - parseFloat(arqueoCompleto.total_gastos || 0))
     
-    // Hoja 3: Abonos por método
-    const abonosMetodo = [
-      { 'MÉTODO': 'EFECTIVO', 'MONTO': `C$${parseFloat(arqueoCompleto.total_abonos_efectivo || 0).toFixed(2)}`, 'CANTIDAD': arqueoCompleto.abonos_efectivo_eliminados || 0 },
-      { 'MÉTODO': 'TARJETA', 'MONTO': `C$${parseFloat(arqueoCompleto.total_abonos_tarjeta || 0).toFixed(2)}`, 'CANTIDAD': arqueoCompleto.abonos_tarjeta_eliminados || 0 },
-      { 'MÉTODO': 'TRANSFERENCIA', 'MONTO': `C$${parseFloat(arqueoCompleto.total_abonos_transferencia || 0).toFixed(2)}`, 'CANTIDAD': arqueoCompleto.abonos_transferencia_eliminados || 0 },
-      { 'MÉTODO': 'TOTAL ABONOS', 'MONTO': `C$${(parseFloat(arqueoCompleto.total_abonos_efectivo || 0) + parseFloat(arqueoCompleto.total_abonos_tarjeta || 0) + parseFloat(arqueoCompleto.total_abonos_transferencia || 0)).toFixed(2)}`, 'CANTIDAD': (arqueoCompleto.abonos_efectivo_eliminados || 0) + (arqueoCompleto.abonos_tarjeta_eliminados || 0) + (arqueoCompleto.abonos_transferencia_eliminados || 0) }
-    ]
-    
-    // Hoja 4: Gastos
-    const gastos = [
-      { 'DESCRIPCIÓN': 'Total Gastos', 'MONTO': `C$${parseFloat(arqueoCompleto.total_gastos || 0).toFixed(2)}`, 'CANTIDAD': arqueoCompleto.gastos_eliminados || 0 }
-    ]
-    
-    // Hoja 5: Cálculo de efectivo
     const calculoEfectivo = [
+      { 'CONCEPTO': 'CÁLCULO DE EFECTIVO', 'MONTO': '' },
+      { 'CONCEPTO': '', 'MONTO': '' },
       { 'CONCEPTO': 'Ventas en efectivo', 'MONTO': `C$${parseFloat(arqueoCompleto.total_ventas_efectivo || 0).toFixed(2)}` },
-      { 'CONCEPTO': '+ Abonos en efectivo', 'MONTO': `C$${parseFloat(arqueoCompleto.total_abonos_efectivo || 0).toFixed(2)}` },
+      { 'CONCEPTO': '+ Bonos en efectivo', 'MONTO': `C$${parseFloat(arqueoCompleto.total_abonos_efectivo || 0).toFixed(2)}` },
       { 'CONCEPTO': '= EFECTIVO BRUTO', 'MONTO': `C$${parseFloat(arqueoCompleto.total_efectivo || 0).toFixed(2)}` },
       { 'CONCEPTO': '- Gastos', 'MONTO': `C$${parseFloat(arqueoCompleto.total_gastos || 0).toFixed(2)}` },
-      { 'CONCEPTO': '= EFECTIVO NETO ESPERADO', 'MONTO': `C$${(parseFloat(arqueoCompleto.total_efectivo || 0) - parseFloat(arqueoCompleto.total_gastos || 0)).toFixed(2)}` },
+      { 'CONCEPTO': '= EFECTIVO NETO ESPERADO', 'MONTO': `C$${efectivoNetoCalculado.toFixed(2)}` },
       { 'CONCEPTO': 'EFECTIVO CONTADO', 'MONTO': `C$${parseFloat(arqueoCompleto.efectivo_en_caja || 0).toFixed(2)}` },
-      { 'CONCEPTO': 'DIFERENCIA', 'MONTO': `C$${Math.abs(parseFloat(arqueoCompleto.diferencia_efectivo || 0)).toFixed(2)} ${parseFloat(arqueoCompleto.diferencia_efectivo || 0) > 0 ? 'Sobrante' : parseFloat(arqueoCompleto.diferencia_efectivo || 0) < 0 ? 'Faltante' : 'Exacto'}` }
+      { 'CONCEPTO': 'DIFERENCIA', 'MONTO': `C$${Math.abs(parseFloat(arqueoCompleto.diferencia_efectivo || 0)).toFixed(2)} ${parseFloat(arqueoCompleto.diferencia_efectivo || 0) > 0 ? '(Sobrante)' : parseFloat(arqueoCompleto.diferencia_efectivo || 0) < 0 ? '(Faltante)' : '(Exacto)'}` },
     ]
-    
+
+    // ============ CREAR LIBRO DE EXCEL ============
     const wb = XLSX.utils.book_new()
     
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(resumenGeneral), 'Resumen')
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(ventasMetodo), 'Ventas')
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(abonosMetodo), 'Abonos')
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(gastos), 'Gastos')
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(calculoEfectivo), 'Cálculo Efectivo')
+    // Aplicar estilos básicos (ancho de columnas)
+    const colWidths = [
+      { wch: 30 }, // SECCIÓN/CONCEPTO
+      { wch: 20 }, // VALOR/MONTO
+      { wch: 15 }, // DETALLE/CANTIDAD
+    ]
     
+    // Hoja 1: Resumen Principal
+    const wsResumen = XLSX.utils.json_to_sheet(resumenPrincipal, { header: ['SECCIÓN', 'VALOR', 'DETALLE'] })
+    wsResumen['!cols'] = colWidths
+    XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen')
+    
+    // Hoja 2: Detalles Adicionales
+    const wsDetalles = XLSX.utils.json_to_sheet(detallesAdicionales, { header: ['DESCRIPCIÓN', 'MONTO', 'CANTIDAD'] })
+    wsDetalles['!cols'] = colWidths
+    XLSX.utils.book_append_sheet(wb, wsDetalles, 'Detalles')
+    
+    // Hoja 3: Ventas por Método
+    const wsVentas = XLSX.utils.json_to_sheet(ventasMetodo, { header: ['MÉTODO', 'MONTO', 'CANTIDAD'] })
+    wsVentas['!cols'] = colWidths
+    XLSX.utils.book_append_sheet(wb, wsVentas, 'Ventas')
+    
+    // Hoja 4: Cálculo de Efectivo
+    const wsCalculo = XLSX.utils.json_to_sheet(calculoEfectivo, { header: ['CONCEPTO', 'MONTO'] })
+    wsCalculo['!cols'] = [{ wch: 30 }, { wch: 20 }]
+    XLSX.utils.book_append_sheet(wb, wsCalculo, 'Cálculo Efectivo')
+    
+    // ============ GUARDAR ARCHIVO ============
     const fechaFormateada = formatFechaNicaragua(arqueo.fecha)
       .replace(/[/: ]/g, '-')
       .replace(/[a.m.p.m]/g, '')
@@ -467,7 +524,8 @@ const exportarArqueoExcel = async (arqueo) => {
     setExportando(prev => ({ ...prev, [arqueo.id]: null }))
   }
 }
-  // Exportar UN arqueo a PDF - VERSIÓN CORREGIDA
+
+ // Exportar UN arqueo a PDF - VERSIÓN SIMPLE Y LIMPIA
 const exportarArqueoPDF = async (arqueo) => {
   try {
     setExportando(prev => ({ ...prev, [arqueo.id]: 'pdf' }))
@@ -484,218 +542,132 @@ const exportarArqueoPDF = async (arqueo) => {
     const fecha = formatFechaNicaragua(arqueoCompleto.fecha)
     const fechaArchivo = fecha.replace(/[/: ]/g, '-').replace(/[a.m.p.m]/g, '')
     
-    const colorPrimario = [139, 92, 246]
-    const colorSecundario = [59, 130, 246]
+    // Colores
+    const colorTitulo = [80, 70, 230] // Azul morado
+    const colorTexto = [50, 50, 50]
     
-    // ============ PÁGINA 1 ============
-    doc.setFontSize(20)
-    doc.setTextColor(...colorPrimario)
+    // ============ TÍTULO ============
+    doc.setFontSize(22)
+    doc.setTextColor(...colorTitulo)
     doc.text('COMPROBANTE DE ARQUEO', 105, 20, { align: 'center' })
     
     doc.setFontSize(12)
-    doc.setTextColor(100, 116, 139)
+    doc.setTextColor(100, 100, 100)
     doc.text('Arelyz Salón - Sistema de Caja', 105, 30, { align: 'center' })
     
-    doc.setDrawColor(...colorPrimario)
+    doc.setDrawColor(200, 200, 200)
     doc.setLineWidth(0.5)
     doc.line(20, 35, 190, 35)
     
-    doc.setFontSize(14)
-    doc.setTextColor(30, 41, 59)
-    doc.text(`Fecha: ${fecha}`, 20, 45)
-    doc.text(`Usuario: ${arqueoCompleto.usuario || 'Sistema'}`, 20, 55)
+    // ============ INFORMACIÓN BÁSICA ============
+    doc.setFontSize(11)
+    doc.setTextColor(...colorTexto)
+    
+    doc.text(`Fecha del Arqueo: ${fecha}`, 20, 45)
+    doc.text(`Usuario: ${arqueoCompleto.usuario || 'Sistema'}`, 20, 52)
     
     doc.setFontSize(10)
-    doc.setTextColor(100, 116, 139)
+    doc.setTextColor(100, 100, 100)
     doc.text(`ID: ${arqueoCompleto.id.substring(0, 8)}...`, 150, 45)
-    doc.text(`Período: ${arqueoCompleto.periodo_desde || 'N/A'}`, 150, 55)
-    doc.text(`Hasta: ${arqueoCompleto.periodo_hasta || 'N/A'}`, 150, 62)
     
-    // ============ EFECTIVO ============
+    // Período
+    const periodoDesde = arqueoCompleto.periodo_desde?.substring(0, 10) || 'N/A'
+    const periodoHasta = arqueoCompleto.periodo_hasta?.substring(0, 10) || 'N/A'
+    doc.text(`Período: ${periodoDesde} - ${periodoHasta}`, 20, 62)
+    
+    // ============ RESUMEN FINANCIERO ============
     doc.setFontSize(16)
-    doc.setTextColor(...colorSecundario)
-    doc.text('EFECTIVO EN CAJA - DETALLADO', 20, 80)
-    
-    doc.setFillColor(248, 250, 252)
-    doc.rect(20, 85, 170, 60, 'F')
-    
-    doc.setFontSize(11)
-    doc.setTextColor(30, 41, 59)
-    
-    // Ventas en efectivo
-    doc.text('Ventas en efectivo:', 25, 95)
-    doc.setFont(undefined, 'bold')
-    doc.text(`C$${parseFloat(arqueoCompleto.total_ventas_efectivo || 0).toFixed(2)}`, 100, 95)
-    doc.setFont(undefined, 'normal')
-    doc.setFontSize(9)
-    doc.setTextColor(100, 116, 139)
-    doc.text(`(${arqueoCompleto.ventas_eliminadas || 0} ventas)`, 130, 95)
-    
-    // Abonos en efectivo
-    doc.setFontSize(11)
-    doc.setTextColor(30, 41, 59)
-    doc.text('Abonos en efectivo:', 25, 105)
-    doc.setFont(undefined, 'bold')
-    doc.text(`C$${parseFloat(arqueoCompleto.total_abonos_efectivo || 0).toFixed(2)}`, 100, 105)
-    doc.setFont(undefined, 'normal')
-    doc.setFontSize(9)
-    doc.setTextColor(100, 116, 139)
-    doc.text(`(${arqueoCompleto.abonos_efectivo_eliminados || 0} abonos)`, 130, 105)
+    doc.setTextColor(...colorTitulo)
+    doc.text('RESUMEN FINANCIERO', 20, 80)
     
     doc.setDrawColor(200, 200, 200)
-    doc.line(25, 112, 185, 112)
+    doc.setLineWidth(0.5)
+    doc.line(20, 83, 190, 83)
     
-    // EFECTIVO BRUTO
+    // Totales principales
+    let y = 95
+    const leftX = 30
+    const rightX = 120
+    
     doc.setFontSize(12)
-    doc.setTextColor(...colorPrimario)
-    doc.setFont(undefined, 'bold')
-    doc.text('EFECTIVO BRUTO:', 25, 122)
-    doc.text(`C$${parseFloat(arqueoCompleto.total_efectivo || 0).toFixed(2)}`, 100, 122)
+    doc.setTextColor(...colorTexto)
     
-    // Gastos
-    doc.setFontSize(11)
-    doc.setTextColor(239, 68, 68)
+    // VENTAS TOTALES
+    doc.setFont(undefined, 'bold')
+    doc.text('VENTAS TOTALES', leftX, y)
     doc.setFont(undefined, 'normal')
-    doc.text('Gastos:', 25, 132)
+    doc.text(`C$${parseFloat(arqueoCompleto.total_ventas || 0).toFixed(2)}`, rightX, y)
+    
+    y += 8
+    doc.text('Ventas Crédito', leftX + 5, y)
+    doc.text(`C$${parseFloat(arqueoCompleto.total_credito || 0).toFixed(2)}`, rightX, y)
+    
+    y += 12
     doc.setFont(undefined, 'bold')
-    doc.text(`-C$${parseFloat(arqueoCompleto.total_gastos || 0).toFixed(2)}`, 100, 132)
+    doc.text('EFECTIVO BRUTO', leftX, y)
     doc.setFont(undefined, 'normal')
-    doc.setFontSize(9)
-    doc.setTextColor(100, 116, 139)
-    doc.text(`(${arqueoCompleto.gastos_eliminados || 0} gastos)`, 130, 132)
+    doc.text(`C$${parseFloat(arqueoCompleto.total_efectivo || 0).toFixed(2)}`, rightX, y)
     
-    doc.setDrawColor(...colorSecundario)
-    doc.setLineWidth(1)
-    doc.line(25, 138, 185, 138)
+    y += 8
+    doc.text('Bonos en efectivo', leftX + 5, y)
+    doc.text(`C$${parseFloat(arqueoCompleto.total_abonos_efectivo || 0).toFixed(2)}`, rightX, y)
     
-    // EFECTIVO NETO
-    doc.setFontSize(14)
-    doc.setTextColor(16, 185, 129)
+    y += 8
+    doc.text('GASTOS', leftX, y)
+    doc.text(`C$${parseFloat(arqueoCompleto.total_gastos || 0).toFixed(2)}`, rightX, y)
+    
+    y += 12
     doc.setFont(undefined, 'bold')
-    doc.text('EFECTIVO NETO EN CAJA:', 25, 150)
-    doc.text(`C$${parseFloat(arqueoCompleto.efectivo_en_caja || 0).toFixed(2)}`, 130, 150)
+    doc.text('EFECTIVO EN CAJA', leftX, y)
+    doc.setFont(undefined, 'normal')
     
-    // Diferencia
-    const efectivoNetoCalculado = (parseFloat(arqueoCompleto.total_efectivo || 0) - parseFloat(arqueoCompleto.total_gastos || 0))
-    const diferencia = parseFloat(arqueoCompleto.efectivo_en_caja || 0) - efectivoNetoCalculado
+    const efectivoNeto = parseFloat(arqueoCompleto.efectivo_en_caja || 0).toFixed(2)
+    doc.text(`C$${efectivoNeto}`, rightX, y)
     
+    y += 8
+    const diferencia = parseFloat(arqueoCompleto.diferencia_efectivo || 0)
     if (Math.abs(diferencia) > 0.01) {
-      doc.setFontSize(11)
-      doc.setTextColor(diferencia > 0 ? 16 : 239, diferencia > 0 ? 185 : 68, diferencia > 0 ? 129 : 68)
-      doc.text(`Diferencia: C$${Math.abs(diferencia).toFixed(2)} ${diferencia > 0 ? '(Sobrante)' : '(Faltante)'}`, 25, 162)
+      doc.setTextColor(diferencia > 0 ? 0 : 200, diferencia > 0 ? 150 : 0, 0)
+      doc.text('DIFERENCIA', leftX, y)
+      doc.text(`C$${Math.abs(diferencia).toFixed(2)} ${diferencia > 0 ? '(Sobrante)' : '(Faltante)'}`, rightX, y)
+    } else {
+      doc.text('DIFERENCIA', leftX, y)
+      doc.text('C$0.00', rightX, y)
     }
     
-    // ============ OTROS MÉTODOS ============
-    doc.setFontSize(16)
-    doc.setTextColor(...colorSecundario)
-    doc.text('OTROS MÉTODOS DE PAGO', 20, 185)
+    // ============ DETALLES ADICIONALES ============
+    y += 20
+    doc.setFontSize(14)
+    doc.setTextColor(...colorTitulo)
+    doc.text('DETALLES ADICIONALES', 20, y)
     
-    // Cabecera
-    doc.setFillColor(243, 244, 246)
-    doc.rect(20, 190, 170, 8, 'F')
-    doc.setFontSize(10)
-    doc.setTextColor(55, 65, 81)
-    doc.setFont(undefined, 'bold')
-    doc.text('Método', 25, 196)
-    doc.text('Ventas', 80, 196)
-    doc.text('Abonos', 130, 196)
+    doc.setDrawColor(200, 200, 200)
+    doc.line(20, y + 3, 190, y + 3)
     
-    doc.setFont(undefined, 'normal')
-    doc.setTextColor(30, 41, 59)
+    y += 15
+    doc.setFontSize(11)
+    doc.setTextColor(...colorTexto)
     
-    // Tarjeta
-    doc.text('Tarjeta', 25, 206)
-    doc.text(`C$${parseFloat(arqueoCompleto.total_ventas_tarjeta || 0).toFixed(2)}`, 80, 206)
-    doc.text(`C$${parseFloat(arqueoCompleto.total_abonos_tarjeta || 0).toFixed(2)}`, 130, 206)
+    doc.text(`• Ventas eliminadas: ${arqueoCompleto.ventas_eliminadas || 0}`, 25, y)
+    y += 7
+    doc.text(`• Gastos eliminados: ${arqueoCompleto.gastos_eliminados || 0}`, 25, y)
+    y += 7
+    doc.text(`• Abonos en efectivo: C$${parseFloat(arqueoCompleto.total_abonos_efectivo || 0).toFixed(2)} (${arqueoCompleto.abonos_efectivo_eliminados || 0} abonos)`, 25, y)
+    y += 7
+    doc.text(`• Abonos con tarjeta: C$${parseFloat(arqueoCompleto.total_abonos_tarjeta || 0).toFixed(2)} (${arqueoCompleto.abonos_tarjeta_eliminados || 0} abonos)`, 25, y)
+    y += 7
+    doc.text(`• Abonos con transferencia: C$${parseFloat(arqueoCompleto.total_abonos_transferencia || 0).toFixed(2)} (${arqueoCompleto.abonos_transferencia_eliminados || 0} abonos)`, 25, y)
+    y += 7
+    doc.text(`• Créditos mantenidos: ${arqueoCompleto.creditos_completados_eliminados || 0} créditos`, 25, y)
     
-    // Transferencia
-    doc.text('Transferencia', 25, 216)
-    doc.text(`C$${parseFloat(arqueoCompleto.total_ventas_transferencia || 0).toFixed(2)}`, 80, 216)
-    doc.text(`C$${parseFloat(arqueoCompleto.total_abonos_transferencia || 0).toFixed(2)}`, 130, 216)
-    
-    // Crédito
-    doc.text('Crédito (ventas)', 25, 226)
-    doc.text(`C$${parseFloat(arqueoCompleto.total_credito || 0).toFixed(2)}`, 80, 226)
-    doc.text('-', 130, 226)
-    
-    doc.setFontSize(9)
-    doc.setTextColor(100, 116, 139)
-    doc.text(`Total ventas crédito: ${arqueoCompleto.creditos_completados_eliminados || 0} créditos`, 25, 236)
-    
-    // ============ PÁGINA 2 ============
-    doc.addPage()
-    
-    doc.setFontSize(16)
-    doc.setTextColor(...colorSecundario)
-    doc.text('REGISTROS DEL ARQUEO', 20, 20)
-    
-    // Ventas eliminadas
-    doc.setFillColor(254, 226, 226)
-    doc.rect(20, 30, 80, 25, 'F')
-    doc.setTextColor(153, 27, 27)
-    doc.setFontSize(20)
-    doc.setFont(undefined, 'bold')
-    doc.text(`${arqueoCompleto.ventas_eliminadas || 0}`, 60, 48, { align: 'center' })
-    doc.setFontSize(10)
-    doc.text('VENTAS', 60, 55, { align: 'center' })
-    doc.text('ELIMINADAS', 60, 61, { align: 'center' })
-    
-    // Gastos eliminados
-    doc.setFillColor(254, 226, 226)
-    doc.rect(110, 30, 80, 25, 'F')
-    doc.setTextColor(153, 27, 27)
-    doc.setFontSize(20)
-    doc.setFont(undefined, 'bold')
-    doc.text(`${arqueoCompleto.gastos_eliminados || 0}`, 150, 48, { align: 'center' })
-    doc.setFontSize(10)
-    doc.text('GASTOS', 150, 55, { align: 'center' })
-    doc.text('ELIMINADOS', 150, 61, { align: 'center' })
-    
-    // Abonos procesados
-    const totalAbonos = (arqueoCompleto.abonos_efectivo_eliminados || 0) + 
-                       (arqueoCompleto.abonos_tarjeta_eliminados || 0) + 
-                       (arqueoCompleto.abonos_transferencia_eliminados || 0)
-    
-    doc.setFillColor(209, 250, 229)
-    doc.rect(65, 70, 80, 25, 'F')
-    doc.setTextColor(6, 95, 70)
-    doc.setFontSize(20)
-    doc.setFont(undefined, 'bold')
-    doc.text(`${totalAbonos}`, 105, 88, { align: 'center' })
-    doc.setFontSize(10)
-    doc.text('ABONOS', 105, 95, { align: 'center' })
-    doc.text('PROCESADOS', 105, 101, { align: 'center' })
-    
-    // Detalle de abonos
-    doc.setFontSize(12)
-    doc.setTextColor(30, 41, 59)
-    doc.text('Detalle de abonos procesados:', 20, 120)
-    
-    doc.setFontSize(10)
-    doc.text(`• Efectivo: ${arqueoCompleto.abonos_efectivo_eliminados || 0} abonos - C$${parseFloat(arqueoCompleto.total_abonos_efectivo || 0).toFixed(2)}`, 25, 130)
-    doc.text(`• Tarjeta: ${arqueoCompleto.abonos_tarjeta_eliminados || 0} abonos - C$${parseFloat(arqueoCompleto.total_abonos_tarjeta || 0).toFixed(2)}`, 25, 140)
-    doc.text(`• Transferencia: ${arqueoCompleto.abonos_transferencia_eliminados || 0} abonos - C$${parseFloat(arqueoCompleto.total_abonos_transferencia || 0).toFixed(2)}`, 25, 150)
-    
-    // Créditos
-    doc.text(`• Ventas a crédito: ${arqueoCompleto.creditos_completados_eliminados || 0} créditos - C$${parseFloat(arqueoCompleto.total_credito || 0).toFixed(2)}`, 25, 165)
-    
-    // Nota
-    doc.setFillColor(254, 243, 199)
-    doc.rect(20, 180, 170, 35, 'F')
-    doc.setTextColor(146, 64, 14)
-    doc.setFontSize(10)
-    doc.text('NOTA IMPORTANTE:', 25, 190)
-    doc.setFontSize(9)
-    doc.text('Los abonos se contabilizan UNA SOLA VEZ en este arqueo', 25, 200)
-    doc.text('y se marcan como procesados para evitar doble conteo.', 25, 207)
-    doc.text('Los créditos se mantienen en el sistema para seguimiento.', 25, 214)
-    
-    // Pie
+    // ============ PIE DE PÁGINA ============
     const pageHeight = doc.internal.pageSize.height
     doc.setFontSize(9)
-    doc.setTextColor(100, 116, 139)
-    doc.text('Documento generado automáticamente por el Sistema Arelyz Salón', 105, pageHeight - 10, { align: 'center' })
+    doc.setTextColor(150, 150, 150)
+    doc.text('Documento generado automáticamente por el Sistema Arelyz Salón', 105, pageHeight - 15, { align: 'center' })
+    doc.text(`ID: ${arqueoCompleto.id}`, 105, pageHeight - 10, { align: 'center' })
     
+    // ============ GUARDAR ============
     doc.save(`arqueo-${fechaArchivo}.pdf`)
     
     setTimeout(() => {
