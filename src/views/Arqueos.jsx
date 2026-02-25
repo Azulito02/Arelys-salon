@@ -44,161 +44,195 @@ const Arqueos = () => {
   }
 
   const calcularResumenTurno = async () => {
-    try {
-      setCalculando(true)
-      
-      let fechaDesde = new Date()
-      fechaDesde.setHours(0, 0, 0, 0)
-      const fechaHasta = new Date()
-      
-      const [ventasResp, creditosResp, abonosResp, gastosResp] = await Promise.all([
-        supabase.from('ventas').select('*').gte('fecha', fechaDesde.toISOString()),
-        supabase.from('ventas_credito').select('*').gte('fecha', fechaDesde.toISOString()),
-        supabase.from('abonos_credito').select('*')
-          .gte('fecha', fechaDesde.toISOString())
-          .is('procesado_en_arqueo', false),
-        supabase.from('gastos').select('*')
-          .gte('fecha', fechaDesde.toISOString())
-          .eq('procesado_en_arqueo', false)
-      ])
-      
-      const ventas = ventasResp.data || []
-      const creditos = creditosResp.data || []
-      const abonos = abonosResp.data || []
-      const gastos = gastosResp.data || []
+  try {
+    setCalculando(true)
+    
+    let fechaDesde = new Date()
+    fechaDesde.setHours(0, 0, 0, 0)
+    const fechaHasta = new Date()
+    
+    const [ventasResp, creditosResp, abonosResp, gastosResp] = await Promise.all([
+      supabase.from('ventas').select('*').gte('fecha', fechaDesde.toISOString()),
+      supabase.from('ventas_credito').select('*').gte('fecha', fechaDesde.toISOString()),
+      supabase.from('abonos_credito').select('*')
+        .gte('fecha', fechaDesde.toISOString())
+        .is('procesado_en_arqueo', false),
+      supabase.from('gastos').select('*')
+        .gte('fecha', fechaDesde.toISOString())
+        .eq('procesado_en_arqueo', false)
+    ])
+    
+    const ventas = ventasResp.data || []
+    const creditos = creditosResp.data || []
+    const abonos = abonosResp.data || []
+    const gastos = gastosResp.data || []
 
-      console.log('📊 Ventas pendientes:', ventas.length)
-      console.log('📊 Abonos pendientes:', abonos.length)
-      console.log('📊 Gastos pendientes:', gastos.length)
+    console.log('📊 Ventas pendientes:', ventas.length)
+    console.log('📊 Abonos pendientes:', abonos.length)
+    console.log('📊 Gastos pendientes:', gastos.length)
+    
+    // ============ CALCULAR VENTAS POR MÉTODO DE PAGO ============
+    let totalVentasEfectivo = 0
+    let totalVentasTarjeta = 0
+    let totalVentasTransferencia = 0
+    
+    let cantidadVentasEfectivo = 0
+    let cantidadVentasTarjeta = 0
+    let cantidadVentasTransferencia = 0
+    
+    // CORREGIDO: Procesar ventas incluyendo mixtas
+    ventas.forEach(venta => {
+      const metodo = venta.metodo_pago?.toLowerCase() || ''
       
-      // ============ CALCULAR VENTAS POR MÉTODO DE PAGO ============
-      let totalVentasEfectivo = 0
-      let totalVentasTarjeta = 0
-      let totalVentasTransferencia = 0
-      
-      let cantidadVentasEfectivo = 0
-      let cantidadVentasTarjeta = 0
-      let cantidadVentasTransferencia = 0
-      
-      // CORREGIDO: Cada venta cuenta UNA SOLA VEZ según su método
-      ventas.forEach(venta => {
-        switch(venta.metodo_pago) {
-          case 'efectivo':
-            totalVentasEfectivo += parseFloat(venta.total) || 0
-            cantidadVentasEfectivo++
-            break
-            
-          case 'tarjeta':
-            totalVentasTarjeta += parseFloat(venta.total) || 0
-            cantidadVentasTarjeta++
-            break
-            
-          case 'transferencia':
-            totalVentasTransferencia += parseFloat(venta.total) || 0
-            cantidadVentasTransferencia++
-            break
-            
-          case 'mixto':
-            totalVentasEfectivo += parseFloat(venta.efectivo) || 0
-            totalVentasTarjeta += parseFloat(venta.tarjeta) || 0
-            totalVentasTransferencia += parseFloat(venta.transferencia) || 0
-            // Las ventas mixtas NO incrementan contadores individuales
-            break
-            
-          default:
-            console.log('Método de pago desconocido:', venta.metodo_pago)
-        }
-      })
-      
-      // ============ CALCULAR ABONOS POR MÉTODO DE PAGO ============
-      let abonosEfectivo = 0
-      let abonosTarjeta = 0
-      let abonosTransferencia = 0
-      
-      let cantidadAbonosEfectivo = 0
-      let cantidadAbonosTarjeta = 0
-      let cantidadAbonosTransferencia = 0
-      
-      abonos.forEach(abono => {
-        switch(abono.metodo_pago) {
-          case 'efectivo':
-            abonosEfectivo += parseFloat(abono.monto) || 0
-            cantidadAbonosEfectivo++
-            break
-            
-          case 'tarjeta':
-            abonosTarjeta += parseFloat(abono.monto) || 0
-            cantidadAbonosTarjeta++
-            break
-            
-          case 'transferencia':
-            abonosTransferencia += parseFloat(abono.monto) || 0
-            cantidadAbonosTransferencia++
-            break
-            
-          case 'mixto':
-            abonosEfectivo += parseFloat(abono.efectivo) || 0
-            abonosTarjeta += parseFloat(abono.tarjeta) || 0
-            abonosTransferencia += parseFloat(abono.transferencia) || 0
-            // Los abonos mixtos NO incrementan contadores individuales
-            break
-        }
-      })
-      
-      const totalCreditos = creditos.reduce((s, c) => s + (parseFloat(c.total) || 0), 0)
-      const totalGastos = gastos.reduce((s, g) => s + (parseFloat(g.monto) || 0), 0)
-      
-      const resumen = {
-        // Totales por método de pago
-        totalVentasEfectivo,
-        totalVentasTarjeta,
-        totalVentasTransferencia,
-        
-        totalAbonosEfectivo: abonosEfectivo,
-        abonosTarjeta,
-        abonosTransferencia,
-        
-        totalCreditos,
-        totalGastos,
-        
-        // Cálculo de efectivo para arqueo
-        efectivoNeto: totalVentasEfectivo + abonosEfectivo - totalGastos,
-        totalEfectivo: totalVentasEfectivo + abonosEfectivo,
-        
-        // Cantidades CORREGIDAS - cada método tiene su propio contador
-        cantidadVentas: ventas.length,
-        cantidadVentasEfectivo,
-        cantidadVentasTarjeta,
-        cantidadVentasTransferencia,
-        
-        cantidadCreditos: creditos.length,
-        
-        cantidadAbonosEfectivo,
-        cantidadAbonosTarjeta,
-        cantidadAbonosTransferencia,
-        
-        cantidadGastos: gastos.length,
-        
-        // Fechas
-        fechaDesde: fechaDesde.toLocaleString('es-MX'),
-        fechaHasta: fechaHasta.toLocaleString('es-MX'),
-        
-        // Totales generales
-        totalVentasGeneral: totalVentasEfectivo + totalVentasTarjeta + totalVentasTransferencia,
-        totalAbonosGeneral: abonosEfectivo + abonosTarjeta + abonosTransferencia
+      // Ventas simples
+      if (metodo === 'efectivo') {
+        totalVentasEfectivo += parseFloat(venta.total) || 0
+        cantidadVentasEfectivo++
       }
+      else if (metodo === 'tarjeta') {
+        totalVentasTarjeta += parseFloat(venta.total) || 0
+        cantidadVentasTarjeta++
+      }
+      else if (metodo === 'transferencia') {
+        totalVentasTransferencia += parseFloat(venta.total) || 0
+        cantidadVentasTransferencia++
+      }
+      // Ventas mixtas - ¡CORREGIDO!
+      else if (metodo === 'mixto') {
+        const efectivo = parseFloat(venta.efectivo) || 0
+        const tarjeta = parseFloat(venta.tarjeta) || 0
+        const transferencia = parseFloat(venta.transferencia) || 0
+        
+        totalVentasEfectivo += efectivo
+        totalVentasTarjeta += tarjeta
+        totalVentasTransferencia += transferencia
+        
+        // Incrementar contadores SOLO si tienen monto
+        if (efectivo > 0) cantidadVentasEfectivo++
+        if (tarjeta > 0) cantidadVentasTarjeta++
+        if (transferencia > 0) cantidadVentasTransferencia++
+        
+        console.log('🎯 Venta mixta procesada:', { efectivo, tarjeta, transferencia })
+      }
+      else {
+        console.log('Método de pago desconocido:', venta.metodo_pago)
+      }
+    })
+    
+    // ============ CALCULAR ABONOS POR MÉTODO DE PAGO ============
+    let abonosEfectivo = 0
+    let abonosTarjeta = 0
+    let abonosTransferencia = 0
+    
+    let cantidadAbonosEfectivo = 0
+    let cantidadAbonosTarjeta = 0
+    let cantidadAbonosTransferencia = 0
+    
+    // CORREGIDO: Procesar abonos incluyendo mixtos
+    abonos.forEach(abono => {
+      const metodo = abono.metodo_pago?.toLowerCase() || ''
       
-      setResumenTurno(resumen)
-      setEfectivoContado((totalVentasEfectivo + abonosEfectivo - totalGastos).toFixed(2))
-      setModalAbierto(true)
+      // Abonos simples
+      if (metodo === 'efectivo') {
+        abonosEfectivo += parseFloat(abono.monto) || 0
+        cantidadAbonosEfectivo++
+      }
+      else if (metodo === 'tarjeta') {
+        abonosTarjeta += parseFloat(abono.monto) || 0
+        cantidadAbonosTarjeta++
+      }
+      else if (metodo === 'transferencia') {
+        abonosTransferencia += parseFloat(abono.monto) || 0
+        cantidadAbonosTransferencia++
+      }
+      // Abonos mixtos - ¡CORREGIDO!
+      else if (metodo === 'mixto') {
+        const efectivo = parseFloat(abono.efectivo) || 0
+        const tarjeta = parseFloat(abono.tarjeta) || 0
+        const transferencia = parseFloat(abono.transferencia) || 0
+        
+        abonosEfectivo += efectivo
+        abonosTarjeta += tarjeta
+        abonosTransferencia += transferencia
+        
+        // Incrementar contadores SOLO si tienen monto
+        if (efectivo > 0) cantidadAbonosEfectivo++
+        if (tarjeta > 0) cantidadAbonosTarjeta++
+        if (transferencia > 0) cantidadAbonosTransferencia++
+        
+        console.log('🎯 Abono mixto procesado:', { efectivo, tarjeta, transferencia })
+      }
+    })
+    
+    const totalCreditos = creditos.reduce((s, c) => s + (parseFloat(c.total) || 0), 0)
+    const totalGastos = gastos.reduce((s, g) => s + (parseFloat(g.monto) || 0), 0)
+    
+    console.log('📊 Totales después de procesar:', {
+      ventas: {
+        efectivo: { monto: totalVentasEfectivo, cant: cantidadVentasEfectivo },
+        tarjeta: { monto: totalVentasTarjeta, cant: cantidadVentasTarjeta },
+        transferencia: { monto: totalVentasTransferencia, cant: cantidadVentasTransferencia }
+      },
+      abonos: {
+        efectivo: { monto: abonosEfectivo, cant: cantidadAbonosEfectivo },
+        tarjeta: { monto: abonosTarjeta, cant: cantidadAbonosTarjeta },
+        transferencia: { monto: abonosTransferencia, cant: cantidadAbonosTransferencia }
+      },
+      creditos: { monto: totalCreditos, cant: creditos.length },
+      gastos: { monto: totalGastos, cant: gastos.length }
+    })
+    
+    const resumen = {
+      // Totales por método de pago
+      totalVentasEfectivo,
+      totalVentasTarjeta,
+      totalVentasTransferencia,
       
-    } catch (error) {
-      console.error('Error calculando resumen:', error)
-      alert('Error al calcular resumen del turno')
-    } finally {
-      setCalculando(false)
+      totalAbonosEfectivo: abonosEfectivo,
+      abonosTarjeta,
+      abonosTransferencia,
+      
+      totalCreditos,
+      totalGastos,
+      
+      // Cálculo de efectivo para arqueo
+      efectivoNeto: totalVentasEfectivo + abonosEfectivo - totalGastos,
+      totalEfectivo: totalVentasEfectivo + abonosEfectivo,
+      
+      // Cantidades CORREGIDAS - cada método tiene su propio contador
+      cantidadVentas: ventas.length,
+      cantidadVentasEfectivo,
+      cantidadVentasTarjeta,
+      cantidadVentasTransferencia,
+      
+      cantidadCreditos: creditos.length,
+      
+      cantidadAbonosEfectivo,
+      cantidadAbonosTarjeta,
+      cantidadAbonosTransferencia,
+      
+      cantidadGastos: gastos.length,
+      
+      // Fechas
+      fechaDesde: fechaDesde.toLocaleString('es-MX'),
+      fechaHasta: fechaHasta.toLocaleString('es-MX'),
+      
+      // Totales generales
+      totalVentasGeneral: totalVentasEfectivo + totalVentasTarjeta + totalVentasTransferencia,
+      totalAbonosGeneral: abonosEfectivo + abonosTarjeta + abonosTransferencia
     }
+    
+    setResumenTurno(resumen)
+    setEfectivoContado((totalVentasEfectivo + abonosEfectivo - totalGastos).toFixed(2))
+    setModalAbierto(true)
+    
+  } catch (error) {
+    console.error('Error calculando resumen:', error)
+    alert('Error al calcular resumen del turno')
+  } finally {
+    setCalculando(false)
   }
+}
 
   const abrirModal = async () => {
     await calcularResumenTurno()
@@ -1092,217 +1126,217 @@ const exportarArqueoPDF = async (arqueo) => {
 
       {/* Modal para arqueo de turno */}
       {modalAbierto && resumenTurno && (
-        <div className="modal-overlay">
-          <div className="modal-container arqueo-modal">
-            <div className="modal-header">
-              <h3 className="modal-titulo">Arqueo de Turno</h3>
-              <button onClick={cerrarModal} className="modal-cerrar">
-                ×
-              </button>
+  <div className="modal-overlay">
+    <div className="modal-container arqueo-modal">
+      <div className="modal-header">
+        <h3 className="modal-titulo">Arqueo de Turno</h3>
+        <button onClick={cerrarModal} className="modal-cerrar">
+          ×
+        </button>
+      </div>
+      
+      <div className="modal-body">
+        <div className="periodo-info">
+          <p className="periodo-texto">
+            <strong>Período:</strong> Desde {resumenTurno.fechaDesde} hasta {resumenTurno.fechaHasta}
+          </p>
+        </div>
+        
+        <div className="resumen-grid">
+          {/* Columna izquierda - Ingresos */}
+          <div className="resumen-columna ingresos-col">
+            <h4 className="resumen-subtitulo">💰 EFECTIVO PARA CAJA</h4>
+            
+            <div className="resumen-item">
+              <span className="resumen-label">Ventas en efectivo:</span>
+              <span className="resumen-valor positivo">
+                C${(resumenTurno.totalVentasEfectivo || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+              </span>
+              <span className="resumen-cantidad">({resumenTurno.cantidadVentasEfectivo || 0} ventas)</span>
             </div>
             
-            <div className="modal-body">
-              <div className="periodo-info">
-                <p className="periodo-texto">
-                  <strong>Período:</strong> Desde {resumenTurno.fechaDesde} hasta {resumenTurno.fechaHasta}
-                </p>
+            <div className="resumen-item">
+              <span className="resumen-label">Abonos en efectivo:</span>
+              <span className="resumen-valor positivo">
+                C${(resumenTurno.totalAbonosEfectivo || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+              </span>
+              <span className="resumen-cantidad">({resumenTurno.cantidadAbonosEfectivo || 0} abonos)</span>
+            </div>
+            
+            <h4 className="resumen-subtitulo" style={{marginTop: '20px'}}>💳 OTROS MÉTODOS</h4>
+            
+            <div className="resumen-item">
+              <span className="resumen-label">Ventas con tarjeta:</span>
+              <span className="resumen-valor tarjeta">
+                C${(resumenTurno.totalVentasTarjeta || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+              </span>
+              <span className="resumen-cantidad">({resumenTurno.cantidadVentasTarjeta || 0} ventas)</span>
+            </div>
+            
+            <div className="resumen-item">
+              <span className="resumen-label">Ventas con transferencia:</span>
+              <span className="resumen-valor transferencia">
+                C${(resumenTurno.totalVentasTransferencia || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+              </span>
+              <span className="resumen-cantidad">({resumenTurno.cantidadVentasTransferencia || 0} ventas)</span>
+            </div>
+            
+            <div className="resumen-item">
+              <span className="resumen-label">Abonos con tarjeta:</span>
+              <span className="resumen-valor tarjeta">
+                C${(resumenTurno.abonosTarjeta || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+              </span>
+              <span className="resumen-cantidad">({resumenTurno.cantidadAbonosTarjeta || 0} abonos)</span>
+            </div>
+            
+            <div className="resumen-item">
+              <span className="resumen-label">Abonos con transferencia:</span>
+              <span className="resumen-valor transferencia">
+                C${(resumenTurno.abonosTransferencia || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+              </span>
+              <span className="resumen-cantidad">({resumenTurno.cantidadAbonosTransferencia || 0} abonos)</span>
+            </div>
+            
+            <div className="resumen-item">
+              <span className="resumen-label">Ventas a crédito:</span>
+              <span className="resumen-valor credito">
+                C${(resumenTurno.totalCreditos || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+              </span>
+              <span className="resumen-cantidad">({resumenTurno.cantidadCreditos || 0} créditos)</span>
+            </div>
+          </div>
+          
+          {/* Columna derecha - Egresos y cálculo de efectivo */}
+          <div className="resumen-columna egresos-col">
+            <h4 className="resumen-subtitulo">📉 EGRESOS</h4>
+            
+            <div className="resumen-item">
+              <span className="resumen-label">Gastos:</span>
+              <span className="resumen-valor negativo">
+                C${(resumenTurno.totalGastos || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+              </span>
+              <span className="resumen-cantidad">({resumenTurno.cantidadGastos || 0} gastos)</span>
+            </div>
+            
+            <div className="resumen-separador"></div>
+            
+            <div className="resumen-calculo">
+              <h5 className="calculo-titulo">💰 CÁLCULO DE EFECTIVO PARA CAJA</h5>
+              <div className="calculo-item">
+                <span>Ventas en efectivo:</span>
+                <span>C${(resumenTurno.totalVentasEfectivo || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
               </div>
-              
-              <div className="resumen-grid">
-                {/* Columna izquierda - Ingresos */}
-                <div className="resumen-columna ingresos-col">
-                  <h4 className="resumen-subtitulo">💰 EFECTIVO PARA CAJA</h4>
-                  
-                  <div className="resumen-item">
-                    <span className="resumen-label">Ventas en efectivo:</span>
-                    <span className="resumen-valor positivo">
-                      C${(resumenTurno.totalVentasEfectivo || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                    </span>
-                    <span className="resumen-cantidad">({resumenTurno.cantidadVentasEfectivo || 0} ventas)</span>
-                  </div>
-                  
-                  <div className="resumen-item">
-                    <span className="resumen-label">Abonos en efectivo:</span>
-                    <span className="resumen-valor positivo">
-                      C${(resumenTurno.totalAbonosEfectivo || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                    </span>
-                    <span className="resumen-cantidad">({resumenTurno.cantidadAbonosEfectivo || 0} abonos)</span>
-                  </div>
-                  
-                  <h4 className="resumen-subtitulo" style={{marginTop: '20px'}}>💳 OTROS MÉTODOS</h4>
-                  
-                  <div className="resumen-item">
-                    <span className="resumen-label">Ventas con tarjeta:</span>
-                    <span className="resumen-valor tarjeta">
-                      C${(resumenTurno.totalVentasTarjeta || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                    </span>
-                    <span className="resumen-cantidad">({resumenTurno.cantidadVentasTarjeta || 0} ventas)</span>
-                  </div>
-                  
-                  <div className="resumen-item">
-                    <span className="resumen-label">Ventas con transferencia:</span>
-                    <span className="resumen-valor transferencia">
-                      C${(resumenTurno.totalVentasTransferencia || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                    </span>
-                    <span className="resumen-cantidad">({resumenTurno.cantidadVentasTransferencia || 0} ventas)</span>
-                  </div>
-                  
-                  <div className="resumen-item">
-                    <span className="resumen-label">Abonos con tarjeta:</span>
-                    <span className="resumen-valor tarjeta">
-                      C${(resumenTurno.abonosTarjeta || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                    </span>
-                    <span className="resumen-cantidad">({resumenTurno.cantidadAbonosTarjeta || 0} abonos)</span>
-                  </div>
-                  
-                  <div className="resumen-item">
-                    <span className="resumen-label">Abonos con transferencia:</span>
-                    <span className="resumen-valor transferencia">
-                      C${(resumenTurno.abonosTransferencia || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                    </span>
-                    <span className="resumen-cantidad">({resumenTurno.cantidadAbonosTransferencia || 0} abonos)</span>
-                  </div>
-                  
-                  <div className="resumen-item">
-                    <span className="resumen-label">Ventas a crédito:</span>
-                    <span className="resumen-valor credito">
-                      C${(resumenTurno.totalCreditos || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                    </span>
-                    <span className="resumen-cantidad">({resumenTurno.cantidadCreditos || 0} créditos)</span>
-                  </div>
-                </div>
-                
-                {/* Columna derecha - Egresos y cálculo de efectivo */}
-                <div className="resumen-columna egresos-col">
-                  <h4 className="resumen-subtitulo">📉 EGRESOS</h4>
-                  
-                  <div className="resumen-item">
-                    <span className="resumen-label">Gastos:</span>
-                    <span className="resumen-valor negativo">
-                      C${(resumenTurno.totalGastos || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                    </span>
-                    <span className="resumen-cantidad">({resumenTurno.cantidadGastos || 0} gastos)</span>
-                  </div>
-                  
-                  <div className="resumen-separador"></div>
-                  
-                  <div className="resumen-calculo">
-                    <h5 className="calculo-titulo">💰 CÁLCULO DE EFECTIVO PARA CAJA</h5>
-                    <div className="calculo-item">
-                      <span>Ventas en efectivo:</span>
-                      <span>C${(resumenTurno.totalVentasEfectivo || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
-                    </div>
-                    <div className="calculo-item">
-                      <span>+ Abonos en efectivo:</span>
-                      <span>C${(resumenTurno.totalAbonosEfectivo || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
-                    </div>
-                    <div className="calculo-subtotal">
-                      <span>EFECTIVO BRUTO:</span>
-                      <span className="subtotal-valor">
-                        C${(resumenTurno.totalEfectivo || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                      </span>
-                    </div>
-                    <div className="calculo-item">
-                      <span>- Gastos:</span>
-                      <span>C${(resumenTurno.totalGastos || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
-                    </div>
-                    <div className="calculo-total">
-                      <span>EFECTIVO NETO ESPERADO:</span>
-                      <span className="neto-esperado">
-                        C${(resumenTurno.efectivoNeto || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <div className="efectivo-contado">
-                    <label className="contado-label">
-                      💵 EFECTIVO REAL CONTADO:
-                    </label>
-                    <div className="contado-input-container">
-                      <span className="contado-prefijo">C$</span>
-                      <input
-                        type="number"
-                        value={efectivoContado}
-                        onChange={(e) => setEfectivoContado(e.target.value)}
-                        className="contado-input"
-                        placeholder="0.00"
-                        step="0.01"
-                        min="0"
-                        autoFocus
-                      />
-                    </div>
-                    
-                    {efectivoContado && resumenTurno.efectivoNeto && (
-                      <div className="diferencia">
-                        <span>Diferencia:</span>
-                        <span className={`diferencia-valor ${(parseFloat(efectivoContado) - (resumenTurno.efectivoNeto || 0)) >= 0 ? 'positivo' : 'negativo'}`}>
-                          C${Math.abs(parseFloat(efectivoContado) - (resumenTurno.efectivoNeto || 0)).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                          {(parseFloat(efectivoContado) - (resumenTurno.efectivoNeto || 0)) > 0 ? ' (Sobrante)' : ' (Faltante)'}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
+              <div className="calculo-item">
+                <span>+ Abonos en efectivo:</span>
+                <span>C${(resumenTurno.totalAbonosEfectivo || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
               </div>
-              
-              <div className="advertencia-arqueo">
-                <p className="advertencia-texto">
-                  ⚠️ <strong>ATENCIÓN:</strong> Al confirmar este arqueo se procesarán los siguientes registros:
-                </p>
-                <div className="advertencia-columnas">
-                  <div className="advertencia-col">
-                    <p className="advertencia-subtitulo">🗑️ ELIMINADOS:</p>
-                    <ul className="advertencia-lista">
-                      <li><span className="eliminar-item">{resumenTurno.cantidadVentas || 0} ventas</span></li>
-                      <li><span className="eliminar-item">{resumenTurno.cantidadGastos || 0} gastos</span></li>
-                    </ul>
-                  </div>
-                  <div className="advertencia-col">
-                    <p className="advertencia-subtitulo">✅ PROCESADOS:</p>
-                    <ul className="advertencia-lista">
-                      <li><span className="mantener-item">{resumenTurno.cantidadAbonosEfectivo || 0} abonos en efectivo</span></li>
-                      <li><span className="mantener-item">{resumenTurno.cantidadAbonosTarjeta || 0} abonos con tarjeta</span></li>
-                      <li><span className="mantener-item">{resumenTurno.cantidadAbonosTransferencia || 0} abonos con transferencia</span></li>
-                      <li><span className="mantener-item">{resumenTurno.cantidadCreditos || 0} créditos (mantenidos)</span></li>
-                    </ul>
-                  </div>
-                </div>
-                
-                <div className="advertencia-footer">
-                  <p className="advertencia-nota">
-                    💾 <strong>Nota:</strong> Todo el historial se guardará en "facturados". 
-                    Los abonos se marcan como procesados (no se eliminan) y solo se contabilizan UNA VEZ en el arqueo.
-                  </p>
-                </div>
+              <div className="calculo-subtotal">
+                <span>EFECTIVO BRUTO:</span>
+                <span className="subtotal-valor">
+                  C${(resumenTurno.totalEfectivo || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+              <div className="calculo-item">
+                <span>- Gastos:</span>
+                <span>C${(resumenTurno.totalGastos || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}</span>
+              </div>
+              <div className="calculo-total">
+                <span>EFECTIVO NETO ESPERADO:</span>
+                <span className="neto-esperado">
+                  C${(resumenTurno.efectivoNeto || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                </span>
               </div>
             </div>
             
-            <div className="modal-footer">
-              <button
-                onClick={cerrarModal}
-                className="btn btn-secondary"
-                disabled={loading}
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={realizarArqueo}
-                className="btn btn-success"
-                disabled={!efectivoContado || loading}
-              >
-                {loading ? (
-                  <>
-                    <div className="spinner-small"></div>
-                    Procesando...
-                  </>
-                ) : (
-                  '✅ Confirmar Arqueo'
-                )}
-              </button>
+            <div className="efectivo-contado">
+              <label className="contado-label">
+                💵 EFECTIVO REAL CONTADO:
+              </label>
+              <div className="contado-input-container">
+                <span className="contado-prefijo">C$</span>
+                <input
+                  type="number"
+                  value={efectivoContado}
+                  onChange={(e) => setEfectivoContado(e.target.value)}
+                  className="contado-input"
+                  placeholder="0.00"
+                  step="0.01"
+                  min="0"
+                  autoFocus
+                />
+              </div>
+              
+              {efectivoContado && resumenTurno.efectivoNeto && (
+                <div className="diferencia">
+                  <span>Diferencia:</span>
+                  <span className={`diferencia-valor ${(parseFloat(efectivoContado) - (resumenTurno.efectivoNeto || 0)) >= 0 ? 'positivo' : 'negativo'}`}>
+                    C${Math.abs(parseFloat(efectivoContado) - (resumenTurno.efectivoNeto || 0)).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    {(parseFloat(efectivoContado) - (resumenTurno.efectivoNeto || 0)) > 0 ? ' (Sobrante)' : ' (Faltante)'}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
-      )}
+        
+        <div className="advertencia-arqueo">
+          <p className="advertencia-texto">
+            ⚠️ <strong>ATENCIÓN:</strong> Al confirmar este arqueo se procesarán los siguientes registros:
+          </p>
+          <div className="advertencia-columnas">
+            <div className="advertencia-col">
+              <p className="advertencia-subtitulo">🗑️ ELIMINADOS:</p>
+              <ul className="advertencia-lista">
+                <li><span className="eliminar-item">{resumenTurno.cantidadVentas || 0} ventas</span></li>
+                <li><span className="eliminar-item">{resumenTurno.cantidadGastos || 0} gastos</span></li>
+              </ul>
+            </div>
+            <div className="advertencia-col">
+              <p className="advertencia-subtitulo">✅ PROCESADOS:</p>
+              <ul className="advertencia-lista">
+                <li><span className="mantener-item">{resumenTurno.cantidadAbonosEfectivo || 0} abonos en efectivo</span></li>
+                <li><span className="mantener-item">{resumenTurno.cantidadAbonosTarjeta || 0} abonos con tarjeta</span></li>
+                <li><span className="mantener-item">{resumenTurno.cantidadAbonosTransferencia || 0} abonos con transferencia</span></li>
+                <li><span className="mantener-item">{resumenTurno.cantidadCreditos || 0} créditos (mantenidos)</span></li>
+              </ul>
+            </div>
+          </div>
+          
+          <div className="advertencia-footer">
+            <p className="advertencia-nota">
+              💾 <strong>Nota:</strong> Todo el historial se guardará en "facturados". 
+              Los abonos se marcan como procesados (no se eliminan) y solo se contabilizan UNA VEZ en el arqueo.
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      <div className="modal-footer">
+        <button
+          onClick={cerrarModal}
+          className="btn btn-secondary"
+          disabled={loading}
+        >
+          Cancelar
+        </button>
+        <button
+          onClick={realizarArqueo}
+          className="btn btn-success"
+          disabled={!efectivoContado || loading}
+        >
+          {loading ? (
+            <>
+              <div className="spinner-small"></div>
+              Procesando...
+            </>
+          ) : (
+            '✅ Confirmar Arqueo'
+          )}
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   )
 }
