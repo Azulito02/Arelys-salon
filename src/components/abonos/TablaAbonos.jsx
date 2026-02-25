@@ -219,7 +219,7 @@ const TablaAbonos = ({
             padding: '4px 12px',
             borderRadius: '20px'
           }}>
-            {$totalMixto.toFixed(2)}
+            {totalMixto.toFixed(2)}
           </span>
         </div>
         
