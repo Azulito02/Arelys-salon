@@ -375,18 +375,18 @@ const TablaCreditos = ({
         {/* VISTA DESKTOP/TABLET */}
         <div className="tabla-scroll-container desktop-only">
           <table className="tabla-creditos">
-            <thead>
+           <thead>
               <tr>
-                <th className="columna-cliente">Cliente</th>
-                <th className="columna-producto">Producto</th>
-                <th className="columna-cantidad">Cantidad</th>
-                <th className="columna-precio">Precio Unit.</th>
-                <th className="columna-total">Total</th>
-                <th className="columna-saldo">Saldo Pendiente</th>
-                <th className="columna-fecha">Fecha Registro</th>
-                <th className="columna-fecha-fin">Fecha Fin</th>
-                <th className="columna-estado">Estado</th>
-                <th className="columna-acciones">Acciones</th>
+                <th className="columna-cliente" style={{ width: '15%' }}>Cliente</th>
+                <th className="columna-producto" style={{ width: '20%' }}>Producto</th>
+                <th className="columna-cantidad" style={{ width: '8%' }}>Cant</th>
+                <th className="columna-precio" style={{ width: '10%' }}>Precio Unit.</th>
+                <th className="columna-total" style={{ width: '10%' }}>Total</th>
+                <th className="columna-saldo" style={{ width: '10%' }}>Saldo Pend.</th>
+                <th className="columna-fecha" style={{ width: '12%' }}>Fecha Registro</th>
+                <th className="columna-fecha-fin" style={{ width: '10%' }}>Fecha Fin</th>
+                <th className="columna-estado" style={{ width: '8%' }}>Estado</th>
+                <th className="columna-acciones" style={{ width: '12%' }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -410,43 +410,51 @@ const TablaCreditos = ({
                   
                   return (
                     <React.Fragment key={clave}>
-                      {/* Fila del cliente (resumen) */}
-                      <tr 
-                        className="fila-cliente-resumen"
-                        onClick={() => toggleExpandirCliente(clave)}
-                        style={{ cursor: 'pointer', backgroundColor: '#f8fafc' }}
-                      >
-                        <td className="celda-cliente">
-                          <div className="nombre-cliente-resumen">
-                            <span className="expandir-icono">
-                              {expandido ? '▼' : '▶'}
+                     {/* Fila del cliente (resumen) */}
+                        <tr 
+                          className="fila-cliente-resumen"
+                          onClick={() => toggleExpandirCliente(clave)}
+                          style={{ cursor: 'pointer', backgroundColor: '#f8fafc' }}
+                        >
+                          <td className="celda-cliente">
+                            <div className="nombre-cliente-resumen">
+                              <span className="expandir-icono">
+                                {expandido ? '▼' : '▶'}
+                              </span>
+                              <strong>{datos.cliente}</strong>
+                              <span className="badge-cantidad-cliente">
+                                {datos.creditos.length} crédito{datos.creditos.length !== 1 ? 's' : ''}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="celda-producto" colSpan="2">
+                            <span className="productos-resumen" title={productosLista}>
+                              {productosLista.length > 40 ? productosLista.substring(0, 40) + '...' : productosLista}
                             </span>
-                            <strong>{datos.cliente}</strong>
-                            <span className="badge-cantidad-cliente">
-                              {datos.creditos.length} crédito{datos.creditos.length !== 1 ? 's' : ''}
+                          </td>
+                          <td className="celda-precio">
+                            {/* Vacío o puedes poner algo */}
+                          </td>
+                          <td className="celda-total">
+                            <strong>C${(datos.totalGeneral || 0).toFixed(2)}</strong>
+                          </td>
+                          <td className="celda-saldo">
+                            <span className={`badge-saldo ${datos.saldoGeneral > 0 ? 'pendiente' : 'pagado'}`}>
+                              C${(datos.saldoGeneral || 0).toFixed(2)}
                             </span>
-                          </div>
-                        </td>
-                        <td className="celda-producto" colSpan="2">
-                          <span className="productos-resumen" title={productosLista}>
-                            {productosLista.length > 50 ? productosLista.substring(0, 50) + '...' : productosLista}
-                          </span>
-                        </td>
-                        <td className="celda-total">
-                          <strong>C${(datos.totalGeneral || 0).toFixed(2)}</strong>
-                        </td>
-                        <td className="celda-saldo">
-                          <span className={`badge-saldo ${datos.saldoGeneral > 0 ? 'pendiente' : 'pagado'}`}>
-                            C${(datos.saldoGeneral || 0).toFixed(2)}
-                          </span>
-                        </td>
-                        <td colSpan="5">
-                          <span className="texto-expandir">
-                            {expandido ? 'Ocultar detalles' : 'Ver detalles'}
-                          </span>
-                        </td>
-                      </tr>
-                      
+                          </td>
+                          <td className="celda-fecha" colSpan="2">
+                            {/* Vacío o puedes poner algo */}
+                          </td>
+                          <td className="celda-estado">
+                            {/* Vacío */}
+                          </td>
+                          <td className="celda-acciones">
+                            <span className="texto-expandir">
+                              {expandido ? 'Ocultar detalles' : 'Ver detalles'}
+                            </span>
+                          </td>
+                        </tr>
                       {/* Filas detalladas del cliente (si está expandido) */}
                       {expandido && datos.creditos.map((credito) => {
                         const estado = getEstadoCredito ? getEstadoCredito(credito) : { texto: 'Activo', clase: 'estado-activo' };

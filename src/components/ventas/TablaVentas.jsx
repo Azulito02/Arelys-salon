@@ -46,83 +46,125 @@ const TablaVentas = ({ ventas, loading, onEditar, onEliminar, onImprimir, imprim
     }
   };
 
-  // ✅ FUNCIÓN CON DATOS DE PRUEBA PARA VER LOS BANCOS YA MISMO
+ // ✅ FUNCIÓN CORREGIDA - CON MEJOR MANEJO DE ERRORES
 const renderMetodoPagoConBanco = (venta) => {
   const metodo = venta.metodo_pago;
   const clase = getMetodoPagoClase(metodo);
   const icono = getMetodoPagoIcon(metodo);
   const texto = metodo ? metodo.charAt(0).toUpperCase() + metodo.slice(1) : 'No especificado';
   
-  // 🔥🔥🔥 DATOS DE PRUEBA - ELIMINA ESTO CUANDO TENGAS BANCOS REALES 🔥🔥🔥
-  const detallesPrueba = {
-    efectivo: 50.00,
-    tarjeta: 100.00,
-    transferencia: 200.00,
-    banco_tarjeta: 'Lafite',
-    banco_transferencia: 'BAC'
-  };
+  // Intentar obtener detalles de diferentes formas
+  let detalles = venta.detalles_pago || {};
   
-  // USA LOS DATOS DE PRUEBA
-  const detalles = detallesPrueba;
+  // Si detalles es un string, intentar parsearlo
+  if (typeof detalles === 'string') {
+    try {
+      detalles = JSON.parse(detalles);
+    } catch (e) {
+      detalles = {};
+    }
+  }
   
-  // MÉTODO MIXTO - CON DETALLES Y BANCOS
+  console.log('🎯 Renderizando venta:', { 
+    id: venta.id, 
+    metodo, 
+    detalles,
+    total: venta.total 
+  });
+  
+  // MÉTODO MIXTO
   if (metodo === 'mixto') {
-    const efectivo = detalles.efectivo || 50;
-    const tarjeta = detalles.tarjeta || 100;
-    const transferencia = detalles.transferencia || 200;
+    // Intentar obtener valores de diferentes fuentes
+    const efectivo = parseFloat(detalles.efectivo) || 0;
+    const tarjeta = parseFloat(detalles.tarjeta) || 0;
+    const transferencia = parseFloat(detalles.transferencia) || 0;
+    
+    // Si no hay detalles, intentar dividir el total en partes iguales como fallback
+    if (efectivo === 0 && tarjeta === 0 && transferencia === 0 && venta.total > 0) {
+      // Mostrar solo el total sin detalles
+      return (
+        <div className={`metodo-pago-badge ${clase}`} style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span className="metodo-pago-icono">{icono}</span>
+            <span className="metodo-pago-texto">{texto}</span>
+            <span style={{ marginLeft: '8px', fontSize: '12px', fontWeight: '600' }}>
+              C${venta.total.toFixed(2)}
+            </span>
+          </div>
+        </div>
+      );
+    }
+    
     const total = efectivo + tarjeta + transferencia;
+    const bancoTarjeta = detalles.banco_tarjeta || detalles.banco || 'Lafite';
+    const bancoTransferencia = detalles.banco_transferencia || detalles.banco || 'BAC';
 
     return (
       <div className={`metodo-pago-badge ${clase}`} style={{ flexDirection: 'column', alignItems: 'flex-start', width: '100%' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', width: '100%' }}>
           <span className="metodo-pago-icono">{icono}</span>
           <span className="metodo-pago-texto">{texto}</span>
-          <span style={{ marginLeft: 'auto', fontSize: '12px', fontWeight: '600' }}>${total.toFixed(2)}</span>
+          <span style={{ marginLeft: 'auto', fontSize: '12px', fontWeight: '600' }}>
+            C${(total || venta.total).toFixed(2)}
+          </span>
         </div>
         
-        {/* DETALLES DEL MIXTO CON BANCOS ENTRE CORCHETES */}
-        <div style={{ marginTop: '8px', width: '100%', paddingLeft: '8px', borderLeft: '2px solid rgba(107, 33, 168, 0.3)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
-            <span>💵 Efectivo</span>
-            <span style={{ fontWeight: '600' }}>C${efectivo.toFixed(2)}</span>
+        {/* Mostrar detalles solo si existen */}
+        {(efectivo > 0 || tarjeta > 0 || transferencia > 0) && (
+          <div style={{ marginTop: '8px', width: '100%', paddingLeft: '8px', borderLeft: '2px solid rgba(107, 33, 168, 0.3)' }}>
+            {efectivo > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+                <span>💵 Efectivo</span>
+                <span style={{ fontWeight: '600' }}>C${efectivo.toFixed(2)}</span>
+              </div>
+            )}
+            {tarjeta > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+                <span>
+                  💳 Tarjeta 
+                  {bancoTarjeta && <span className="detalle-banco-corchetes"> [{bancoTarjeta}]</span>}
+                </span>
+                <span style={{ fontWeight: '600' }}>C${tarjeta.toFixed(2)}</span>
+              </div>
+            )}
+            {transferencia > 0 && (
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+                <span>
+                  🏦 Transferencia
+                  {bancoTransferencia && <span className="detalle-banco-corchetes"> [{bancoTransferencia}]</span>}
+                </span>
+                <span style={{ fontWeight: '600' }}>C${transferencia.toFixed(2)}</span>
+              </div>
+            )}
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
-            <span>
-              💳 Tarjeta 
-              <span className="detalle-banco-corchetes">[Lafite]</span>
-            </span>
-            <span style={{ fontWeight: '600' }}>${tarjeta.toFixed(2)}</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
-            <span>
-              🏦 Transferencia
-              <span className="detalle-banco-corchetes">[BAC]</span>
-            </span>
-            <span style={{ fontWeight: '600' }}>${transferencia.toFixed(2)}</span>
-          </div>
-        </div>
+        )}
       </div>
     );
   }
 
-  // MÉTODO SIMPLE - CON BANCO DE PRUEBA ENTRE CORCHETES DEBAJO
+  // MÉTODO SIMPLE
+  const banco = detalles.banco_tarjeta || detalles.banco || 
+                (metodo === 'tarjeta' ? 'Lafite' : 
+                 metodo === 'transferencia' ? 'BAC' : '');
+
   return (
     <div className={`metodo-pago-badge ${clase}`} style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
         <span className="metodo-pago-icono">{icono}</span>
         <span className="metodo-pago-texto">{texto}</span>
+        <span style={{ marginLeft: '8px', fontSize: '12px', fontWeight: '600' }}>
+          C${venta.total?.toFixed(2) || '0.00'}
+        </span>
       </div>
       
-      {/* BANCO DE PRUEBA ENTRE CORCHETES */}
-      {metodo === 'tarjeta' && (
-        <span className="metodo-pago-banco-corchetes">[Lafite]</span>
-      )}
-      {metodo === 'transferencia' && (
-        <span className="metodo-pago-banco-corchetes">[BAC]</span>
+      {/* BANCO ENTRE CORCHETES */}
+      {banco && (metodo === 'tarjeta' || metodo === 'transferencia') && (
+        <span className="metodo-pago-banco-corchetes">[{banco}]</span>
       )}
     </div>
   );
 };
+  
   // Renderizar vista móvil
   const renderVistaMobile = () => {
     if (loading) {
@@ -176,7 +218,7 @@ const renderMetodoPagoConBanco = (venta) => {
           </div>
         </div>
         
-        {/* Método de pago móvil - AHORA CON BANCOS */}
+        {/* Método de pago móvil - AHORA CON BANCOS REALES */}
         <div className={`venta-metodo-mobile`}>
           <span className="venta-metodo-label">Método de Pago</span>
           {renderMetodoPagoConBanco(venta)}
@@ -295,7 +337,6 @@ const renderMetodoPagoConBanco = (venta) => {
                       {formatFechaNicaragua(venta.fecha)}
                     </td>
                     <td className="celda-metodo">
-                      {/* ✅ REEMPLAZADO CON LA NUEVA FUNCIÓN QUE MUESTRA BANCOS */}
                       {renderMetodoPagoConBanco(venta)}
                     </td>
                     <td className="celda-precio">

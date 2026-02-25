@@ -163,6 +163,9 @@ const TablaAbonos = ({
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <span className="metodo-pago-icono">{icono}</span>
           <span className="metodo-pago-texto" style={{ fontWeight: '600' }}>{texto}</span>
+          <span style={{ marginLeft: '8px', fontSize: '12px', fontWeight: '600' }}>
+            C${abono.monto?.toFixed(2) || '0.00'}
+          </span>
         </div>
         
         {!metodoLower.includes('efectivo') && banco && (
@@ -174,13 +177,14 @@ const TablaAbonos = ({
     );
   };
 
-  // ✅ MÉTODO MIXTO COMPLETO - CON TODOS LOS DETALLES Y BANCOS
+  // ✅ MÉTODO MIXTO COMPLETO - CON VALORES REALES (CORREGIDO)
   const renderDetallesPagoMixto = (abono) => {
     const detalles = abono.detalles_pago || {};
     
-    const efectivo = parseFloat(detalles.efectivo) || 30;
-    const tarjeta = parseFloat(detalles.tarjeta) || 50;
-    const transferencia = parseFloat(detalles.transferencia) || 70;
+    // USA LOS VALORES REALES, no valores de prueba
+    const efectivo = parseFloat(detalles.efectivo) || 0;
+    const tarjeta = parseFloat(detalles.tarjeta) || 0;
+    const transferencia = parseFloat(detalles.transferencia) || 0;
     
     let bancoTarjeta = detalles.banco_tarjeta || detalles.banco || '';
     let bancoTransferencia = detalles.banco_transferencia || detalles.banco || '';
@@ -189,6 +193,21 @@ const TablaAbonos = ({
     if (!bancoTransferencia && transferencia > 0) bancoTransferencia = 'BAC';
     
     const totalMixto = efectivo + tarjeta + transferencia;
+
+    // Si todos los valores son 0, mostrar un mensaje simple
+    if (totalMixto === 0) {
+      return (
+        <div className={`metodo-pago-badge metodo-mixto`} style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span className="metodo-pago-icono">🔄</span>
+            <span className="metodo-pago-texto">Mixto</span>
+            <span style={{ marginLeft: '8px', fontSize: '12px', fontWeight: '600' }}>
+              C${abono.monto?.toFixed(2) || '0.00'}
+            </span>
+          </div>
+        </div>
+      );
+    }
 
     return (
       <div className="metodo-pago-mixto-container">
@@ -219,7 +238,7 @@ const TablaAbonos = ({
             padding: '4px 12px',
             borderRadius: '20px'
           }}>
-            {totalMixto.toFixed(2)}
+            C${totalMixto.toFixed(2)}
           </span>
         </div>
         
@@ -296,6 +315,13 @@ const TablaAbonos = ({
   // ✅ FUNCIÓN PRINCIPAL - UNE TODO
   const renderMetodoPago = (abono) => {
     if (!abono) return null;
+    
+    console.log('📝 Renderizando abono:', {
+      id: abono.id,
+      metodo: abono.metodo_pago,
+      detalles: abono.detalles_pago,
+      monto: abono.monto
+    });
     
     const metodo = abono.metodo_pago || '';
     const metodoLower = metodo.toLowerCase();
