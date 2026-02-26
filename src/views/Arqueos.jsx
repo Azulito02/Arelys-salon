@@ -680,91 +680,115 @@ const exportarArqueoPDF = async (arqueo) => {
     setExportando(prev => ({ ...prev, [arqueo.id]: null }))
   }
 }
-  // Mostrar detalles del arqueo en móvil
-  const mostrarDetallesMobile = (arqueo) => {
-    const diferencia = parseFloat(arqueo.diferencia_efectivo || 0)
-    
-    return (
-      <div className="arqueo-detalle-mobile">
-        <div className="detalle-grid-mobile">
-          <div className="detalle-item-mobile">
-            <span className="detalle-label-mobile">Fecha</span>
-            <span className="detalle-valor-mobile">{formatFechaCorta(arqueo.fecha)}</span>
-          </div>
-          <div className="detalle-item-mobile">
-            <span className="detalle-label-mobile">Usuario</span>
-            <span className="detalle-valor-mobile">{arqueo.usuario || 'Sistema'}</span>
-          </div>
-          <div className="detalle-item-mobile">
-            <span className="detalle-label-mobile">Ventas Totales</span>
-            <span className="detalle-valor-mobile positivo">
-              C${parseFloat(arqueo.total_ventas).toFixed(2)}
-            </span>
-          </div>
-          <div className="detalle-item-mobile">
-            <span className="detalle-label-mobile">Efectivo Bruto</span>
-            <span className="detalle-valor-mobile efectivo">
-              C${parseFloat(arqueo.total_efectivo).toFixed(2)}
-            </span>
-          </div>
-          <div className="detalle-item-mobile">
-            <span className="detalle-label-mobile">Gastos</span>
-            <span className="detalle-valor-mobile negativo">
-              C${parseFloat(arqueo.total_gastos).toFixed(2)}
-            </span>
-          </div>
-          <div className="detalle-item-mobile">
-            <span className="detalle-label-mobile">Efectivo en Caja</span>
-            <span className={`detalle-valor-mobile ${parseFloat(arqueo.efectivo_en_caja) > 0 ? 'positivo' : 'negativo'}`}>
-              C${parseFloat(arqueo.efectivo_en_caja).toFixed(2)}
-            </span>
-          </div>
-          {diferencia !== 0 && (
-            <div className="detalle-item-mobile full-width">
-              <span className="detalle-label-mobile">Diferencia</span>
-              <span className={`detalle-valor-mobile ${diferencia > 0 ? 'positivo' : 'negativo'}`}>
-                C${Math.abs(diferencia).toFixed(2)} {diferencia > 0 ? '(Sobrante)' : '(Faltante)'}
-              </span>
-            </div>
-          )}
+ // Mostrar detalles del arqueo en móvil
+const mostrarDetallesMobile = (arqueo) => {
+  const diferencia = parseFloat(arqueo.diferencia_efectivo || 0)
+  
+  return (
+    <div className="arqueo-detalle-mobile">
+      <div className="detalle-grid-mobile">
+        <div className="detalle-item-mobile">
+          <span className="detalle-label-mobile">Fecha</span>
+          <span className="detalle-valor-mobile">{formatFechaCorta(arqueo.fecha)}</span>
         </div>
-        <div className="detalle-actions-mobile">
-          <button
-            onClick={() => exportarArqueoExcel(arqueo)}
-            disabled={exportando[arqueo.id] === 'excel'}
-            className="detalle-action-btn-mobile excel"
-          >
-            {exportando[arqueo.id] === 'excel' ? (
-              <>
-                <div className="spinner-mini"></div>
-                Exportando...
-              </>
-            ) : (
-              <>
-                📊 Excel
-              </>
-            )}
-          </button>
-          <button
-            onClick={() => exportarArqueoPDF(arqueo)}
-            disabled={exportando[arqueo.id] === 'pdf'}
-            className="detalle-action-btn-mobile pdf"
-          >
-            {exportando[arqueo.id] === 'pdf' ? (
-              <>
-                <div className="spinner-mini"></div>
-                Exportando...
-              </>
-            ) : (
+        <div className="detalle-item-mobile">
+          <span className="detalle-label-mobile">Usuario</span>
+          <span className="detalle-valor-mobile">{arqueo.usuario || 'Sistema'}</span>
+        </div>
+        <div className="detalle-item-mobile">
+          <span className="detalle-label-mobile">Ventas Totales</span>
+          <span className="detalle-valor-mobile positivo">
+            C${parseFloat(arqueo.total_ventas).toFixed(2)}
+          </span>
+        </div>
+        <div className="detalle-item-mobile">
+          <span className="detalle-label-mobile">Ventas Crédito</span>
+          <span className="detalle-valor-mobile credito">
+            C${parseFloat(arqueo.total_credito).toFixed(2)}
+          </span>
+        </div>
+        <div className="detalle-item-mobile">
+          <span className="detalle-label-mobile">💰 Abonos Ef.</span>
+          <span className="detalle-valor-mobile efectivo">
+            C${parseFloat(arqueo.total_abonos_efectivo || 0).toFixed(2)}
+          </span>
+        </div>
+        <div className="detalle-item-mobile">
+          <span className="detalle-label-mobile">💳 Abonos Tarj.</span>
+          <span className="detalle-valor-mobile tarjeta">
+            C${parseFloat(arqueo.total_abonos_tarjeta || 0).toFixed(2)}
+          </span>
+        </div>
+        <div className="detalle-item-mobile">
+          <span className="detalle-label-mobile">🏦 Abonos Transf.</span>
+          <span className="detalle-valor-mobile transferencia">
+            C${parseFloat(arqueo.total_abonos_transferencia || 0).toFixed(2)}
+          </span>
+        </div>
+        <div className="detalle-item-mobile">
+          <span className="detalle-label-mobile">Efectivo Bruto</span>
+          <span className="detalle-valor-mobile efectivo">
+            C${parseFloat(arqueo.total_efectivo).toFixed(2)}
+          </span>
+        </div>
+        <div className="detalle-item-mobile">
+          <span className="detalle-label-mobile">Gastos</span>
+          <span className="detalle-valor-mobile negativo">
+            C${parseFloat(arqueo.total_gastos).toFixed(2)}
+          </span>
+        </div>
+        <div className="detalle-item-mobile">
+          <span className="detalle-label-mobile">Efectivo en Caja</span>
+          <span className={`detalle-valor-mobile ${parseFloat(arqueo.efectivo_en_caja) > 0 ? 'positivo' : 'negativo'}`}>
+            C${parseFloat(arqueo.efectivo_en_caja).toFixed(2)}
+          </span>
+        </div>
+        {diferencia !== 0 && (
+          <div className="detalle-item-mobile full-width">
+            <span className="detalle-label-mobile">Diferencia</span>
+            <span className={`detalle-valor-mobile ${diferencia > 0 ? 'positivo' : 'negativo'}`}>
+              C${Math.abs(diferencia).toFixed(2)} {diferencia > 0 ? '(Sobrante)' : '(Faltante)'}
+            </span>
+          </div>
+        )}
+      </div>
+      <div className="detalle-actions-mobile">
+        <button
+          onClick={() => exportarArqueoExcel(arqueo)}
+          disabled={exportando[arqueo.id] === 'excel'}
+          className="detalle-action-btn-mobile excel"
+        >
+          {exportando[arqueo.id] === 'excel' ? (
+            <>
+              <div className="spinner-mini"></div>
+              Exportando...
+            </>
+          ) : (
+            <>
+              📊 Excel
+            </>
+          )}
+        </button>
+        <button
+          onClick={() => exportarArqueoPDF(arqueo)}
+          disabled={exportando[arqueo.id] === 'pdf'}
+          className="detalle-action-btn-mobile pdf"
+        >
+          {exportando[arqueo.id] === 'pdf' ? (
+            <>
+              <div className="spinner-mini"></div>
+              Exportando...
+            </>
+          ) : (
               <>
                 📄 PDF
               </>
             )}
-          </button>
-        </div>
+        </button>
       </div>
-    )
-  }
+    </div>
+  )
+}
 
   // Renderizar arqueos para vista móvil
   const renderArqueosMobile = () => {
@@ -951,150 +975,169 @@ const exportarArqueoPDF = async (arqueo) => {
         </div>
       )}
 
-      {/* Tabla de arqueos */}
-      <div className="tabla-arqueos-container">
-        <div className="tabla-arqueos-card">
-          {/* VISTA DESKTOP/TABLET */}
-          <div className="tabla-scroll-container desktop-only">
-            <table className="tabla-arqueos">
-              <thead>
-                <tr>
-                  <th className="columna-fecha">Fecha</th>
-                  <th className="columna-ventas">Ventas Totales</th>
-                  <th className="columna-credito">Ventas Crédito</th>
-                  <th className="columna-efectivo">Efectivo Bruto</th>
-                  <th className="columna-gastos">Gastos</th>
-                  <th className="columna-caja">Efectivo en Caja</th>
-                  <th className="columna-acciones">Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan="7" className="cargando-mensaje">
-                      <div className="spinner"></div>
-                      Cargando arqueos...
-                    </td>
-                  </tr>
-                ) : arqueosFiltrados.length === 0 ? (
-                  <tr>
-                    <td colSpan="7" className="sin-registros">
-                      {busqueda ? 'No se encontraron arqueos con esa búsqueda' : 'No hay arqueos registrados'}
-                    </td>
-                  </tr>
-                ) : (
-                  arqueosFiltrados.map((arqueo) => (
-                    <tr key={arqueo.id} className="fila-arqueo">
-                      <td className="celda-fecha">
-                        {formatFechaNicaragua(arqueo.fecha)}
-                      </td>
-                      <td className="celda-ventas">
-                        <span className="valor-positivo">
-                          C${parseFloat(arqueo.total_ventas).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                        </span>
-                      </td>
-                      <td className="celda-credito">
-                        <span className="valor-credito">
-                          C${parseFloat(arqueo.total_credito).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                        </span>
-                      </td>
-                      <td className="celda-efectivo">
-                        <span className="valor-efectivo">
-                          C${parseFloat(arqueo.total_efectivo).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                        </span>
-                      </td>
-                      <td className="celda-gastos">
-                        <span className="valor-negativo">
-                          C${parseFloat(arqueo.total_gastos).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                        </span>
-                      </td>
-                      <td className="celda-caja">
-                        <span className={`badge-caja ${parseFloat(arqueo.efectivo_en_caja) > 0 ? 'positivo' : 'negativo'}`}>
-                          C${parseFloat(arqueo.efectivo_en_caja).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                        </span>
-                      </td>
-                      <td className="celda-acciones">
-                        <div className="acciones-container">
-                          <button 
-                            className="btn-accion btn-excel"
-                            onClick={() => exportarArqueoExcel(arqueo)}
-                            disabled={exportando[arqueo.id] === 'excel'}
-                            title="Exportar a Excel"
-                          >
-                            {exportando[arqueo.id] === 'excel' ? (
-                              <>
-                                <span className="spinner-mini"></span>
-                                <span className="btn-text">Exportando...</span>
-                              </>
-                            ) : (
-                              <>
-                                <span className="btn-icon">📊</span>
-                                <span className="btn-text">Excel</span>
-                              </>
-                            )}
-                          </button>
-                          
-                          <button 
-                            className="btn-accion btn-pdf"
-                            onClick={() => exportarArqueoPDF(arqueo)}
-                            disabled={exportando[arqueo.id] === 'pdf'}
-                            title="Exportar a PDF"
-                          >
-                            {exportando[arqueo.id] === 'pdf' ? (
-                              <>
-                                <span className="spinner-mini"></span>
-                                <span className="btn-text">Exportando...</span>
-                              </>
-                            ) : (
-                              <>
-                                <span className="btn-icon">📄</span>
-                                <span className="btn-text">PDF</span>
-                              </>
-                            )}
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-          
-          {/* VISTA MÓVIL */}
-          <div className="tabla-mobile-view mobile-only">
-            {renderArqueosMobile()}
-          </div>
-          
-          {/* RESUMEN MÓVIL */}
-          {!loading && resumenMobile.totalArqueos > 0 && (
-            <div className="resumen-mobile mobile-only">
-              <div className="resumen-mobile-item">
-                <span className="resumen-mobile-label">Arqueos</span>
-                <span className="resumen-mobile-value">{resumenMobile.totalArqueos}</span>
-              </div>
-              <div className="resumen-mobile-item">
-                <span className="resumen-mobile-label">Total Ventas</span>
-                <span className="resumen-mobile-value positivo">
-                  C${resumenMobile.totalVentas.toFixed(2)}
-                </span>
-              </div>
-              <div className="resumen-mobile-item">
-                <span className="resumen-mobile-label">Total Gastos</span>
-                <span className="resumen-mobile-value negativo">
-                  C${resumenMobile.totalGastos.toFixed(2)}
-                </span>
-              </div>
-              <div className="resumen-mobile-item">
-                <span className="resumen-mobile-label">Efectivo Total</span>
-                <span className={`resumen-mobile-value ${resumenMobile.totalEfectivo > 0 ? 'positivo' : 'negativo'}`}>
-                  C${resumenMobile.totalEfectivo.toFixed(2)}
-                </span>
-              </div>
-            </div>
+{/* Tabla de arqueos */}
+<div className="tabla-arqueos-container">
+  <div className="tabla-arqueos-card">
+    {/* VISTA DESKTOP/TABLET */}
+    <div className="tabla-scroll-container desktop-only">
+      <table className="tabla-arqueos">
+        <thead>
+          <tr>
+            <th className="columna-fecha">Fecha</th>
+            <th className="columna-ventas">Ventas Totales</th>
+            <th className="columna-credito">Ventas Crédito</th>
+            <th className="columna-abonos-efectivo">💰 Abonos Ef.</th>
+            <th className="columna-abonos-tarjeta">💳 Abonos Tarj.</th>
+            <th className="columna-abonos-transf">🏦 Abonos Transf.</th>
+            <th className="columna-efectivo">Efectivo Bruto</th>
+            <th className="columna-gastos">Gastos</th>
+            <th className="columna-caja">Efectivo en Caja</th>
+            <th className="columna-acciones">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {loading ? (
+            <tr>
+              <td colSpan="10" className="cargando-mensaje">
+                <div className="spinner"></div>
+                Cargando arqueos...
+              </td>
+            </tr>
+          ) : arqueosFiltrados.length === 0 ? (
+            <tr>
+              <td colSpan="10" className="sin-registros">
+                {busqueda ? 'No se encontraron arqueos con esa búsqueda' : 'No hay arqueos registrados'}
+              </td>
+            </tr>
+          ) : (
+            arqueosFiltrados.map((arqueo) => (
+              <tr key={arqueo.id} className="fila-arqueo">
+                <td className="celda-fecha">
+                  {formatFechaNicaragua(arqueo.fecha)}
+                </td>
+                <td className="celda-ventas">
+                  <span className="valor-positivo">
+                    C${parseFloat(arqueo.total_ventas).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                  </span>
+                </td>
+                <td className="celda-credito">
+                  <span className="valor-credito">
+                    C${parseFloat(arqueo.total_credito).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                  </span>
+                </td>
+                <td className="celda-abonos-efectivo">
+                  <span className="badge-abono efectivo">
+                    💵 C${parseFloat(arqueo.total_abonos_efectivo || 0).toFixed(2)}
+                  </span>
+                </td>
+                <td className="celda-abonos-tarjeta">
+                  <span className="badge-abono tarjeta">
+                    💳 C${parseFloat(arqueo.total_abonos_tarjeta || 0).toFixed(2)}
+                  </span>
+                </td>
+                <td className="celda-abonos-transf">
+                  <span className="badge-abono transferencia">
+                    🏦 C${parseFloat(arqueo.total_abonos_transferencia || 0).toFixed(2)}
+                  </span>
+                </td>
+                <td className="celda-efectivo">
+                  <span className="valor-efectivo">
+                    C${parseFloat(arqueo.total_efectivo).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                  </span>
+                </td>
+                <td className="celda-gastos">
+                  <span className="valor-negativo">
+                    C${parseFloat(arqueo.total_gastos).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                  </span>
+                </td>
+                <td className="celda-caja">
+                  <span className={`badge-caja ${parseFloat(arqueo.efectivo_en_caja) > 0 ? 'positivo' : 'negativo'}`}>
+                    C${parseFloat(arqueo.efectivo_en_caja).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                  </span>
+                </td>
+                <td className="celda-acciones">
+                  <div className="acciones-container">
+                    <button 
+                      className="btn-accion btn-excel"
+                      onClick={() => exportarArqueoExcel(arqueo)}
+                      disabled={exportando[arqueo.id] === 'excel'}
+                      title="Exportar a Excel"
+                    >
+                      {exportando[arqueo.id] === 'excel' ? (
+                        <>
+                          <span className="spinner-mini"></span>
+                          <span className="btn-text">Exportando...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="btn-icon">📊</span>
+                          <span className="btn-text">Excel</span>
+                        </>
+                      )}
+                    </button>
+                    
+                    <button 
+                      className="btn-accion btn-pdf"
+                      onClick={() => exportarArqueoPDF(arqueo)}
+                      disabled={exportando[arqueo.id] === 'pdf'}
+                      title="Exportar a PDF"
+                    >
+                      {exportando[arqueo.id] === 'pdf' ? (
+                        <>
+                          <span className="spinner-mini"></span>
+                          <span className="btn-text">Exportando...</span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="btn-icon">📄</span>
+                          <span className="btn-text">PDF</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))
           )}
+        </tbody>
+      </table>
+    </div>
+    
+    {/* VISTA MÓVIL */}
+    <div className="tabla-mobile-view mobile-only">
+      {renderArqueosMobile()}
+    </div>
+    
+    {/* RESUMEN MÓVIL */}
+    {!loading && resumenMobile.totalArqueos > 0 && (
+      <div className="resumen-mobile mobile-only">
+        <div className="resumen-mobile-item">
+          <span className="resumen-mobile-label">Arqueos</span>
+          <span className="resumen-mobile-value">{resumenMobile.totalArqueos}</span>
+        </div>
+        <div className="resumen-mobile-item">
+          <span className="resumen-mobile-label">Total Ventas</span>
+          <span className="resumen-mobile-value positivo">
+            C${resumenMobile.totalVentas.toFixed(2)}
+          </span>
+        </div>
+        <div className="resumen-mobile-item">
+          <span className="resumen-mobile-label">Total Gastos</span>
+          <span className="resumen-mobile-value negativo">
+            C${resumenMobile.totalGastos.toFixed(2)}
+          </span>
+        </div>
+        <div className="resumen-mobile-item">
+          <span className="resumen-mobile-label">Efectivo Total</span>
+          <span className={`resumen-mobile-value ${resumenMobile.totalEfectivo > 0 ? 'positivo' : 'negativo'}`}>
+            C${resumenMobile.totalEfectivo.toFixed(2)}
+          </span>
         </div>
       </div>
+    )}
+  </div>
+</div>
+
 
       {/* Modal para arqueo de turno */}
       {modalAbierto && resumenTurno && (

@@ -1171,3 +1171,45 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+/* Estilos para badges de abonos */
+.badge-abono {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.badge-abono.efectivo {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.badge-abono.tarjeta {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.badge-abono.transferencia {
+  background: #ede9fe;
+  color: #5b21b6;
+}
+
+/* Ajustes de columnas */
+.columna-abonos-efectivo,
+.columna-abonos-tarjeta,
+.columna-abonos-transf {
+  min-width: 120px;
+  text-align: center;
+}
+
+.celda-abonos-efectivo,
+.celda-abonos-tarjeta,
+.celda-abonos-transf {
+  text-align: center;
+}
