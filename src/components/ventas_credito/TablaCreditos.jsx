@@ -310,6 +310,26 @@ const TablaCreditos = ({
 
   return (
     <div className="tabla-creditos-container">
+      {/* BARRA DE CONTROL SUPERIOR - CON SCROLL Y CONTROLES */}
+      <div className="tabla-creditos-controls">
+        <div className="control-left">
+          <span className="control-label">Créditos Activos</span>
+          <span className="control-badge">{clientesFiltrados.length} clientes</span>
+        </div>
+        <div className="control-right">
+          <button className="control-btn" onClick={() => setBusqueda('')} title="Limpiar búsqueda">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+          <button className="control-btn" title="Actualizar">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
       {/* BUSCADOR PARA MÓVIL */}
       <div className="buscador-mobile">
         <div className="buscador-mobile-container">
@@ -372,21 +392,31 @@ const TablaCreditos = ({
       </div>
 
       <div className="tabla-creditos-card">
+        {/* CONTROLES DE SCROLL SUPERIOR */}
+        <div className="scroll-controls-top">
+          <button className="scroll-left-btn" onClick={() => document.querySelector('.tabla-scroll-container').scrollBy({ left: -200, behavior: 'smooth' })}>
+            ◀
+          </button>
+          <button className="scroll-right-btn" onClick={() => document.querySelector('.tabla-scroll-container').scrollBy({ left: 200, behavior: 'smooth' })}>
+            ▶
+          </button>
+        </div>
+
         {/* VISTA DESKTOP/TABLET */}
         <div className="tabla-scroll-container desktop-only">
           <table className="tabla-creditos">
-           <thead>
+            <thead>
               <tr>
                 <th className="columna-cliente" style={{ width: '15%' }}>Cliente</th>
-                <th className="columna-producto" style={{ width: '20%' }}>Producto</th>
-                <th className="columna-cantidad" style={{ width: '8%' }}>Cant</th>
-                <th className="columna-precio" style={{ width: '10%' }}>Precio Unit.</th>
-                <th className="columna-total" style={{ width: '10%' }}>Total</th>
-                <th className="columna-saldo" style={{ width: '10%' }}>Saldo Pend.</th>
-                <th className="columna-fecha" style={{ width: '12%' }}>Fecha Registro</th>
-                <th className="columna-fecha-fin" style={{ width: '10%' }}>Fecha Fin</th>
+                <th className="columna-producto" style={{ width: '18%' }}>Producto</th>
+                <th className="columna-cantidad" style={{ width: '7%' }}>Cant</th>
+                <th className="columna-precio" style={{ width: '9%' }}>Precio Unit.</th>
+                <th className="columna-total" style={{ width: '9%' }}>Total</th>
+                <th className="columna-saldo" style={{ width: '9%' }}>Saldo Pend.</th>
+                <th className="columna-fecha" style={{ width: '11%' }}>Fecha Registro</th>
+                <th className="columna-fecha-fin" style={{ width: '9%' }}>Fecha Fin</th>
                 <th className="columna-estado" style={{ width: '8%' }}>Estado</th>
-                <th className="columna-acciones" style={{ width: '12%' }}>Acciones</th>
+                <th className="columna-acciones" style={{ width: '15%' }}>Acciones</th>
               </tr>
             </thead>
             <tbody>
@@ -410,51 +440,72 @@ const TablaCreditos = ({
                   
                   return (
                     <React.Fragment key={clave}>
-                     {/* Fila del cliente (resumen) */}
-                        <tr 
-                          className="fila-cliente-resumen"
-                          onClick={() => toggleExpandirCliente(clave)}
-                          style={{ cursor: 'pointer', backgroundColor: '#f8fafc' }}
-                        >
-                          <td className="celda-cliente">
-                            <div className="nombre-cliente-resumen">
-                              <span className="expandir-icono">
-                                {expandido ? '▼' : '▶'}
-                              </span>
-                              <strong>{datos.cliente}</strong>
-                              <span className="badge-cantidad-cliente">
-                                {datos.creditos.length} crédito{datos.creditos.length !== 1 ? 's' : ''}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="celda-producto" colSpan="2">
-                            <span className="productos-resumen" title={productosLista}>
-                              {productosLista.length > 40 ? productosLista.substring(0, 40) + '...' : productosLista}
+                      {/* Fila del cliente (resumen) */}
+                      <tr 
+                        className="fila-cliente-resumen"
+                        onClick={() => toggleExpandirCliente(clave)}
+                        style={{ cursor: 'pointer', backgroundColor: '#f8fafc' }}
+                      >
+                        <td className="celda-cliente">
+                          <div className="nombre-cliente-resumen">
+                            <span className="expandir-icono">
+                              {expandido ? '▼' : '▶'}
                             </span>
-                          </td>
-                          <td className="celda-precio">
-                            {/* Vacío o puedes poner algo */}
-                          </td>
-                          <td className="celda-total">
-                            <strong>C${(datos.totalGeneral || 0).toFixed(2)}</strong>
-                          </td>
-                          <td className="celda-saldo">
-                            <span className={`badge-saldo ${datos.saldoGeneral > 0 ? 'pendiente' : 'pagado'}`}>
-                              C${(datos.saldoGeneral || 0).toFixed(2)}
+                            <strong>{datos.cliente}</strong>
+                            <span className="badge-cantidad-cliente">
+                              {datos.creditos.length} crédito{datos.creditos.length !== 1 ? 's' : ''}
                             </span>
-                          </td>
-                          <td className="celda-fecha" colSpan="2">
-                            {/* Vacío o puedes poner algo */}
-                          </td>
-                          <td className="celda-estado">
-                            {/* Vacío */}
-                          </td>
-                          <td className="celda-acciones">
-                            <span className="texto-expandir">
-                              {expandido ? 'Ocultar detalles' : 'Ver detalles'}
-                            </span>
-                          </td>
-                        </tr>
+                          </div>
+                        </td>
+                        <td className="celda-producto">
+                          <span className="productos-resumen" title={productosLista}>
+                            {productosLista.length > 30 ? productosLista.substring(0, 30) + '...' : productosLista}
+                          </span>
+                        </td>
+                        <td className="celda-cantidad">
+                          {/* Mostrar cantidad total aproximada */}
+                          <span className="badge-cantidad-total">
+                            {datos.creditos.reduce((sum, c) => sum + (c.cantidad || 0), 0)} uds
+                          </span>
+                        </td>
+                        <td className="celda-precio">
+                          {/* Precio promedio o vacío */}
+                          <span className="texto-secundario">-</span>
+                        </td>
+                        <td className="celda-total">
+                          <strong>C${(datos.totalGeneral || 0).toFixed(2)}</strong>
+                        </td>
+                        <td className="celda-saldo">
+                          <span className={`badge-saldo ${datos.saldoGeneral > 0 ? 'pendiente' : 'pagado'}`}>
+                            C${(datos.saldoGeneral || 0).toFixed(2)}
+                          </span>
+                        </td>
+                        <td className="celda-fecha">
+                          {/* Fecha más antigua */}
+                          <span className="texto-secundario">
+                            {datos.creditos.length > 0 && datos.creditos[0]?.fecha ? 
+                              formatFechaCorta(datos.creditos[0].fecha) : '-'}
+                          </span>
+                        </td>
+                        <td className="celda-fecha-fin">
+                          {/* Fecha más cercana */}
+                          <span className="texto-secundario">
+                            {datos.creditos.length > 0 && datos.creditos[0]?.fecha_fin ? 
+                              formatSoloFecha(datos.creditos[0].fecha_fin) : '-'}
+                          </span>
+                        </td>
+                        <td className="celda-estado">
+                          <span className={`badge-estado-resumen ${datos.saldoGeneral > 0 ? 'pendiente' : 'completado'}`}>
+                            {datos.saldoGeneral > 0 ? 'Pendiente' : 'Completado'}
+                          </span>
+                        </td>
+                        <td className="celda-acciones">
+                          <span className="texto-expandir">
+                            {expandido ? 'Ocultar' : 'Ver detalles'}
+                          </span>
+                        </td>
+                      </tr>
+                      
                       {/* Filas detalladas del cliente (si está expandido) */}
                       {expandido && datos.creditos.map((credito) => {
                         const estado = getEstadoCredito ? getEstadoCredito(credito) : { texto: 'Activo', clase: 'estado-activo' };
@@ -557,6 +608,16 @@ const TablaCreditos = ({
           </table>
         </div>
         
+        {/* CONTROLES DE SCROLL INFERIOR */}
+        <div className="scroll-controls-bottom">
+          <button className="scroll-left-btn" onClick={() => document.querySelector('.tabla-scroll-container').scrollBy({ left: -200, behavior: 'smooth' })}>
+            ◀ Desplazar izquierda
+          </button>
+          <button className="scroll-right-btn" onClick={() => document.querySelector('.tabla-scroll-container').scrollBy({ left: 200, behavior: 'smooth' })}>
+            Desplazar derecha ▶
+          </button>
+        </div>
+
         {/* VISTA MÓVIL */}
         <div className="tabla-mobile-view mobile-only">
           {renderCreditosMobile()}
@@ -578,13 +639,13 @@ const TablaCreditos = ({
             <div className="resumen-item">
               <span>Monto total:</span>
               <strong>
-                ${clientesFiltrados.reduce((sum, [_, datos]) => sum + (datos.totalGeneral || 0), 0).toFixed(2)}
+                C${clientesFiltrados.reduce((sum, [_, datos]) => sum + (datos.totalGeneral || 0), 0).toFixed(2)}
               </strong>
             </div>
             <div className="resumen-item">
               <span>Saldo total:</span>
               <strong className="saldo-total-pendiente">
-                ${clientesFiltrados.reduce((sum, [_, datos]) => sum + (datos.saldoGeneral || 0), 0).toFixed(2)}
+                C${clientesFiltrados.reduce((sum, [_, datos]) => sum + (datos.saldoGeneral || 0), 0).toFixed(2)}
               </strong>
             </div>
           </div>
