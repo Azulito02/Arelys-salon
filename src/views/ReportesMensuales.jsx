@@ -39,6 +39,9 @@ const ReportesMensuales = () => {
     aplicarFiltros()
   }, [facturas, filtroTipo, filtroMetodo, filtroBusqueda])
 
+  // ============================================
+  // FUNCIÓN PRINCIPAL PARA CARGAR FACTURAS
+  // ============================================
   const cargarFacturas = async () => {
     try {
       setLoading(true)
@@ -56,31 +59,119 @@ const ReportesMensuales = () => {
 
       if (error) throw error
 
-      // ✅ PROCESAR FACTURAS SIN CONSULTAS ADICIONALES
+      // ============================================
+      // OBTENER PRODUCTOS RELACIONADOS
+      // ============================================
+      
+      // Recopilar todos los IDs de productos que aparecen
+      const productosIds = []
+      data?.forEach(factura => {
+        if (factura.referencia_id) {
+          productosIds.push(factura.referencia_id)
+        }
+      })
+
+      // Consultar productos solo si hay IDs
+      let productosMap = {}
+      if (productosIds.length > 0) {
+        const { data: productos } = await supabase
+          .from('productos')
+          .select('id, nombre, codigo')
+          .in('id', productosIds)
+        
+        // Crear mapa de productos por ID
+        productosMap = (productos || []).reduce((acc, prod) => {
+          acc[prod.id] = prod
+          return acc
+        }, {})
+      }
+
+      // ============================================
+      // OBTENER CRÉDITOS PARA ABONOS
+      // ============================================
+      
+      const creditosIds = []
+      data?.forEach(factura => {
+        if (factura.tipo_venta === 'abono_credito' && factura.referencia_id) {
+          creditosIds.push(factura.referencia_id)
+        }
+      })
+
+      let creditosMap = {}
+      if (creditosIds.length > 0) {
+        const { data: creditos } = await supabase
+          .from('ventas_credito')
+          .select('id, nombre_cliente, productos:producto_id (nombre)')
+          .in('id', creditosIds)
+        
+        creditosMap = (creditos || []).reduce((acc, cred) => {
+          acc[cred.id] = cred
+          return acc
+        }, {})
+      }
+
+      // ============================================
+      // PROCESAR CADA FACTURA CON INFORMACIÓN COMPLETA
+      // ============================================
+      
       const facturasProcesadas = (data || []).map(factura => {
         let detalle = ''
+        let productoInfo = null
+        let creditoInfo = null
         
-        // Si es un GASTO, usar la descripción guardada
-        if (factura.tipo_venta === 'gasto') {
-          detalle = factura.descripcion || 'Gasto sin descripción'
-        } 
-        // Si es un CRÉDITO
+        // Buscar producto si hay referencia_id
+        if (factura.referencia_id && productosMap[factura.referencia_id]) {
+          productoInfo = productosMap[factura.referencia_id]
+        }
+        
+        // Buscar crédito si es abono
+        if (factura.tipo_venta === 'abono_credito' && factura.referencia_id && creditosMap[factura.referencia_id]) {
+          creditoInfo = creditosMap[factura.referencia_id]
+        }
+
+        // VENTAS NORMALES
+        if (factura.tipo_venta === 'normal') {
+          if (productoInfo) {
+            detalle = `${productoInfo.nombre}${productoInfo.codigo ? ` (${productoInfo.codigo})` : ''}`
+          } else {
+            detalle = `Venta ${factura.total ? `C$${factura.total}` : ''}`
+          }
+        }
+        // VENTAS A CRÉDITO
         else if (factura.tipo_venta === 'credito') {
-          detalle = factura.cliente_nombre || `Crédito ${factura.id?.substring(0, 8)}`
+          if (productoInfo) {
+            detalle = `${productoInfo.nombre}${productoInfo.codigo ? ` (${productoInfo.codigo})` : ''}`
+          } else if (factura.cliente_nombre) {
+            detalle = `Crédito: ${factura.cliente_nombre}`
+          } else {
+            detalle = `Crédito`
+          }
         }
-        // Si es una VENTA normal
-        else if (factura.tipo_venta === 'normal') {
-          detalle = `Venta ${factura.id?.substring(0, 8)}`
-        }
-        // Si es un ABONO
+        // ABONOS
         else if (factura.tipo_venta === 'abono_credito') {
-          detalle = `Abono ${factura.id?.substring(0, 8)}`
+          if (creditoInfo) {
+            detalle = `Abono: ${creditoInfo.nombre_cliente || 'Cliente'}`
+            if (creditoInfo.productos?.nombre) {
+              detalle += ` - ${creditoInfo.productos.nombre}`
+            }
+          } else if (factura.cliente_nombre) {
+            detalle = `Abono - ${factura.cliente_nombre}`
+          } else {
+            detalle = `Abono`
+          }
+        }
+        // GASTOS
+        else if (factura.tipo_venta === 'gasto') {
+          detalle = factura.descripcion || 'Gasto sin descripción'
         }
 
         return {
           ...factura,
           fecha_formateada: formatFechaNicaragua(factura.fecha),
-          detalle_texto: detalle
+          detalle_texto: detalle,
+          producto_nombre: productoInfo?.nombre || null,
+          producto_codigo: productoInfo?.codigo || null,
+          cliente_nombre: creditoInfo?.nombre_cliente || factura.cliente_nombre || null
         }
       })
 
@@ -119,6 +210,8 @@ const ReportesMensuales = () => {
         return (
           (f.detalle_texto && f.detalle_texto.toLowerCase().includes(termino)) ||
           (f.descripcion && f.descripcion.toLowerCase().includes(termino)) ||
+          (f.cliente_nombre && f.cliente_nombre.toLowerCase().includes(termino)) ||
+          (f.producto_nombre && f.producto_nombre.toLowerCase().includes(termino)) ||
           (f.id && f.id.toLowerCase().includes(termino))
         )
       })
@@ -152,11 +245,38 @@ const ReportesMensuales = () => {
   }
 
   const obtenerTextoDetalle = (factura) => {
-    // Para gastos, usar la descripción guardada
+    // GASTOS: usar descripción guardada
     if (factura.tipo_venta === 'gasto') {
       return factura.descripcion || 'Gasto sin descripción'
     }
-    // Para otros tipos, usar el detalle procesado
+    
+    // VENTAS NORMALES: mostrar producto si existe
+    if (factura.tipo_venta === 'normal') {
+      if (factura.producto_nombre) {
+        return factura.producto_nombre
+      }
+      return factura.detalle_texto || 'Venta'
+    }
+    
+    // CRÉDITOS: mostrar producto o cliente
+    if (factura.tipo_venta === 'credito') {
+      if (factura.producto_nombre) {
+        return factura.producto_nombre
+      }
+      if (factura.cliente_nombre) {
+        return `Crédito: ${factura.cliente_nombre}`
+      }
+      return factura.detalle_texto || 'Crédito'
+    }
+    
+    // ABONOS: mostrar cliente si existe
+    if (factura.tipo_venta === 'abono_credito') {
+      if (factura.cliente_nombre) {
+        return `Abono - ${factura.cliente_nombre}`
+      }
+      return factura.detalle_texto || 'Abono'
+    }
+    
     return factura.detalle_texto || 'Sin detalle'
   }
 
@@ -441,7 +561,7 @@ const ReportesMensuales = () => {
             type="text"
             value={filtroBusqueda}
             onChange={(e) => setFiltroBusqueda(e.target.value)}
-            placeholder="Descripción, cliente, ID..."
+            placeholder="Producto, cliente, descripción..."
             className="filtro-input"
           />
           {filtroBusqueda && (
@@ -593,7 +713,7 @@ const ReportesMensuales = () => {
                          factura.tipo_venta === 'normal' ? 'Venta' : 'Abono'}
                       </span>
                     </td>
-                    <td className="col-detalle">
+                    <td className="col-detalle" title={obtenerTextoDetalle(factura)}>
                       {obtenerTextoDetalle(factura)}
                     </td>
                     <td className="col-metodo">
