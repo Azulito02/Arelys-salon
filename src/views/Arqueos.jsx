@@ -386,7 +386,7 @@ const Arqueos = () => {
     );
   });
 
-// Exportar UN arqueo a Excel - VERSIÓN SIMPLE Y LIMPIA
+// Exportar UN arqueo a Excel - VERSIÓN COMPLETA CON VENTAS NORMALES
 const exportarArqueoExcel = async (arqueo) => {
   try {
     setExportando(prev => ({ ...prev, [arqueo.id]: 'excel' }))
@@ -412,10 +412,18 @@ const exportarArqueoExcel = async (arqueo) => {
       { 'SECCIÓN': 'VENTAS TOTALES', 'VALOR': `C$${parseFloat(arqueoCompleto.total_ventas || 0).toFixed(2)}`, 'DETALLE': '' },
       { 'SECCIÓN': 'Ventas Crédito', 'VALOR': `C$${parseFloat(arqueoCompleto.total_credito || 0).toFixed(2)}`, 'DETALLE': '' },
       { 'SECCIÓN': '', 'VALOR': '', 'DETALLE': '' },
-      { 'SECCIÓN': 'EFECTIVO BRUTO', 'VALOR': `C$${parseFloat(arqueoCompleto.total_efectivo || 0).toFixed(2)}`, 'DETALLE': '' },
-      { 'SECCIÓN': 'Bonos en efectivo', 'VALOR': `C$${parseFloat(arqueoCompleto.total_abonos_efectivo || 0).toFixed(2)}`, 'DETALLE': '' },
-      { 'SECCIÓN': 'GASTOS', 'VALOR': `C$${parseFloat(arqueoCompleto.total_gastos || 0).toFixed(2)}`, 'DETALLE': '' },
+      { 'SECCIÓN': 'VENTAS POR MÉTODO', 'VALOR': '', 'DETALLE': '' },
+      { 'SECCIÓN': '  • Efectivo', 'VALOR': `C$${parseFloat(arqueoCompleto.total_ventas_efectivo || 0).toFixed(2)}`, 'DETALLE': '' },
+      { 'SECCIÓN': '  • Tarjeta', 'VALOR': `C$${parseFloat(arqueoCompleto.total_ventas_tarjeta || 0).toFixed(2)}`, 'DETALLE': '' },
+      { 'SECCIÓN': '  • Transferencia', 'VALOR': `C$${parseFloat(arqueoCompleto.total_ventas_transferencia || 0).toFixed(2)}`, 'DETALLE': '' },
       { 'SECCIÓN': '', 'VALOR': '', 'DETALLE': '' },
+      { 'SECCIÓN': 'ABONOS POR MÉTODO', 'VALOR': '', 'DETALLE': '' },
+      { 'SECCIÓN': '  • Efectivo', 'VALOR': `C$${parseFloat(arqueoCompleto.total_abonos_efectivo || 0).toFixed(2)}`, 'DETALLE': '' },
+      { 'SECCIÓN': '  • Tarjeta', 'VALOR': `C$${parseFloat(arqueoCompleto.total_abonos_tarjeta || 0).toFixed(2)}`, 'DETALLE': '' },
+      { 'SECCIÓN': '  • Transferencia', 'VALOR': `C$${parseFloat(arqueoCompleto.total_abonos_transferencia || 0).toFixed(2)}`, 'DETALLE': '' },
+      { 'SECCIÓN': '', 'VALOR': '', 'DETALLE': '' },
+      { 'SECCIÓN': 'EFECTIVO BRUTO', 'VALOR': `C$${parseFloat(arqueoCompleto.total_efectivo || 0).toFixed(2)}`, 'DETALLE': '' },
+      { 'SECCIÓN': 'GASTOS', 'VALOR': `C$${parseFloat(arqueoCompleto.total_gastos || 0).toFixed(2)}`, 'DETALLE': '' },
       { 'SECCIÓN': 'EFECTIVO EN CAJA', 'VALOR': `C$${parseFloat(arqueoCompleto.efectivo_en_caja || 0).toFixed(2)}`, 'DETALLE': '' },
     ]
 
@@ -442,34 +450,27 @@ const exportarArqueoExcel = async (arqueo) => {
       { 'DESCRIPCIÓN': 'Ventas eliminadas', 'MONTO': '', 'CANTIDAD': arqueoCompleto.ventas_eliminadas || 0 },
       { 'DESCRIPCIÓN': 'Gastos eliminados', 'MONTO': '', 'CANTIDAD': arqueoCompleto.gastos_eliminados || 0 },
       { 'DESCRIPCIÓN': '', 'MONTO': '', 'CANTIDAD': '' },
+      { 'DESCRIPCIÓN': 'VENTAS POR MÉTODO', 'MONTO': '', 'CANTIDAD': '' },
+      { 'DESCRIPCIÓN': '  Efectivo', 'MONTO': `C$${parseFloat(arqueoCompleto.total_ventas_efectivo || 0).toFixed(2)}`, 'CANTIDAD': arqueoCompleto.ventas_eliminadas || 0 },
+      { 'DESCRIPCIÓN': '  Tarjeta', 'MONTO': `C$${parseFloat(arqueoCompleto.total_ventas_tarjeta || 0).toFixed(2)}`, 'CANTIDAD': '' },
+      { 'DESCRIPCIÓN': '  Transferencia', 'MONTO': `C$${parseFloat(arqueoCompleto.total_ventas_transferencia || 0).toFixed(2)}`, 'CANTIDAD': '' },
+      { 'DESCRIPCIÓN': '', 'MONTO': '', 'CANTIDAD': '' },
       { 'DESCRIPCIÓN': 'ABONOS PROCESADOS', 'MONTO': '', 'CANTIDAD': '' },
-      { 'DESCRIPCIÓN': 'Efectivo', 'MONTO': `C$${parseFloat(arqueoCompleto.total_abonos_efectivo || 0).toFixed(2)}`, 'CANTIDAD': arqueoCompleto.abonos_efectivo_eliminados || 0 },
-      { 'DESCRIPCIÓN': 'Tarjeta', 'MONTO': `C$${parseFloat(arqueoCompleto.total_abonos_tarjeta || 0).toFixed(2)}`, 'CANTIDAD': arqueoCompleto.abonos_tarjeta_eliminados || 0 },
-      { 'DESCRIPCIÓN': 'Transferencia', 'MONTO': `C$${parseFloat(arqueoCompleto.total_abonos_transferencia || 0).toFixed(2)}`, 'CANTIDAD': arqueoCompleto.abonos_transferencia_eliminados || 0 },
+      { 'DESCRIPCIÓN': '  Efectivo', 'MONTO': `C$${parseFloat(arqueoCompleto.total_abonos_efectivo || 0).toFixed(2)}`, 'CANTIDAD': arqueoCompleto.abonos_efectivo_eliminados || 0 },
+      { 'DESCRIPCIÓN': '  Tarjeta', 'MONTO': `C$${parseFloat(arqueoCompleto.total_abonos_tarjeta || 0).toFixed(2)}`, 'CANTIDAD': arqueoCompleto.abonos_tarjeta_eliminados || 0 },
+      { 'DESCRIPCIÓN': '  Transferencia', 'MONTO': `C$${parseFloat(arqueoCompleto.total_abonos_transferencia || 0).toFixed(2)}`, 'CANTIDAD': arqueoCompleto.abonos_transferencia_eliminados || 0 },
       { 'DESCRIPCIÓN': '', 'MONTO': '', 'CANTIDAD': '' },
       { 'DESCRIPCIÓN': 'CRÉDITOS MANTENIDOS', 'MONTO': `C$${parseFloat(arqueoCompleto.total_credito || 0).toFixed(2)}`, 'CANTIDAD': arqueoCompleto.creditos_completados_eliminados || 0 },
     ]
 
-    // ============ HOJA 3: VENTAS POR MÉTODO ============
-    const ventasMetodo = [
-      { 'MÉTODO': 'VENTAS POR MÉTODO', 'MONTO': '', 'CANTIDAD': '' },
-      { 'MÉTODO': '', 'MONTO': '', 'CANTIDAD': '' },
-      { 'MÉTODO': 'Efectivo', 'MONTO': `C$${parseFloat(arqueoCompleto.total_ventas_efectivo || 0).toFixed(2)}`, 'CANTIDAD': arqueoCompleto.ventas_eliminadas || 0 },
-      { 'MÉTODO': 'Tarjeta', 'MONTO': `C$${parseFloat(arqueoCompleto.total_ventas_tarjeta || 0).toFixed(2)}`, 'CANTIDAD': 'N/A' },
-      { 'MÉTODO': 'Transferencia', 'MONTO': `C$${parseFloat(arqueoCompleto.total_ventas_transferencia || 0).toFixed(2)}`, 'CANTIDAD': 'N/A' },
-      { 'MÉTODO': 'Crédito', 'MONTO': `C$${parseFloat(arqueoCompleto.total_credito || 0).toFixed(2)}`, 'CANTIDAD': arqueoCompleto.creditos_completados_eliminados || 0 },
-      { 'MÉTODO': '', 'MONTO': '', 'CANTIDAD': '' },
-      { 'MÉTODO': 'TOTAL VENTAS', 'MONTO': `C$${parseFloat(arqueoCompleto.total_ventas || 0).toFixed(2)}`, 'CANTIDAD': '' },
-    ]
-
-    // ============ HOJA 4: CÁLCULO DE EFECTIVO ============
+    // ============ HOJA 3: CÁLCULO DE EFECTIVO ============
     const efectivoNetoCalculado = (parseFloat(arqueoCompleto.total_efectivo || 0) - parseFloat(arqueoCompleto.total_gastos || 0))
     
     const calculoEfectivo = [
       { 'CONCEPTO': 'CÁLCULO DE EFECTIVO', 'MONTO': '' },
       { 'CONCEPTO': '', 'MONTO': '' },
       { 'CONCEPTO': 'Ventas en efectivo', 'MONTO': `C$${parseFloat(arqueoCompleto.total_ventas_efectivo || 0).toFixed(2)}` },
-      { 'CONCEPTO': '+ Bonos en efectivo', 'MONTO': `C$${parseFloat(arqueoCompleto.total_abonos_efectivo || 0).toFixed(2)}` },
+      { 'CONCEPTO': '+ Abonos en efectivo', 'MONTO': `C$${parseFloat(arqueoCompleto.total_abonos_efectivo || 0).toFixed(2)}` },
       { 'CONCEPTO': '= EFECTIVO BRUTO', 'MONTO': `C$${parseFloat(arqueoCompleto.total_efectivo || 0).toFixed(2)}` },
       { 'CONCEPTO': '- Gastos', 'MONTO': `C$${parseFloat(arqueoCompleto.total_gastos || 0).toFixed(2)}` },
       { 'CONCEPTO': '= EFECTIVO NETO ESPERADO', 'MONTO': `C$${efectivoNetoCalculado.toFixed(2)}` },
@@ -477,35 +478,51 @@ const exportarArqueoExcel = async (arqueo) => {
       { 'CONCEPTO': 'DIFERENCIA', 'MONTO': `C$${Math.abs(parseFloat(arqueoCompleto.diferencia_efectivo || 0)).toFixed(2)} ${parseFloat(arqueoCompleto.diferencia_efectivo || 0) > 0 ? '(Sobrante)' : parseFloat(arqueoCompleto.diferencia_efectivo || 0) < 0 ? '(Faltante)' : '(Exacto)'}` },
     ]
 
+    // ============ HOJA 4: RESUMEN TABULAR ============
+    const resumenTabular = [
+      { 
+        'FECHA': formatFechaNicaragua(arqueoCompleto.fecha),
+        'VENTAS TOTALES': `C$${parseFloat(arqueoCompleto.total_ventas || 0).toFixed(2)}`,
+        'VENTAS CRÉDITO': `C$${parseFloat(arqueoCompleto.total_credito || 0).toFixed(2)}`,
+        'VENTAS EFECTIVO': `C$${parseFloat(arqueoCompleto.total_ventas_efectivo || 0).toFixed(2)}`,
+        'VENTAS TARJETA': `C$${parseFloat(arqueoCompleto.total_ventas_tarjeta || 0).toFixed(2)}`,
+        'VENTAS TRANSF': `C$${parseFloat(arqueoCompleto.total_ventas_transferencia || 0).toFixed(2)}`,
+        'ABONOS EFECTIVO': `C$${parseFloat(arqueoCompleto.total_abonos_efectivo || 0).toFixed(2)}`,
+        'ABONOS TARJETA': `C$${parseFloat(arqueoCompleto.total_abonos_tarjeta || 0).toFixed(2)}`,
+        'ABONOS TRANSF': `C$${parseFloat(arqueoCompleto.total_abonos_transferencia || 0).toFixed(2)}`,
+        'EFECTIVO BRUTO': `C$${parseFloat(arqueoCompleto.total_efectivo || 0).toFixed(2)}`,
+        'GASTOS': `C$${parseFloat(arqueoCompleto.total_gastos || 0).toFixed(2)}`,
+        'EFECTIVO CAJA': `C$${parseFloat(arqueoCompleto.efectivo_en_caja || 0).toFixed(2)}`,
+        'DIFERENCIA': `C$${Math.abs(parseFloat(arqueoCompleto.diferencia_efectivo || 0)).toFixed(2)}`
+      }
+    ]
+
     // ============ CREAR LIBRO DE EXCEL ============
     const wb = XLSX.utils.book_new()
     
-    // Aplicar estilos básicos (ancho de columnas)
-    const colWidths = [
-      { wch: 30 }, // SECCIÓN/CONCEPTO
-      { wch: 20 }, // VALOR/MONTO
-      { wch: 15 }, // DETALLE/CANTIDAD
-    ]
-    
     // Hoja 1: Resumen Principal
     const wsResumen = XLSX.utils.json_to_sheet(resumenPrincipal, { header: ['SECCIÓN', 'VALOR', 'DETALLE'] })
-    wsResumen['!cols'] = colWidths
+    wsResumen['!cols'] = [{ wch: 30 }, { wch: 20 }, { wch: 15 }]
     XLSX.utils.book_append_sheet(wb, wsResumen, 'Resumen')
     
     // Hoja 2: Detalles Adicionales
     const wsDetalles = XLSX.utils.json_to_sheet(detallesAdicionales, { header: ['DESCRIPCIÓN', 'MONTO', 'CANTIDAD'] })
-    wsDetalles['!cols'] = colWidths
+    wsDetalles['!cols'] = [{ wch: 30 }, { wch: 20 }, { wch: 15 }]
     XLSX.utils.book_append_sheet(wb, wsDetalles, 'Detalles')
     
-    // Hoja 3: Ventas por Método
-    const wsVentas = XLSX.utils.json_to_sheet(ventasMetodo, { header: ['MÉTODO', 'MONTO', 'CANTIDAD'] })
-    wsVentas['!cols'] = colWidths
-    XLSX.utils.book_append_sheet(wb, wsVentas, 'Ventas')
-    
-    // Hoja 4: Cálculo de Efectivo
+    // Hoja 3: Cálculo de Efectivo
     const wsCalculo = XLSX.utils.json_to_sheet(calculoEfectivo, { header: ['CONCEPTO', 'MONTO'] })
     wsCalculo['!cols'] = [{ wch: 30 }, { wch: 20 }]
     XLSX.utils.book_append_sheet(wb, wsCalculo, 'Cálculo Efectivo')
+    
+    // Hoja 4: Resumen Tabular
+    const wsTabular = XLSX.utils.json_to_sheet(resumenTabular)
+    wsTabular['!cols'] = [
+      { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 },
+      { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 15 },
+      { wch: 15 }, { wch: 15 }, { wch: 15 }
+    ]
+    XLSX.utils.book_append_sheet(wb, wsTabular, 'Resumen Tabular')
     
     // ============ GUARDAR ARCHIVO ============
     const fechaFormateada = formatFechaNicaragua(arqueo.fecha)
@@ -525,7 +542,7 @@ const exportarArqueoExcel = async (arqueo) => {
   }
 }
 
- // Exportar UN arqueo a PDF - VERSIÓN SIMPLE Y LIMPIA
+ // Exportar UN arqueo a PDF - VERSIÓN COMPLETA CON VENTAS NORMALES
 const exportarArqueoPDF = async (arqueo) => {
   try {
     setExportando(prev => ({ ...prev, [arqueo.id]: 'pdf' }))
@@ -604,13 +621,44 @@ const exportarArqueoPDF = async (arqueo) => {
     
     y += 12
     doc.setFont(undefined, 'bold')
+    doc.text('VENTAS POR MÉTODO', leftX, y)
+    doc.setFont(undefined, 'normal')
+    doc.text('', rightX, y)
+    
+    y += 8
+    doc.text('  • Efectivo', leftX + 5, y)
+    doc.text(`C$${parseFloat(arqueoCompleto.total_ventas_efectivo || 0).toFixed(2)}`, rightX, y)
+    
+    y += 7
+    doc.text('  • Tarjeta', leftX + 5, y)
+    doc.text(`C$${parseFloat(arqueoCompleto.total_ventas_tarjeta || 0).toFixed(2)}`, rightX, y)
+    
+    y += 7
+    doc.text('  • Transferencia', leftX + 5, y)
+    doc.text(`C$${parseFloat(arqueoCompleto.total_ventas_transferencia || 0).toFixed(2)}`, rightX, y)
+    
+    y += 12
+    doc.setFont(undefined, 'bold')
+    doc.text('ABONOS POR MÉTODO', leftX, y)
+    doc.setFont(undefined, 'normal')
+    
+    y += 8
+    doc.text('  • Efectivo', leftX + 5, y)
+    doc.text(`C$${parseFloat(arqueoCompleto.total_abonos_efectivo || 0).toFixed(2)}`, rightX, y)
+    
+    y += 7
+    doc.text('  • Tarjeta', leftX + 5, y)
+    doc.text(`C$${parseFloat(arqueoCompleto.total_abonos_tarjeta || 0).toFixed(2)}`, rightX, y)
+    
+    y += 7
+    doc.text('  • Transferencia', leftX + 5, y)
+    doc.text(`C$${parseFloat(arqueoCompleto.total_abonos_transferencia || 0).toFixed(2)}`, rightX, y)
+    
+    y += 12
+    doc.setFont(undefined, 'bold')
     doc.text('EFECTIVO BRUTO', leftX, y)
     doc.setFont(undefined, 'normal')
     doc.text(`C$${parseFloat(arqueoCompleto.total_efectivo || 0).toFixed(2)}`, rightX, y)
-    
-    y += 8
-    doc.text('Bonos en efectivo', leftX + 5, y)
-    doc.text(`C$${parseFloat(arqueoCompleto.total_abonos_efectivo || 0).toFixed(2)}`, rightX, y)
     
     y += 8
     doc.text('GASTOS', leftX, y)
@@ -652,6 +700,12 @@ const exportarArqueoPDF = async (arqueo) => {
     y += 7
     doc.text(`• Gastos eliminados: ${arqueoCompleto.gastos_eliminados || 0}`, 25, y)
     y += 7
+    doc.text(`• Ventas en efectivo: C$${parseFloat(arqueoCompleto.total_ventas_efectivo || 0).toFixed(2)}`, 25, y)
+    y += 7
+    doc.text(`• Ventas con tarjeta: C$${parseFloat(arqueoCompleto.total_ventas_tarjeta || 0).toFixed(2)}`, 25, y)
+    y += 7
+    doc.text(`• Ventas con transferencia: C$${parseFloat(arqueoCompleto.total_ventas_transferencia || 0).toFixed(2)}`, 25, y)
+    y += 7
     doc.text(`• Abonos en efectivo: C$${parseFloat(arqueoCompleto.total_abonos_efectivo || 0).toFixed(2)} (${arqueoCompleto.abonos_efectivo_eliminados || 0} abonos)`, 25, y)
     y += 7
     doc.text(`• Abonos con tarjeta: C$${parseFloat(arqueoCompleto.total_abonos_tarjeta || 0).toFixed(2)} (${arqueoCompleto.abonos_tarjeta_eliminados || 0} abonos)`, 25, y)
@@ -680,7 +734,8 @@ const exportarArqueoPDF = async (arqueo) => {
     setExportando(prev => ({ ...prev, [arqueo.id]: null }))
   }
 }
- // Mostrar detalles del arqueo en móvil
+
+// Mostrar detalles del arqueo en móvil
 const mostrarDetallesMobile = (arqueo) => {
   const diferencia = parseFloat(arqueo.diferencia_efectivo || 0)
   
@@ -705,6 +760,24 @@ const mostrarDetallesMobile = (arqueo) => {
           <span className="detalle-label-mobile">Ventas Crédito</span>
           <span className="detalle-valor-mobile credito">
             C${parseFloat(arqueo.total_credito).toFixed(2)}
+          </span>
+        </div>
+        <div className="detalle-item-mobile">
+          <span className="detalle-label-mobile">💰 Ventas Ef.</span>
+          <span className="detalle-valor-mobile efectivo">
+            C${parseFloat(arqueo.total_ventas_efectivo || 0).toFixed(2)}
+          </span>
+        </div>
+        <div className="detalle-item-mobile">
+          <span className="detalle-label-mobile">💳 Ventas Tarj.</span>
+          <span className="detalle-valor-mobile tarjeta">
+            C${parseFloat(arqueo.total_ventas_tarjeta || 0).toFixed(2)}
+          </span>
+        </div>
+        <div className="detalle-item-mobile">
+          <span className="detalle-label-mobile">🏦 Ventas Transf.</span>
+          <span className="detalle-valor-mobile transferencia">
+            C${parseFloat(arqueo.total_ventas_transferencia || 0).toFixed(2)}
           </span>
         </div>
         <div className="detalle-item-mobile">
@@ -789,7 +862,6 @@ const mostrarDetallesMobile = (arqueo) => {
     </div>
   )
 }
-
   // Renderizar arqueos para vista móvil
   const renderArqueosMobile = () => {
     if (loading) {
@@ -978,14 +1050,47 @@ const mostrarDetallesMobile = (arqueo) => {
 {/* Tabla de arqueos */}
 <div className="tabla-arqueos-container">
   <div className="tabla-arqueos-card">
+    {/* CONTROLES DE NAVEGACIÓN SUPERIOR */}
+    <div className="tabla-controls-container">
+      <div className="tabla-info">
+        <strong>{arqueosFiltrados.length}</strong> arqueos encontrados
+        {busqueda && <span> · Búsqueda: "{busqueda}"</span>}
+      </div>
+      <div className="tabla-scroll-controls">
+        <button 
+          className="btn-scroll"
+          onClick={() => {
+            const container = document.querySelector('.tabla-scroll-container');
+            if (container) container.scrollBy({ left: -300, behavior: 'smooth' });
+          }}
+          title="Desplazar izquierda"
+        >
+          ← Desplazar
+        </button>
+        <button 
+          className="btn-scroll"
+          onClick={() => {
+            const container = document.querySelector('.tabla-scroll-container');
+            if (container) container.scrollBy({ left: 300, behavior: 'smooth' });
+          }}
+          title="Desplazar derecha"
+        >
+          Desplazar →
+        </button>
+      </div>
+    </div>
+
     {/* VISTA DESKTOP/TABLET */}
     <div className="tabla-scroll-container desktop-only">
       <table className="tabla-arqueos">
         <thead>
           <tr>
             <th className="columna-fecha">Fecha</th>
-            <th className="columna-ventas">Ventas Totales</th>
+            <th className="columna-ventas-totales">Ventas Totales</th>
             <th className="columna-credito">Ventas Crédito</th>
+            <th className="columna-ventas-efectivo">💰 Ventas Ef.</th>
+            <th className="columna-ventas-tarjeta">💳 Ventas Tarj.</th>
+            <th className="columna-ventas-transferencia">🏦 Ventas Transf.</th>
             <th className="columna-abonos-efectivo">💰 Abonos Ef.</th>
             <th className="columna-abonos-tarjeta">💳 Abonos Tarj.</th>
             <th className="columna-abonos-transf">🏦 Abonos Transf.</th>
@@ -998,14 +1103,14 @@ const mostrarDetallesMobile = (arqueo) => {
         <tbody>
           {loading ? (
             <tr>
-              <td colSpan="10" className="cargando-mensaje">
+              <td colSpan="13" className="cargando-mensaje">
                 <div className="spinner"></div>
                 Cargando arqueos...
               </td>
             </tr>
           ) : arqueosFiltrados.length === 0 ? (
             <tr>
-              <td colSpan="10" className="sin-registros">
+              <td colSpan="13" className="sin-registros">
                 {busqueda ? 'No se encontraron arqueos con esa búsqueda' : 'No hay arqueos registrados'}
               </td>
             </tr>
@@ -1015,7 +1120,7 @@ const mostrarDetallesMobile = (arqueo) => {
                 <td className="celda-fecha">
                   {formatFechaNicaragua(arqueo.fecha)}
                 </td>
-                <td className="celda-ventas">
+                <td className="celda-ventas-totales">
                   <span className="valor-positivo">
                     C${parseFloat(arqueo.total_ventas).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                   </span>
@@ -1023,6 +1128,21 @@ const mostrarDetallesMobile = (arqueo) => {
                 <td className="celda-credito">
                   <span className="valor-credito">
                     C${parseFloat(arqueo.total_credito).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                  </span>
+                </td>
+                <td className="celda-ventas-efectivo">
+                  <span className="badge-venta efectivo">
+                    💵 C${parseFloat(arqueo.total_ventas_efectivo || 0).toFixed(2)}
+                  </span>
+                </td>
+                <td className="celda-ventas-tarjeta">
+                  <span className="badge-venta tarjeta">
+                    💳 C${parseFloat(arqueo.total_ventas_tarjeta || 0).toFixed(2)}
+                  </span>
+                </td>
+                <td className="celda-ventas-transferencia">
+                  <span className="badge-venta transferencia">
+                    🏦 C${parseFloat(arqueo.total_ventas_transferencia || 0).toFixed(2)}
                   </span>
                 </td>
                 <td className="celda-abonos-efectivo">
@@ -1103,6 +1223,35 @@ const mostrarDetallesMobile = (arqueo) => {
       </table>
     </div>
     
+    {/* CONTROLES DE NAVEGACIÓN INFERIOR */}
+    {!loading && arqueosFiltrados.length > 0 && (
+      <div className="tabla-controls-container" style={{ borderTop: '1px solid #e2e8f0', borderBottom: 'none' }}>
+        <div className="tabla-info">
+          Mostrando {arqueosFiltrados.length} de {arqueos.length} arqueos
+        </div>
+        <div className="tabla-scroll-controls">
+          <button 
+            className="btn-scroll"
+            onClick={() => {
+              const container = document.querySelector('.tabla-scroll-container');
+              if (container) container.scrollBy({ left: -300, behavior: 'smooth' });
+            }}
+          >
+            ← Desplazar
+          </button>
+          <button 
+            className="btn-scroll"
+            onClick={() => {
+              const container = document.querySelector('.tabla-scroll-container');
+              if (container) container.scrollBy({ left: 300, behavior: 'smooth' });
+            }}
+          >
+            Desplazar →
+          </button>
+        </div>
+      </div>
+    )}
+    
     {/* VISTA MÓVIL */}
     <div className="tabla-mobile-view mobile-only">
       {renderArqueosMobile()}
@@ -1137,7 +1286,6 @@ const mostrarDetallesMobile = (arqueo) => {
     )}
   </div>
 </div>
-
 
       {/* Modal para arqueo de turno */}
       {modalAbierto && resumenTurno && (
