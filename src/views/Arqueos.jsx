@@ -542,7 +542,7 @@ const exportarArqueoExcel = async (arqueo) => {
   }
 }
 
- // Exportar UN arqueo a PDF - VERSIÓN COMPLETA CON VENTAS NORMALES
+ // Exportar UN arqueo a PDF - VERSIÓN COMPLETA CON VENTAS NORMALES DETALLADAS
 const exportarArqueoPDF = async (arqueo) => {
   try {
     setExportando(prev => ({ ...prev, [arqueo.id]: 'pdf' }))
@@ -700,7 +700,7 @@ const exportarArqueoPDF = async (arqueo) => {
     y += 7
     doc.text(`• Gastos eliminados: ${arqueoCompleto.gastos_eliminados || 0}`, 25, y)
     y += 7
-    doc.text(`• Ventas en efectivo: C$${parseFloat(arqueoCompleto.total_ventas_efectivo || 0).toFixed(2)}`, 25, y)
+    doc.text(`• Ventas en efectivo: C$${parseFloat(arqueoCompleto.total_ventas_efectivo || 0).toFixed(2)} (${arqueoCompleto.ventas_eliminadas || 0} ventas)`, 25, y)
     y += 7
     doc.text(`• Ventas con tarjeta: C$${parseFloat(arqueoCompleto.total_ventas_tarjeta || 0).toFixed(2)}`, 25, y)
     y += 7
