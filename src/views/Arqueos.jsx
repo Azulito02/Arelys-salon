@@ -1122,12 +1122,12 @@ const mostrarDetallesMobile = (arqueo) => {
                 </td>
                 <td className="celda-ventas-totales">
                   <span className="valor-positivo">
-                    C${parseFloat(arqueo.total_ventas).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    C${parseFloat(arqueo.total_ventas || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                   </span>
                 </td>
                 <td className="celda-credito">
                   <span className="valor-credito">
-                    C${parseFloat(arqueo.total_credito).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    C${parseFloat(arqueo.total_credito || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                   </span>
                 </td>
                 <td className="celda-ventas-efectivo">
@@ -1162,17 +1162,17 @@ const mostrarDetallesMobile = (arqueo) => {
                 </td>
                 <td className="celda-efectivo">
                   <span className="valor-efectivo">
-                    C${parseFloat(arqueo.total_efectivo).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    C${parseFloat(arqueo.total_efectivo || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                   </span>
                 </td>
                 <td className="celda-gastos">
                   <span className="valor-negativo">
-                    C${parseFloat(arqueo.total_gastos).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                    C${parseFloat(arqueo.total_gastos || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                   </span>
                 </td>
                 <td className="celda-caja">
-                  <span className={`badge-caja ${parseFloat(arqueo.efectivo_en_caja) > 0 ? 'positivo' : 'negativo'}`}>
-                    C${parseFloat(arqueo.efectivo_en_caja).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                  <span className={`badge-caja ${parseFloat(arqueo.efectivo_en_caja || 0) > 0 ? 'positivo' : 'negativo'}`}>
+                    C${parseFloat(arqueo.efectivo_en_caja || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
                   </span>
                 </td>
                 <td className="celda-acciones">
