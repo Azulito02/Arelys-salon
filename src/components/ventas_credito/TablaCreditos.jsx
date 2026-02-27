@@ -53,10 +53,16 @@ const TablaCreditos = ({
           }
         }
         
+        // Determinar el nombre del item (producto o servicio)
+        const nombreItem = credito.item?.nombre || 
+                          credito.productos?.nombre || 
+                          credito.servicios?.nombre || 
+                          'Sin nombre'
+        
         agrupados[clienteNombre].creditos.push(credito)
         agrupados[clienteNombre].totalGeneral += parseFloat(credito.total || 0)
         agrupados[clienteNombre].saldoGeneral += credito.saldo_pendiente || 0
-        agrupados[clienteNombre].productosUnicos.add(credito.productos?.nombre || 'Sin nombre')
+        agrupados[clienteNombre].productosUnicos.add(nombreItem)
       })
       
       setCreditosAgrupados(agrupados)
@@ -169,10 +175,14 @@ const TablaCreditos = ({
 
     // Para móvil, mostrar todos los créditos individualmente (sin agrupar)
     const creditosParaMostrar = busqueda.trim() 
-      ? creditosConSaldo.filter(credito => 
-          credito.nombre_cliente?.toLowerCase().includes(busqueda.toLowerCase()) ||
-          credito.productos?.nombre?.toLowerCase().includes(busqueda.toLowerCase())
-        )
+      ? creditosConSaldo.filter(credito => {
+          const nombreItem = credito.item?.nombre || 
+                            credito.productos?.nombre || 
+                            credito.servicios?.nombre || 
+                            'Sin nombre';
+          return credito.nombre_cliente?.toLowerCase().includes(busqueda.toLowerCase()) ||
+                 nombreItem.toLowerCase().includes(busqueda.toLowerCase());
+        })
       : creditosConSaldo;
 
     if (creditosParaMostrar.length === 0) {
@@ -185,6 +195,10 @@ const TablaCreditos = ({
 
     return creditosParaMostrar.map((credito) => {
       const estado = getEstadoCredito ? getEstadoCredito(credito) : { texto: 'Activo', clase: 'estado-activo' };
+      const nombreItem = credito.item?.nombre || 
+                        credito.productos?.nombre || 
+                        credito.servicios?.nombre || 
+                        'Sin nombre';
       
       return (
         <div key={credito.id} className="credito-card">
@@ -192,10 +206,13 @@ const TablaCreditos = ({
             <div style={{ flex: 1 }}>
               <div className="credito-cliente">{credito.nombre_cliente || 'Cliente'}</div>
               <div className="credito-producto">
-                {credito.productos?.nombre || 'Producto no encontrado'}
-                {credito.productos?.codigo && (
+                {nombreItem}
+                {credito.tipo_item === 'servicio' && (
+                  <span style={{ marginLeft: '4px', fontSize: '12px', color: '#8b5cf6' }}>💇</span>
+                )}
+                {credito.item?.codigo && (
                   <span style={{ fontSize: '12px', color: '#64748b', marginLeft: '8px' }}>
-                    (Código: {credito.productos.codigo})
+                    (Código: {credito.item.codigo})
                   </span>
                 )}
               </div>
@@ -292,10 +309,14 @@ const TablaCreditos = ({
   // Calcular resumen para móvil
   const calcularResumenMobile = () => {
     const creditosParaResumen = busqueda.trim() 
-      ? creditosConSaldo.filter(credito => 
-          credito.nombre_cliente?.toLowerCase().includes(busqueda.toLowerCase()) ||
-          credito.productos?.nombre?.toLowerCase().includes(busqueda.toLowerCase())
-        )
+      ? creditosConSaldo.filter(credito => {
+          const nombreItem = credito.item?.nombre || 
+                            credito.productos?.nombre || 
+                            credito.servicios?.nombre || 
+                            'Sin nombre';
+          return credito.nombre_cliente?.toLowerCase().includes(busqueda.toLowerCase()) ||
+                 nombreItem.toLowerCase().includes(busqueda.toLowerCase());
+        })
       : creditosConSaldo;
 
     const totalCreditos = creditosParaResumen.length;
@@ -408,7 +429,7 @@ const TablaCreditos = ({
             <thead>
               <tr>
                 <th className="columna-cliente" style={{ width: '15%' }}>Cliente</th>
-                <th className="columna-producto" style={{ width: '18%' }}>Producto</th>
+                <th className="columna-producto" style={{ width: '18%' }}>Producto/Servicio</th>
                 <th className="columna-cantidad" style={{ width: '7%' }}>Cant</th>
                 <th className="columna-precio" style={{ width: '9%' }}>Precio Unit.</th>
                 <th className="columna-total" style={{ width: '9%' }}>Total</th>
@@ -463,13 +484,11 @@ const TablaCreditos = ({
                           </span>
                         </td>
                         <td className="celda-cantidad">
-                          {/* Mostrar cantidad total aproximada */}
                           <span className="badge-cantidad-total">
                             {datos.creditos.reduce((sum, c) => sum + (c.cantidad || 0), 0)} uds
                           </span>
                         </td>
                         <td className="celda-precio">
-                          {/* Precio promedio o vacío */}
                           <span className="texto-secundario">-</span>
                         </td>
                         <td className="celda-total">
@@ -481,14 +500,12 @@ const TablaCreditos = ({
                           </span>
                         </td>
                         <td className="celda-fecha">
-                          {/* Fecha más antigua */}
                           <span className="texto-secundario">
                             {datos.creditos.length > 0 && datos.creditos[0]?.fecha ? 
                               formatFechaCorta(datos.creditos[0].fecha) : '-'}
                           </span>
                         </td>
                         <td className="celda-fecha-fin">
-                          {/* Fecha más cercana */}
                           <span className="texto-secundario">
                             {datos.creditos.length > 0 && datos.creditos[0]?.fecha_fin ? 
                               formatSoloFecha(datos.creditos[0].fecha_fin) : '-'}
@@ -509,6 +526,10 @@ const TablaCreditos = ({
                       {/* Filas detalladas del cliente (si está expandido) */}
                       {expandido && datos.creditos.map((credito) => {
                         const estado = getEstadoCredito ? getEstadoCredito(credito) : { texto: 'Activo', clase: 'estado-activo' };
+                        const nombreItem = credito.item?.nombre || 
+                                          credito.productos?.nombre || 
+                                          credito.servicios?.nombre || 
+                                          'Sin nombre';
                         
                         return (
                           <tr key={credito.id} className="fila-credito-detalle">
@@ -519,11 +540,14 @@ const TablaCreditos = ({
                             </td>
                             <td className="celda-producto">
                               <div className="nombre-producto">
-                                {credito.productos?.nombre || 'Producto no encontrado'}
+                                {nombreItem}
+                                {credito.tipo_item === 'servicio' && (
+                                  <span style={{ marginLeft: '4px', fontSize: '12px', color: '#8b5cf6' }}>💇</span>
+                                )}
                               </div>
-                              {credito.productos?.codigo && (
+                              {credito.item?.codigo && (
                                 <div className="codigo-producto">
-                                  Código: {credito.productos.codigo}
+                                  Código: {credito.item.codigo}
                                 </div>
                               )}
                             </td>

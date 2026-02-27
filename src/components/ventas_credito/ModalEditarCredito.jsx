@@ -2,19 +2,28 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '../../database/supabase'
 import './ModalEditarCredito.css'
 
-const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, productos }) => {
+const ModalEditarCredito = ({ 
+  isOpen, 
+  onClose, 
+  onCreditoEditado, 
+  credito, 
+  productos, 
+  servicios = [],
+  itemsDisponibles = []
+}) => {
   const [formData, setFormData] = useState({
-    producto_id: '',
+    item_id: '',
+    tipo: 'producto',
     cantidad: 1,
-    precio_unitario: '',
+    precio_unitario: 0,
     nombre_cliente: '',
     fecha_inicio: '',
     fecha_fin: ''
   })
   
-  // 🔍 ESTADOS PARA BUSCADOR DE PRODUCTOS
-  const [busquedaProducto, setBusquedaProducto] = useState('')
-  const [productosFiltrados, setProductosFiltrados] = useState([])
+  // Estado para búsqueda de items
+  const [busquedaItem, setBusquedaItem] = useState('')
+  const [itemsFiltrados, setItemsFiltrados] = useState([])
   const [mostrarResultados, setMostrarResultados] = useState(false)
   
   const [loading, setLoading] = useState(false)
@@ -22,49 +31,68 @@ const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, produc
   const [abonos, setAbonos] = useState([])
   const [totalAbonado, setTotalAbonado] = useState(0)
 
+  // Combinar items si no vienen de props
+  const [itemsCombinados, setItemsCombinados] = useState([])
+
+  useEffect(() => {
+    if (itemsDisponibles && itemsDisponibles.length > 0) {
+      setItemsCombinados(itemsDisponibles)
+    } else {
+      const combinados = [
+        ...(productos || []).map(p => ({ ...p, tipo: 'producto', icono: '📦' })),
+        ...(servicios || []).map(s => ({ ...s, tipo: 'servicio', icono: '💇' }))
+      ]
+      setItemsCombinados(combinados)
+    }
+  }, [productos, servicios, itemsDisponibles])
+
   useEffect(() => {
     if (credito && isOpen) {
-      // Cargar datos del crédito
+      // Determinar el tipo de item
+      const itemId = credito.producto_id || credito.servicio_id
+      const tipo = credito.producto_id ? 'producto' : 'servicio'
+      
       setFormData({
-        producto_id: credito.producto_id,
-        cantidad: credito.cantidad,
-        precio_unitario: credito.precio_unitario,
-        nombre_cliente: credito.nombre_cliente,
-        fecha_inicio: credito.fecha_inicio,
-        fecha_fin: credito.fecha_fin
+        item_id: itemId,
+        tipo: tipo,
+        cantidad: credito.cantidad || 1,
+        precio_unitario: credito.precio_unitario || 0,
+        nombre_cliente: credito.nombre_cliente || '',
+        fecha_inicio: credito.fecha_inicio || '',
+        fecha_fin: credito.fecha_fin || ''
       })
       
-      // Establecer búsqueda con el producto actual
-      const producto = productos.find(p => p.id === credito.producto_id)
-      if (producto) {
-        setBusquedaProducto(producto.nombre)
+      // Buscar el item correspondiente
+      const item = itemsCombinados.find(i => i.id === itemId)
+      if (item) {
+        setBusquedaItem(item.nombre)
       }
       
       // Cargar abonos de este crédito
       cargarAbonosCredito(credito.id)
     }
-  }, [credito, isOpen, productos])
+  }, [credito, isOpen, itemsCombinados])
 
-  // 🔍 FILTRAR PRODUCTOS POR BÚSQUEDA
+  // Filtrar items por búsqueda
   useEffect(() => {
-    if (busquedaProducto.trim() === '') {
-      setProductosFiltrados([])
+    if (busquedaItem.trim() === '') {
+      setItemsFiltrados([])
       setMostrarResultados(false)
       return
     }
 
-    const termino = busquedaProducto.toLowerCase().trim()
+    const termino = busquedaItem.toLowerCase().trim()
     
-    const filtrados = productos.filter(producto => {
-      if (producto.nombre?.toLowerCase().includes(termino)) return true
-      if (producto.categoria?.toLowerCase().includes(termino)) return true
-      if (producto.codigo_barras?.toLowerCase().includes(termino)) return true
+    const filtrados = itemsCombinados.filter(item => {
+      if (item.nombre?.toLowerCase().includes(termino)) return true
+      if (item.categoria?.toLowerCase().includes(termino)) return true
+      if (item.codigo_barras?.toLowerCase().includes(termino)) return true
       return false
     })
     
-    setProductosFiltrados(filtrados.slice(0, 10))
+    setItemsFiltrados(filtrados.slice(0, 10))
     setMostrarResultados(true)
-  }, [busquedaProducto, productos])
+  }, [busquedaItem, itemsCombinados])
 
   // Cargar abonos del crédito
   const cargarAbonosCredito = async (creditoId) => {
@@ -85,15 +113,16 @@ const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, produc
     }
   }
 
-  // 🔍 SELECCIONAR PRODUCTO
-  const seleccionarProducto = (producto) => {
+  // Seleccionar item
+  const seleccionarItem = (item) => {
     setFormData({
       ...formData,
-      producto_id: producto.id,
-      precio_unitario: producto.precio || producto.precio_venta || 0
+      item_id: item.id,
+      tipo: item.tipo,
+      precio_unitario: item.precio || item.precio_venta || 0
     })
-    setBusquedaProducto(producto.nombre)
-    setProductosFiltrados([])
+    setBusquedaItem(item.nombre)
+    setItemsFiltrados([])
     setMostrarResultados(false)
     setError('')
   }
@@ -118,7 +147,7 @@ const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, produc
   const handleSubmit = async (e) => {
     e.preventDefault()
     
-    if (!formData.producto_id || formData.cantidad < 1 || !formData.nombre_cliente.trim() || !formData.fecha_fin) {
+    if (!formData.item_id || formData.cantidad < 1 || !formData.nombre_cliente.trim() || !formData.fecha_fin) {
       setError('Por favor completa todos los campos obligatorios')
       return
     }
@@ -140,7 +169,9 @@ const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, produc
       }
 
       const creditoData = {
-        producto_id: formData.producto_id,
+        ...(formData.tipo === 'producto' 
+          ? { producto_id: formData.item_id, servicio_id: null }
+          : { servicio_id: formData.item_id, producto_id: null }),
         cantidad: parseInt(formData.cantidad),
         precio_unitario: parseFloat(formData.precio_unitario),
         total: totalNuevo,
@@ -148,7 +179,8 @@ const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, produc
         fecha_inicio: formData.fecha_inicio,
         fecha_fin: formData.fecha_fin,
         saldo_pendiente: nuevoSaldoPendiente > 0 ? nuevoSaldoPendiente : 0,
-        estado: nuevoEstado
+        estado: nuevoEstado,
+        tipo_item: formData.tipo
       }
 
       const { error: supabaseError } = await supabase
@@ -158,9 +190,10 @@ const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, produc
       
       if (supabaseError) throw supabaseError
 
-      if (Math.abs(totalNuevo - totalAnterior) > 0.01) {
+      // Actualizar facturados solo si es producto
+      if (formData.tipo === 'producto' && Math.abs(totalNuevo - totalAnterior) > 0.01) {
         try {
-          const { error: facturaError } = await supabase
+          await supabase
             .from('facturados')
             .update({
               total: totalNuevo,
@@ -171,8 +204,6 @@ const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, produc
             .eq('tipo_venta', 'credito')
             .gte('fecha', credito.fecha)
             .lte('fecha', new Date().toISOString())
-          
-          if (facturaError) console.log('No se pudo actualizar facturados:', facturaError)
         } catch (err) {
           console.log('Error actualizando facturados:', err)
         }
@@ -188,7 +219,7 @@ const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, produc
     }
   }
 
-  const productoSeleccionado = productos.find(p => p.id === formData.producto_id)
+  const itemSeleccionado = itemsCombinados.find(p => p.id === formData.item_id)
   const totalAnterior = credito ? parseFloat(credito.total) : 0
   const totalNuevo = calcularTotal()
   const diferencia = totalNuevo - totalAnterior
@@ -228,6 +259,13 @@ const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, produc
                 <span className="info-valor-actual">{credito.nombre_cliente}</span>
               </div>
               <div className="info-item-actual">
+                <span className="info-label-actual">Item:</span>
+                <span className="info-valor-actual">
+                  {credito.item?.nombre || 'Producto/Servicio'}
+                  {credito.tipo_item === 'servicio' && ' 💇'}
+                </span>
+              </div>
+              <div className="info-item-actual">
                 <span className="info-label-actual">Total anterior:</span>
                 <span className="info-valor-actual">C${totalAnterior.toFixed(2)}</span>
               </div>
@@ -261,29 +299,29 @@ const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, produc
               />
             </div>
             
-            {/* 🔍 BUSCADOR DE PRODUCTOS (REEMPLAZA AL SELECT) */}
+            {/* BUSCADOR DE PRODUCTOS/SERVICIOS */}
             <div className="form-grupo">
               <label className="form-label">
-                Buscar Producto *
+                Buscar Producto o Servicio *
               </label>
               <div className="busqueda-producto-container">
                 <input
                   type="text"
-                  value={busquedaProducto}
-                  onChange={(e) => setBusquedaProducto(e.target.value)}
-                  onFocus={() => busquedaProducto.trim() && setMostrarResultados(true)}
+                  value={busquedaItem}
+                  onChange={(e) => setBusquedaItem(e.target.value)}
+                  onFocus={() => busquedaItem.trim() && setMostrarResultados(true)}
                   className="form-input-busqueda"
-                  placeholder="Buscar producto por nombre, categoría o código..."
+                  placeholder="Buscar por nombre, categoría o código..."
                   disabled={loading}
                   autoComplete="off"
                 />
-                {busquedaProducto && (
+                {busquedaItem && (
                   <button
                     type="button"
                     onClick={() => {
-                      setBusquedaProducto('')
-                      setFormData({...formData, producto_id: '', precio_unitario: ''})
-                      setProductosFiltrados([])
+                      setBusquedaItem('')
+                      setFormData({...formData, item_id: '', precio_unitario: 0})
+                      setItemsFiltrados([])
                       setMostrarResultados(false)
                     }}
                     className="boton-limpiar-busqueda"
@@ -292,25 +330,28 @@ const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, produc
                   </button>
                 )}
                 
-                {/* RESULTADOS DE BÚSQUEDA DE PRODUCTOS */}
-                {mostrarResultados && productosFiltrados.length > 0 && (
+                {/* RESULTADOS DE BÚSQUEDA */}
+                {mostrarResultados && itemsFiltrados.length > 0 && (
                   <div className="resultados-busqueda">
-                    {productosFiltrados.map((producto) => (
+                    {itemsFiltrados.map((item) => (
                       <div
-                        key={producto.id}
+                        key={item.id}
                         className="resultado-item"
-                        onClick={() => seleccionarProducto(producto)}
+                        onClick={() => seleccionarItem(item)}
                       >
                         <div className="resultado-nombre">
-                          <strong>{producto.nombre}</strong>
-                          {producto.categoria && (
-                            <span className="resultado-categoria"> ({producto.categoria})</span>
+                          <strong>{item.nombre}</strong>
+                          <span className="resultado-tipo">
+                            {item.tipo === 'servicio' ? ' 💇' : ' 📦'}
+                          </span>
+                          {item.categoria && (
+                            <span className="resultado-categoria"> ({item.categoria})</span>
                           )}
                         </div>
                         <div className="resultado-info">
-                          <span className="resultado-precio">C${(producto.precio || producto.precio_venta || 0).toFixed(2)}</span>
-                          {producto.codigo_barras && (
-                            <span className="resultado-codigo">📟 {producto.codigo_barras}</span>
+                          <span className="resultado-precio">C${(item.precio || item.precio_venta || 0).toFixed(2)}</span>
+                          {item.codigo_barras && (
+                            <span className="resultado-codigo">📟 {item.codigo_barras}</span>
                           )}
                         </div>
                       </div>
@@ -318,32 +359,38 @@ const ModalEditarCredito = ({ isOpen, onClose, onCreditoEditado, credito, produc
                   </div>
                 )}
                 
-                {mostrarResultados && productosFiltrados.length === 0 && busquedaProducto.trim() !== '' && (
+                {mostrarResultados && itemsFiltrados.length === 0 && busquedaItem.trim() !== '' && (
                   <div className="resultados-busqueda">
                     <div className="resultado-vacio">
-                      No se encontraron productos con "{busquedaProducto}"
+                      No se encontraron items con "{busquedaItem}"
                     </div>
                   </div>
                 )}
               </div>
             </div>
             
-            {/* Información del producto seleccionado */}
-            {productoSeleccionado && (
+            {/* Información del item seleccionado */}
+            {itemSeleccionado && (
               <div className="producto-info-actualizado">
                 <div className="producto-detalles-actualizado">
                   <div className="detalle-item-actualizado">
                     <span>Precio unitario:</span>
-                    <strong>C${productoSeleccionado.precio?.toFixed(2) || '0.00'}</strong>
+                    <strong>C${itemSeleccionado.precio?.toFixed(2) || '0.00'}</strong>
                   </div>
                   <div className="detalle-item-actualizado">
-                    <span>Categoría:</span>
-                    <strong>{productoSeleccionado.categoria || 'Sin categoría'}</strong>
+                    <span>Tipo:</span>
+                    <strong>{itemSeleccionado.tipo === 'servicio' ? '💇 Servicio' : '📦 Producto'}</strong>
                   </div>
-                  {productoSeleccionado.codigo_barras && (
+                  {itemSeleccionado.categoria && (
+                    <div className="detalle-item-actualizado">
+                      <span>Categoría:</span>
+                      <strong>{itemSeleccionado.categoria}</strong>
+                    </div>
+                  )}
+                  {itemSeleccionado.codigo_barras && (
                     <div className="detalle-item-actualizado">
                       <span>Código:</span>
-                      <strong>{productoSeleccionado.codigo_barras}</strong>
+                      <strong>{itemSeleccionado.codigo_barras}</strong>
                     </div>
                   )}
                 </div>

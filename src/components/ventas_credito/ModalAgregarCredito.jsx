@@ -2,30 +2,52 @@ import React, { useState, useEffect } from 'react'
 import { supabase } from '../../database/supabase'
 import './ModalAgregarCredito.css'
 
-const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) => {
+const ModalAgregarCredito = ({ 
+  isOpen, 
+  onClose, 
+  onCreditoAgregado, 
+  productos, 
+  servicios = [],
+  itemsDisponibles = [] 
+}) => {
   const [formData, setFormData] = useState({
     cliente_nombre: '',
     fecha_inicio: new Date().toISOString().split('T')[0],
     fecha_fin: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
   })
   
-  // Estado para búsqueda de productos principal
-  const [busquedaProducto, setBusquedaProducto] = useState('')
-  const [productosFiltrados, setProductosFiltrados] = useState([])
+  // Estado para búsqueda de items principal
+  const [busquedaItem, setBusquedaItem] = useState('')
+  const [itemsFiltrados, setItemsFiltrados] = useState([])
   const [mostrarResultados, setMostrarResultados] = useState(false)
   
-  // Estado para búsqueda manual en productos agregados
+  // Estado para búsqueda manual en items agregados
   const [busquedaManual, setBusquedaManual] = useState('')
-  const [productosFiltradosManual, setProductosFiltradosManual] = useState([])
+  const [itemsFiltradosManual, setItemsFiltradosManual] = useState([])
   const [mostrarResultadosManual, setMostrarResultadosManual] = useState(false)
   const [indiceBuscando, setIndiceBuscando] = useState(null)
   
-  const [productosSeleccionados, setProductosSeleccionados] = useState([])
+  const [itemsSeleccionados, setItemsSeleccionados] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [clientes, setClientes] = useState([])
   const [mostrarNuevoCliente, setMostrarNuevoCliente] = useState(false)
   const [nuevoCliente, setNuevoCliente] = useState({ nombre: '', telefono: '', email: '' })
+
+  // Combinar items si no vienen de props
+  const [itemsCombinados, setItemsCombinados] = useState([])
+
+  useEffect(() => {
+    if (itemsDisponibles && itemsDisponibles.length > 0) {
+      setItemsCombinados(itemsDisponibles)
+    } else {
+      const combinados = [
+        ...(productos || []).map(p => ({ ...p, tipo: 'producto', icono: '📦' })),
+        ...(servicios || []).map(s => ({ ...s, tipo: 'servicio', icono: '💇' }))
+      ]
+      setItemsCombinados(combinados)
+    }
+  }, [productos, servicios, itemsDisponibles])
 
   // Cargar clientes al abrir el modal
   useEffect(() => {
@@ -35,47 +57,47 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
     }
   }, [isOpen])
 
-  // Filtrar productos según búsqueda principal
+  // Filtrar items según búsqueda principal
   useEffect(() => {
-    if (busquedaProducto.trim() === '') {
-      setProductosFiltrados([])
+    if (busquedaItem.trim() === '') {
+      setItemsFiltrados([])
       setMostrarResultados(false)
       return
     }
 
-    const termino = busquedaProducto.toLowerCase().trim()
+    const termino = busquedaItem.toLowerCase().trim()
     
-    const filtrados = productos.filter(producto => {
-      if (producto.nombre?.toLowerCase().includes(termino)) return true
-      if (producto.categoria?.toLowerCase().includes(termino)) return true
-      if (producto.codigo_barras?.toLowerCase().includes(termino)) return true
+    const filtrados = itemsCombinados.filter(item => {
+      if (item.nombre?.toLowerCase().includes(termino)) return true
+      if (item.categoria?.toLowerCase().includes(termino)) return true
+      if (item.codigo_barras?.toLowerCase().includes(termino)) return true
       return false
     })
     
-    setProductosFiltrados(filtrados)
+    setItemsFiltrados(filtrados)
     setMostrarResultados(true)
-  }, [busquedaProducto, productos])
+  }, [busquedaItem, itemsCombinados])
 
-  // Filtrar productos según búsqueda manual
+  // Filtrar items según búsqueda manual
   useEffect(() => {
     if (busquedaManual.trim() === '' || indiceBuscando === null) {
-      setProductosFiltradosManual([])
+      setItemsFiltradosManual([])
       setMostrarResultadosManual(false)
       return
     }
 
     const termino = busquedaManual.toLowerCase().trim()
     
-    const filtrados = productos.filter(producto => {
-      if (producto.nombre?.toLowerCase().includes(termino)) return true
-      if (producto.categoria?.toLowerCase().includes(termino)) return true
-      if (producto.codigo_barras?.toLowerCase().includes(termino)) return true
+    const filtrados = itemsCombinados.filter(item => {
+      if (item.nombre?.toLowerCase().includes(termino)) return true
+      if (item.categoria?.toLowerCase().includes(termino)) return true
+      if (item.codigo_barras?.toLowerCase().includes(termino)) return true
       return false
     })
     
-    setProductosFiltradosManual(filtrados)
+    setItemsFiltradosManual(filtrados)
     setMostrarResultadosManual(true)
-  }, [busquedaManual, productos, indiceBuscando])
+  }, [busquedaManual, itemsCombinados, indiceBuscando])
 
   const cargarClientes = async () => {
     try {
@@ -109,173 +131,173 @@ const ModalAgregarCredito = ({ isOpen, onClose, onCreditoAgregado, productos }) 
       fecha_inicio: new Date().toISOString().split('T')[0],
       fecha_fin: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
     })
-    setProductosSeleccionados([])
+    setItemsSeleccionados([])
     setNuevoCliente({ nombre: '', telefono: '', email: '' })
     setMostrarNuevoCliente(false)
-    setBusquedaProducto('')
-    setProductosFiltrados([])
+    setBusquedaItem('')
+    setItemsFiltrados([])
     setMostrarResultados(false)
     setBusquedaManual('')
-    setProductosFiltradosManual([])
+    setItemsFiltradosManual([])
     setMostrarResultadosManual(false)
     setIndiceBuscando(null)
     setError('')
   }
 
-  // Función auxiliar para obtener el precio del producto
-  const obtenerPrecioProducto = (producto) => {
-    if (producto.precio_venta !== undefined && producto.precio_venta !== null) {
-      return parseFloat(producto.precio_venta)
+  // Función auxiliar para obtener el precio del item
+  const obtenerPrecioItem = (item) => {
+    if (item.precio_venta !== undefined && item.precio_venta !== null) {
+      return parseFloat(item.precio_venta)
     }
-    if (producto.precio !== undefined && producto.precio !== null) {
-      return parseFloat(producto.precio)
+    if (item.precio !== undefined && item.precio !== null) {
+      return parseFloat(item.precio)
     }
-    if (producto.precio_unitario !== undefined && producto.precio_unitario !== null) {
-      return parseFloat(producto.precio_unitario)
+    if (item.precio_unitario !== undefined && item.precio_unitario !== null) {
+      return parseFloat(item.precio_unitario)
     }
     return 0
   }
 
-  // Agregar producto desde búsqueda - CORREGIDA
-  const agregarProductoDesdeBusqueda = (producto) => {
-    console.log('🔍 [CRÉDITO] Producto recibido para agregar:', producto)
+  // Agregar item desde búsqueda
+  const agregarItemDesdeBusqueda = (item) => {
+    console.log('🔍 [CRÉDITO] Item recibido para agregar:', item)
     
-    // Verificar si el producto ya está en la lista
-    const existeIndex = productosSeleccionados.findIndex(p => p.producto_id === producto.id)
+    // Verificar si el item ya está en la lista
+    const existeIndex = itemsSeleccionados.findIndex(p => 
+      p.item_id === item.id && p.tipo === item.tipo
+    )
     
     // Obtener el precio correcto
-    const precioProducto = obtenerPrecioProducto(producto)
-    console.log('💰 [CRÉDITO] Precio asignado:', precioProducto)
+    const precioItem = obtenerPrecioItem(item)
+    console.log('💰 [CRÉDITO] Precio asignado:', precioItem)
     
     if (existeIndex !== -1) {
       // Si existe, incrementar cantidad
-      setProductosSeleccionados(prev =>
+      setItemsSeleccionados(prev =>
         prev.map((p, idx) =>
           idx === existeIndex
-            ? { 
-                ...p, 
-                cantidad: p.cantidad + 1,
-                precio_unitario: precioProducto > 0 ? precioProducto : p.precio_unitario
-              }
+            ? { ...p, cantidad: p.cantidad + 1 }
             : p
         )
       )
     } else {
       // Si no existe, agregar nuevo
-      const nuevoProducto = {
+      const nuevoItem = {
         id: Date.now() + Math.random(),
-        producto_id: producto.id,
+        item_id: item.id,
+        tipo: item.tipo,
         cantidad: 1,
-        precio_unitario: precioProducto,
-        producto_nombre: producto.nombre || producto.producto_nombre,
-        producto_categoria: producto.categoria || producto.producto_categoria,
-        producto_codigo: producto.codigo_barras || producto.producto_codigo || producto.codigo
+        precio_unitario: precioItem,
+        item_nombre: item.nombre,
+        item_categoria: item.categoria || '',
+        item_codigo: item.codigo_barras || '',
+        item_icono: item.tipo === 'servicio' ? '💇' : '📦'
       }
       
-      console.log('🛒 [CRÉDITO] Nuevo producto agregado:', nuevoProducto)
+      console.log('🛒 [CRÉDITO] Nuevo item agregado:', nuevoItem)
       
-      setProductosSeleccionados(prev => [...prev, nuevoProducto])
+      setItemsSeleccionados(prev => [...prev, nuevoItem])
     }
     
-    setBusquedaProducto('')
+    setBusquedaItem('')
     setMostrarResultados(false)
     setError('')
   }
 
-  // Agregar producto manualmente (botón)
-  const agregarProductoManual = () => {
-    const nuevoProducto = { 
+  // Agregar item manualmente (botón)
+  const agregarItemManual = () => {
+    const nuevoItem = { 
       id: Date.now() + Math.random(),
-      producto_id: '', 
+      item_id: '', 
+      tipo: 'producto',
       cantidad: 1, 
       precio_unitario: 0,
-      producto_nombre: '',
-      producto_categoria: '',
-      producto_codigo: ''
+      item_nombre: '',
+      item_categoria: '',
+      item_codigo: '',
+      item_icono: '📦'
     }
     
-    setProductosSeleccionados(prev => [...prev, nuevoProducto])
-    // Establecer que estamos buscando para el último producto agregado
-    setIndiceBuscando(productosSeleccionados.length)
+    setItemsSeleccionados(prev => [...prev, nuevoItem])
+    // Establecer que estamos buscando para el último item agregado
+    setIndiceBuscando(itemsSeleccionados.length)
     setBusquedaManual('')
   }
 
-  // Eliminar producto de la lista
-  const eliminarProducto = (index) => {
-    const nuevosProductos = [...productosSeleccionados]
-    nuevosProductos.splice(index, 1)
-    setProductosSeleccionados(nuevosProductos)
+  // Eliminar item de la lista
+  const eliminarItem = (index) => {
+    const nuevosItems = [...itemsSeleccionados]
+    nuevosItems.splice(index, 1)
+    setItemsSeleccionados(nuevosItems)
   }
 
-  // Actualizar producto en la lista - CORREGIDA
-  const actualizarProducto = (index, campo, valor) => {
-    const nuevosProductos = [...productosSeleccionados]
+  // Actualizar item en la lista
+  const actualizarItem = (index, campo, valor, itemData) => {
+    const nuevosItems = [...itemsSeleccionados]
     
-    if (campo === 'producto_id') {
-      const producto = productos.find(p => p.id === valor)
-      if (producto) {
-        const precioAsignar = obtenerPrecioProducto(producto)
-        nuevosProductos[index] = {
-          ...nuevosProductos[index],
-          producto_id: valor,
-          precio_unitario: precioAsignar,
-          producto_nombre: producto.nombre,
-          producto_categoria: producto.categoria,
-          producto_codigo: producto.codigo_barras
-        }
-        console.log(`✅ [CRÉDITO] Producto ${index} actualizado con precio: C$${precioAsignar}`)
+    if (campo === 'item_id' && itemData) {
+      const precioAsignar = obtenerPrecioItem(itemData)
+      nuevosItems[index] = {
+        ...nuevosItems[index],
+        item_id: valor,
+        tipo: itemData.tipo,
+        precio_unitario: precioAsignar,
+        item_nombre: itemData.nombre,
+        item_categoria: itemData.categoria || '',
+        item_codigo: itemData.codigo_barras || '',
+        item_icono: itemData.tipo === 'servicio' ? '💇' : '📦'
       }
+      console.log(`✅ [CRÉDITO] Item ${index} actualizado con precio: C$${precioAsignar}`)
     } else if (campo === 'cantidad') {
       const nuevaCantidad = Math.max(1, parseInt(valor) || 1)
-      nuevosProductos[index] = {
-        ...nuevosProductos[index],
+      nuevosItems[index] = {
+        ...nuevosItems[index],
         cantidad: nuevaCantidad
       }
     } else if (campo === 'precio_unitario') {
       const nuevoPrecio = parseFloat(valor) || 0
-      nuevosProductos[index] = {
-        ...nuevosProductos[index],
+      nuevosItems[index] = {
+        ...nuevosItems[index],
         precio_unitario: nuevoPrecio
       }
     }
     
-    setProductosSeleccionados(nuevosProductos)
+    setItemsSeleccionados(nuevosItems)
   }
-
 
   const incrementarCantidad = (index) => {
-  const nuevosProductos = [...productosSeleccionados]
-  nuevosProductos[index] = {
-    ...nuevosProductos[index],
-    cantidad: (nuevosProductos[index].cantidad || 1) + 1
+    const nuevosItems = [...itemsSeleccionados]
+    nuevosItems[index] = {
+      ...nuevosItems[index],
+      cantidad: (nuevosItems[index].cantidad || 1) + 1
+    }
+    setItemsSeleccionados(nuevosItems)
   }
-  setProductosSeleccionados(nuevosProductos)
-}
 
-const decrementarCantidad = (index) => {
-  const nuevosProductos = [...productosSeleccionados]
-  const nuevaCantidad = Math.max(1, (nuevosProductos[index].cantidad || 1) - 1)
-  nuevosProductos[index] = {
-    ...nuevosProductos[index],
-    cantidad: nuevaCantidad
+  const decrementarCantidad = (index) => {
+    const nuevosItems = [...itemsSeleccionados]
+    const nuevaCantidad = Math.max(1, (nuevosItems[index].cantidad || 1) - 1)
+    nuevosItems[index] = {
+      ...nuevosItems[index],
+      cantidad: nuevaCantidad
+    }
+    setItemsSeleccionados(nuevosItems)
   }
-  setProductosSeleccionados(nuevosProductos)
-}
 
-  // Calcular totales - CORREGIDA
-  const calcularTotalProducto = (producto) => {
-    if (!producto) return 0
+  // Calcular totales
+  const calcularTotalItem = (item) => {
+    if (!item) return 0
     
-    const cantidad = parseInt(producto.cantidad) || 1
-    const precio = parseFloat(producto.precio_unitario) || 0
+    const cantidad = parseInt(item.cantidad) || 1
+    const precio = parseFloat(item.precio_unitario) || 0
     
     const subtotal = cantidad * precio
     return subtotal
   }
 
   const calcularTotalGeneral = () => {
-    return productosSeleccionados.reduce((total, producto) => {
-      return total + calcularTotalProducto(producto)
+    return itemsSeleccionados.reduce((total, item) => {
+      return total + calcularTotalItem(item)
     }, 0)
   }
 
@@ -330,21 +352,20 @@ const decrementarCantidad = (index) => {
     }
   }
 
-  // Seleccionar producto desde búsqueda manual
-  const seleccionarProductoManual = (producto, index) => {
-    const precioAsignar = obtenerPrecioProducto(producto)
-    actualizarProducto(index, 'producto_id', producto.id)
+  // Seleccionar item desde búsqueda manual
+  const seleccionarItemManual = (item, index) => {
+    actualizarItem(index, 'item_id', item.id, item)
     setBusquedaManual('')
     setMostrarResultadosManual(false)
     setIndiceBuscando(null)
-    console.log(`✅ [CRÉDITO] Producto manual seleccionado para índice ${index} con precio: C$${precioAsignar}`)
+    console.log(`✅ [CRÉDITO] Item manual seleccionado para índice ${index} con precio: C$${obtenerPrecioItem(item)}`)
   }
 
-  // Iniciar búsqueda manual para un producto específico
+  // Iniciar búsqueda manual para un item específico
   const iniciarBusquedaManual = (index) => {
     setIndiceBuscando(index)
     setBusquedaManual('')
-    setProductosFiltradosManual([])
+    setItemsFiltradosManual([])
     setMostrarResultadosManual(false)
   }
 
@@ -356,8 +377,8 @@ const decrementarCantidad = (index) => {
       return
     }
 
-    if (productosSeleccionados.length === 0) {
-      setError('Agrega al menos un producto')
+    if (itemsSeleccionados.length === 0) {
+      setError('Agrega al menos un producto o servicio')
       return
     }
 
@@ -367,9 +388,9 @@ const decrementarCantidad = (index) => {
       return
     }
 
-    const productosInvalidos = productosSeleccionados.filter(p => !p.producto_id)
-    if (productosInvalidos.length > 0) {
-      setError('Todos los productos deben estar seleccionados')
+    const itemsInvalidos = itemsSeleccionados.filter(p => !p.item_id)
+    if (itemsInvalidos.length > 0) {
+      setError('Todos los items deben estar seleccionados')
       return
     }
 
@@ -386,16 +407,19 @@ const decrementarCantidad = (index) => {
         }
       }
 
-      const ventasCredito = productosSeleccionados.map(producto => ({
-        producto_id: producto.producto_id,
-        cantidad: producto.cantidad,
-        precio_unitario: producto.precio_unitario,
-        total: calcularTotalProducto(producto),
+      const ventasCredito = itemsSeleccionados.map(item => ({
+        ...(item.tipo === 'producto' 
+          ? { producto_id: item.item_id, servicio_id: null }
+          : { servicio_id: item.item_id, producto_id: null }),
+        cantidad: item.cantidad,
+        precio_unitario: item.precio_unitario,
+        total: calcularTotalItem(item),
         nombre_cliente: clienteNombre,
         fecha_inicio: formData.fecha_inicio,
         fecha_fin: formData.fecha_fin,
-        saldo_pendiente: calcularTotalProducto(producto),
-        estado: 'activo'
+        saldo_pendiente: calcularTotalItem(item),
+        estado: 'activo',
+        tipo_item: item.tipo
       }))
 
       console.log('Creando ventas a crédito:', ventasCredito)
@@ -406,8 +430,10 @@ const decrementarCantidad = (index) => {
       
       if (errorVentas) throw errorVentas
 
-      try {
-        const facturas = ventasCredito.map(venta => ({
+      // Registrar en facturados (solo productos)
+      const facturasProductos = ventasCredito
+        .filter(v => v.tipo_item === 'producto')
+        .map(venta => ({
           tipo_venta: 'credito',
           producto_id: venta.producto_id,
           cantidad: venta.cantidad,
@@ -417,11 +443,11 @@ const decrementarCantidad = (index) => {
           fecha: new Date().toISOString()
         }))
 
+      if (facturasProductos.length > 0) {
         await supabase
           .from('facturados')
-          .insert(facturas)
-      } catch (err) {
-        console.log('No se pudo registrar en facturados:', err)
+          .insert(facturasProductos)
+          .catch(err => console.log('No se pudo registrar en facturados:', err))
       }
 
       resetForm()
@@ -546,30 +572,30 @@ const decrementarCantidad = (index) => {
               )}
             </div>
             
-            {/* BÚSQUEDA DE PRODUCTOS */}
+            {/* BÚSQUEDA DE PRODUCTOS/SERVICIOS */}
             <div className="form-grupo">
               <label className="form-label">
-                Buscar Producto
-                <span className="hint-text"> (nombre, categoría, código de barras)</span>
+                Buscar Producto o Servicio
+                <span className="hint-text"> (nombre, categoría, código)</span>
               </label>
               <div className="busqueda-producto-container">
                 <input
                   type="text"
-                  value={busquedaProducto}
-                  onChange={(e) => setBusquedaProducto(e.target.value)}
+                  value={busquedaItem}
+                  onChange={(e) => setBusquedaItem(e.target.value)}
                   onFocus={() => {
-                    if (busquedaProducto.trim()) setMostrarResultados(true)
+                    if (busquedaItem.trim()) setMostrarResultados(true)
                   }}
                   className="form-input-busqueda"
-                  placeholder="Escribe para buscar productos..."
+                  placeholder="Escribe para buscar..."
                   disabled={loading}
                 />
-                {busquedaProducto && (
+                {busquedaItem && (
                   <button
                     type="button"
                     onClick={() => {
-                      setBusquedaProducto('')
-                      setProductosFiltrados([])
+                      setBusquedaItem('')
+                      setItemsFiltrados([])
                       setMostrarResultados(false)
                     }}
                     className="boton-limpiar-busqueda"
@@ -579,24 +605,27 @@ const decrementarCantidad = (index) => {
                 )}
                 
                 {/* Resultados de búsqueda */}
-                {mostrarResultados && productosFiltrados.length > 0 && (
+                {mostrarResultados && itemsFiltrados.length > 0 && (
                   <div className="resultados-busqueda">
-                    {productosFiltrados.slice(0, 10).map((producto) => (
+                    {itemsFiltrados.slice(0, 10).map((item) => (
                       <div
-                        key={producto.id}
+                        key={item.id}
                         className="resultado-item"
-                        onClick={() => agregarProductoDesdeBusqueda(producto)}
+                        onClick={() => agregarItemDesdeBusqueda(item)}
                       >
                         <div className="resultado-nombre">
-                          <strong>{producto.nombre}</strong>
-                          {producto.categoria && (
-                            <span className="resultado-categoria"> ({producto.categoria})</span>
+                          <strong>{item.nombre}</strong>
+                          <span className="resultado-tipo">
+                            {item.tipo === 'servicio' ? ' 💇' : ' 📦'}
+                          </span>
+                          {item.categoria && (
+                            <span className="resultado-categoria"> ({item.categoria})</span>
                           )}
                         </div>
                         <div className="resultado-info">
-                          <span className="resultado-precio">C${obtenerPrecioProducto(producto).toFixed(2)}</span>
-                          {producto.codigo_barras && (
-                            <span className="resultado-codigo">📟 {producto.codigo_barras}</span>
+                          <span className="resultado-precio">C${obtenerPrecioItem(item).toFixed(2)}</span>
+                          {item.codigo_barras && (
+                            <span className="resultado-codigo">📟 {item.codigo_barras}</span>
                           )}
                         </div>
                       </div>
@@ -604,43 +633,43 @@ const decrementarCantidad = (index) => {
                   </div>
                 )}
                 
-                {mostrarResultados && productosFiltrados.length === 0 && (
+                {mostrarResultados && itemsFiltrados.length === 0 && (
                   <div className="resultados-busqueda">
                     <div className="resultado-vacio">
-                      No se encontraron productos con "{busquedaProducto}"
+                      No se encontraron items con "{busquedaItem}"
                     </div>
                   </div>
                 )}
               </div>
             </div>
             
-            {/* Lista de Productos */}
+            {/* Lista de Items */}
             <div className="productos-container">
               <div className="productos-header">
-                <h4 className="productos-titulo">Productos ({productosSeleccionados.length})</h4>
+                <h4 className="productos-titulo">Items ({itemsSeleccionados.length})</h4>
                 <button
                   type="button"
-                  onClick={agregarProductoManual}
+                  onClick={agregarItemManual}
                   className="btn-agregar-producto"
                   disabled={loading}
                 >
-                  + Agregar Producto
+                  + Agregar Item
                 </button>
               </div>
               
-              {productosSeleccionados.length === 0 ? (
+              {itemsSeleccionados.length === 0 ? (
                 <div className="sin-productos">
-                  <p>No hay productos agregados. Busca o agrega productos.</p>
+                  <p>No hay items agregados. Busca o agrega productos/servicios.</p>
                 </div>
               ) : (
                 <div className="lista-productos">
-                  {productosSeleccionados.map((producto, index) => (
-                    <div key={producto.id} className="producto-item">
+                  {itemsSeleccionados.map((item, index) => (
+                    <div key={item.id} className="producto-item">
                       <div className="producto-header">
                         <span className="producto-numero">#{index + 1}</span>
                         <button
                           type="button"
-                          onClick={() => eliminarProducto(index)}
+                          onClick={() => eliminarItem(index)}
                           className="btn-eliminar-producto"
                           disabled={loading}
                         >
@@ -650,15 +679,17 @@ const decrementarCantidad = (index) => {
                       
                       <div className="producto-form">
                         <div className="producto-seleccionado-info">
-                          {producto.producto_nombre ? (
+                          {item.item_nombre ? (
                             <div className="producto-info-actual">
-                              <strong>{producto.producto_nombre}</strong>
-                              {producto.producto_categoria && (
-                                <span className="producto-info-categoria"> ({producto.producto_categoria})</span>
+                              <strong>
+                                {item.item_icono} {item.item_nombre}
+                              </strong>
+                              {item.item_categoria && (
+                                <span className="producto-info-categoria"> ({item.item_categoria})</span>
                               )}
-                              {producto.precio_unitario > 0 && (
+                              {item.precio_unitario > 0 && (
                                 <div className="producto-info-precio">
-                                  <small>Precio: C${producto.precio_unitario.toFixed(2)}</small>
+                                  <small>Precio: C${item.precio_unitario.toFixed(2)}</small>
                                 </div>
                               )}
                             </div>
@@ -674,26 +705,29 @@ const decrementarCantidad = (index) => {
                                   }
                                 }}
                                 onFocus={() => iniciarBusquedaManual(index)}
-                                placeholder="Buscar producto para agregar..."
+                                placeholder="Buscar item para agregar..."
                                 className="form-input-busqueda"
                                 disabled={loading}
                               />
-                              {indiceBuscando === index && mostrarResultadosManual && productosFiltradosManual.length > 0 && (
+                              {indiceBuscando === index && mostrarResultadosManual && itemsFiltradosManual.length > 0 && (
                                 <div className="resultados-busqueda-manual">
-                                  {productosFiltradosManual.slice(0, 5).map((p) => (
+                                  {itemsFiltradosManual.slice(0, 5).map((p) => (
                                     <div
                                       key={p.id}
                                       className="resultado-item"
-                                      onClick={() => seleccionarProductoManual(p, index)}
+                                      onClick={() => seleccionarItemManual(p, index)}
                                     >
                                       <div className="resultado-nombre">
                                         <strong>{p.nombre}</strong>
+                                        <span className="resultado-tipo">
+                                          {p.tipo === 'servicio' ? ' 💇' : ' 📦'}
+                                        </span>
                                         {p.categoria && (
                                           <span className="resultado-categoria"> ({p.categoria})</span>
                                         )}
                                       </div>
                                       <div className="resultado-info">
-                                        <span className="resultado-precio">C${obtenerPrecioProducto(p).toFixed(2)}</span>
+                                        <span className="resultado-precio">C${obtenerPrecioItem(p).toFixed(2)}</span>
                                         {p.codigo_barras && (
                                           <span className="resultado-codigo">📟 {p.codigo_barras}</span>
                                         )}
@@ -707,55 +741,54 @@ const decrementarCantidad = (index) => {
                         </div>
                         
                         <div className="producto-cantidad-precio">
-                       
-                       <div className="form-grupo">
-                          <label className="form-label">Cantidad</label>
-                          <div className="input-group-cantidad-credito">
-                            <button 
-                              type="button" 
-                              className="cantidad-btn-credito cantidad-btn-menos"
-                              onClick={() => decrementarCantidad(index)}
-                              disabled={loading}
-                            >
-                              -
-                            </button>
-                            <input 
-                              type="number" 
-                              className="form-input-cantidad-credito" 
-                              value={producto.cantidad || 1}
-                              min="1" 
-                              max="999"
-                              onChange={(e) => actualizarProducto(index, 'cantidad', e.target.value)}
-                              disabled={loading}
-                            />
-                            <button 
-                              type="button" 
-                              className="cantidad-btn-credito cantidad-btn-mas"
-                              onClick={() => incrementarCantidad(index)}
-                              disabled={loading}
-                            >
-                              +
-                            </button>
+                          <div className="form-grupo">
+                            <label className="form-label">Cantidad</label>
+                            <div className="input-group-cantidad-credito">
+                              <button 
+                                type="button" 
+                                className="cantidad-btn-credito cantidad-btn-menos"
+                                onClick={() => decrementarCantidad(index)}
+                                disabled={loading}
+                              >
+                                -
+                              </button>
+                              <input 
+                                type="number" 
+                                className="form-input-cantidad-credito" 
+                                value={item.cantidad || 1}
+                                min="1" 
+                                max="999"
+                                onChange={(e) => actualizarItem(index, 'cantidad', e.target.value)}
+                                disabled={loading}
+                              />
+                              <button 
+                                type="button" 
+                                className="cantidad-btn-credito cantidad-btn-mas"
+                                onClick={() => incrementarCantidad(index)}
+                                disabled={loading}
+                              >
+                                +
+                              </button>
+                            </div>
                           </div>
-                        </div>
-                       
-                           <div>
+                          
+                          <div>
                             <label>Precio Unit.</label>
                             <input
                               type="number"
                               min="0.01"
                               step="0.01"
-                              value={producto.precio_unitario}
-                              onChange={(e) => actualizarProducto(index, 'precio_unitario', e.target.value)}
+                              value={item.precio_unitario}
+                              onChange={(e) => actualizarItem(index, 'precio_unitario', e.target.value)}
                               className="form-input"
-                              disabled={loading || !producto.producto_id}
+                              disabled={loading || !item.item_id}
                               required
                             />
                           </div>
                           <div className="producto-subtotal">
                             <label>Subtotal</label>
                             <div className="subtotal-valor">
-                              C${calcularTotalProducto(producto).toFixed(2)}
+                              C${calcularTotalItem(item).toFixed(2)}
                             </div>
                           </div>
                         </div>
@@ -813,15 +846,15 @@ const decrementarCantidad = (index) => {
                   </span>
                 </div>
                 <div className="resumen-item">
-                  <span className="resumen-label">Productos:</span>
+                  <span className="resumen-label">Items:</span>
                   <span className="resumen-valor">
-                    {productosSeleccionados.length} productos
+                    {itemsSeleccionados.length} items
                   </span>
                 </div>
                 <div className="resumen-item">
                   <span className="resumen-label">Total unidades:</span>
                   <span className="resumen-valor">
-                    {productosSeleccionados.reduce((sum, p) => sum + p.cantidad, 0)} unidades
+                    {itemsSeleccionados.reduce((sum, p) => sum + p.cantidad, 0)} unidades
                   </span>
                 </div>
                 <div className="resumen-item resumen-total">
@@ -852,7 +885,7 @@ const decrementarCantidad = (index) => {
             <button
               type="submit"
               className="btn-primario-credito"
-              disabled={loading || productosSeleccionados.length === 0 || !formData.cliente_nombre}
+              disabled={loading || itemsSeleccionados.length === 0 || !formData.cliente_nombre}
             >
               {loading ? (
                 <>

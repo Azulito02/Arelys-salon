@@ -10,6 +10,8 @@ const Creditos = () => {
   const [creditos, setCreditos] = useState([])
   const [creditosFiltrados, setCreditosFiltrados] = useState([])
   const [productos, setProductos] = useState([])
+  const [servicios, setServicios] = useState([]) // ✅ NUEVO: servicios
+  const [itemsDisponibles, setItemsDisponibles] = useState([])
   const [loading, setLoading] = useState(true)
   const [archivando, setArchivando] = useState(false)
   const [filtroMostrar, setFiltroMostrar] = useState('pendientes')
@@ -67,12 +69,22 @@ const Creditos = () => {
       if (errorProductos) throw errorProductos
       setProductos(productosData || [])
       
+      // ✅ NUEVO: Cargar servicios
+      const { data: serviciosData, error: errorServicios } = await supabase
+        .from('servicios')
+        .select('*')
+        .order('nombre')
+      
+      if (errorServicios) throw errorServicios
+      setServicios(serviciosData || [])
+      
       // ✅ CARGAR CRÉDITOS CON ABONOS
       const { data: creditosData, error: errorCreditos } = await supabase
         .from('ventas_credito')
         .select(`
           *,
           productos (*),
+          servicios (*),
           abonos_credito (*)
         `)
         .order('fecha', { ascending: false })
@@ -84,12 +96,19 @@ const Creditos = () => {
         const total = parseFloat(credito.total) || 0
         const precio_unitario = parseFloat(credito.precio_unitario) || 0
         
-        // ✅ CALCULAR SALDO PENDIENTE CORRECTAMENTE
+        // Determinar el item (producto o servicio)
+        let item = null
+        if (credito.producto_id) {
+          item = productosData?.find(p => p.id === credito.producto_id) || null
+        } else if (credito.servicio_id) {
+          item = serviciosData?.find(s => s.id === credito.servicio_id) || null
+        }
+        
+        // Calcular saldo pendiente
         let saldo_pendiente
         if (credito.saldo_pendiente !== null && credito.saldo_pendiente !== undefined) {
           saldo_pendiente = parseFloat(credito.saldo_pendiente)
         } else {
-          // Si no hay saldo pendiente, calcularlo desde los abonos
           const totalAbonado = credito.abonos_credito?.reduce((sum, abono) => 
             sum + parseFloat(abono.monto || 0), 0) || 0
           saldo_pendiente = total - totalAbonado
@@ -100,17 +119,26 @@ const Creditos = () => {
         
         return {
           ...credito,
+          item,
+          tipo_item: credito.producto_id ? 'producto' : credito.servicio_id ? 'servicio' : null,
           total,
           precio_unitario,
           saldo_pendiente,
           total_abonado,
           completado: saldo_pendiente === 0,
-          abonos_credito: credito.abonos_credito || [] // ✅ ASEGURAR QUE SIEMPRE HAYA UN ARRAY
+          abonos_credito: credito.abonos_credito || []
         }
       })
       
       console.log('✅ Créditos cargados con abonos:', creditosProcesados)
       setCreditos(creditosProcesados)
+      
+      // Combinar items para búsquedas
+      const combinados = [
+        ...(productosData || []).map(p => ({ ...p, tipo: 'producto' })),
+        ...(serviciosData || []).map(s => ({ ...s, tipo: 'servicio' }))
+      ]
+      setItemsDisponibles(combinados)
       
     } catch (error) {
       console.error('Error cargando créditos:', error)
@@ -166,57 +194,57 @@ const Creditos = () => {
     setShowEliminarModal(false)
   }
 
-// 🖨️ FUNCIÓN PARA GENERAR TICKET DE CRÉDITO - SOLO RESUMEN DEL CLIENTE
-const generarContenidoTicketCredito = (credito) => {
-  try {
-    const centrar = (texto) => {
-      const ancho = 32
-      const espacios = Math.max(0, Math.floor((ancho - texto.length) / 2))
-      return " ".repeat(espacios) + texto
-    }
-
-    const linea = () => "--------------------------------"
-
-    const formatFecha = (fechaISO) => {
-      if (!fechaISO) return ''
-      try {
-        const fechaUTC = new Date(fechaISO)
-        const fechaNic = new Date(fechaUTC.getTime() - (6 * 60 * 60 * 1000))
-        const d = fechaNic.getDate().toString().padStart(2, '0')
-        const m = (fechaNic.getMonth() + 1).toString().padStart(2, '0')
-        const y = fechaNic.getFullYear()
-        return `${d}/${m}/${y}`
-      } catch (e) {
-        return fechaISO
+  // 🖨️ FUNCIÓN PARA GENERAR TICKET DE CRÉDITO - CON SERVICIOS
+  const generarContenidoTicketCredito = (credito) => {
+    try {
+      const centrar = (texto) => {
+        const ancho = 32
+        const espacios = Math.max(0, Math.floor((ancho - texto.length) / 2))
+        return " ".repeat(espacios) + texto
       }
-    }
 
-    if (!credito) {
-      console.error('❌ Crédito no válido')
-      return 'Error: Crédito no válido'
-    }
+      const linea = () => "--------------------------------"
 
-    // ✅ OBTENER TODOS LOS CRÉDITOS DEL MISMO CLIENTE
-    const creditosDelCliente = creditos.filter(c => 
-      c.nombre_cliente?.toLowerCase().trim() === credito.nombre_cliente?.toLowerCase().trim()
-    )
+      const formatFecha = (fechaISO) => {
+        if (!fechaISO) return ''
+        try {
+          const fechaUTC = new Date(fechaISO)
+          const fechaNic = new Date(fechaUTC.getTime() - (6 * 60 * 60 * 1000))
+          const d = fechaNic.getDate().toString().padStart(2, '0')
+          const m = (fechaNic.getMonth() + 1).toString().padStart(2, '0')
+          const y = fechaNic.getFullYear()
+          return `${d}/${m}/${y}`
+        } catch (e) {
+          return fechaISO
+        }
+      }
 
-    const cliente = credito.nombre_cliente || 'Cliente'
+      if (!credito) {
+        console.error('❌ Crédito no válido')
+        return 'Error: Crédito no válido'
+      }
 
-    // ✅ CALCULAR TOTALES GENERALES DEL CLIENTE
-    let totalGeneralCliente = 0
-    let saldoGeneralCliente = 0
-    let totalAbonadoCliente = 0
+      // Obtener todos los créditos del mismo cliente
+      const creditosDelCliente = creditos.filter(c => 
+        c.nombre_cliente?.toLowerCase().trim() === credito.nombre_cliente?.toLowerCase().trim()
+      )
 
-    creditosDelCliente.forEach(c => {
-      totalGeneralCliente += parseFloat(c.total || 0)
-      saldoGeneralCliente += parseFloat(c.saldo_pendiente || 0)
-      
-      const abonos = c.abonos_credito || []
-      totalAbonadoCliente += abonos.reduce((sum, a) => sum + parseFloat(a.monto || 0), 0)
-    })
+      const cliente = credito.nombre_cliente || 'Cliente'
 
-    let contenido = `
+      // Calcular totales generales del cliente
+      let totalGeneralCliente = 0
+      let saldoGeneralCliente = 0
+      let totalAbonadoCliente = 0
+
+      creditosDelCliente.forEach(c => {
+        totalGeneralCliente += parseFloat(c.total || 0)
+        saldoGeneralCliente += parseFloat(c.saldo_pendiente || 0)
+        
+        const abonos = c.abonos_credito || []
+        totalAbonadoCliente += abonos.reduce((sum, a) => sum + parseFloat(a.monto || 0), 0)
+      })
+
+      let contenido = `
 ${centrar("ARELYS SALON")}
 ${centrar("8354-3180")}
 ${linea()}
@@ -240,35 +268,36 @@ ${centrar("Conserve este comprobante")}
 
 \n\n\n\n`
 
-    return contenido
-  } catch (error) {
-    console.error('❌ Error generando ticket:', error)
-    return 'Error al generar el ticket'
-  }
-}
-
-// 🖨️ FUNCIÓN PARA IMPRIMIR TICKET DE CRÉDITO
-const imprimirTicketCredito = (credito) => {
-  console.log('🖨️ Imprimiendo estado de cuenta para cliente:', credito?.nombre_cliente)
-  
-  try {
-    const contenido = generarContenidoTicketCredito(credito)
-    const encoded = encodeURIComponent(contenido)
-    
-    if (navigator.userAgent.includes('Android')) {
-      window.location.href = `rawbt:${encoded}`
-    } else {
-      const ventana = window.open('', '_blank')
-      ventana.document.write(`<pre>${contenido}</pre>`)
-      ventana.document.close()
-      ventana.print()
+      return contenido
+    } catch (error) {
+      console.error('❌ Error generando ticket:', error)
+      return 'Error al generar el ticket'
     }
-    
-  } catch (error) {
-    console.error('❌ Error al imprimir:', error)
-    alert('Error al imprimir estado de cuenta')
   }
-}
+
+  // 🖨️ FUNCIÓN PARA IMPRIMIR TICKET DE CRÉDITO
+  const imprimirTicketCredito = (credito) => {
+    console.log('🖨️ Imprimiendo estado de cuenta para cliente:', credito?.nombre_cliente)
+    
+    try {
+      const contenido = generarContenidoTicketCredito(credito)
+      const encoded = encodeURIComponent(contenido)
+      
+      if (navigator.userAgent.includes('Android')) {
+        window.location.href = `rawbt:${encoded}`
+      } else {
+        const ventana = window.open('', '_blank')
+        ventana.document.write(`<pre>${contenido}</pre>`)
+        ventana.document.close()
+        ventana.print()
+      }
+      
+    } catch (error) {
+      console.error('❌ Error al imprimir:', error)
+      alert('Error al imprimir estado de cuenta')
+    }
+  }
+
   // Función para determinar estado del crédito
   const getEstadoCredito = (credito) => {
     if (credito.saldo_pendiente === 0) {
@@ -502,13 +531,13 @@ const imprimirTicketCredito = (credito) => {
         </div>
       </div>
 
-      {/* Tabla de créditos - ✅ PASAR onImprimir CORRECTAMENTE */}
+      {/* Tabla de créditos */}
       <TablaCreditos
         creditos={creditosFiltrados}
         loading={loading}
         onEditar={handleEditarCredito}
         onEliminar={handleEliminarCredito}
-        onImprimir={imprimirTicketCredito}  // ✅ ESTA LÍNEA ES CRÍTICA
+        onImprimir={imprimirTicketCredito}
         getEstadoCredito={getEstadoCredito}
       />
 
@@ -519,6 +548,8 @@ const imprimirTicketCredito = (credito) => {
           onClose={handleCerrarAgregarModal}
           onCreditoAgregado={handleCreditoAgregado}
           productos={productos}
+          servicios={servicios}  // ✅ NUEVO
+          itemsDisponibles={itemsDisponibles}
         />
       )}
 
@@ -529,6 +560,8 @@ const imprimirTicketCredito = (credito) => {
           onCreditoEditado={handleCreditoEditado}
           credito={creditoSeleccionado}
           productos={productos}
+          servicios={servicios}  // ✅ NUEVO
+          itemsDisponibles={itemsDisponibles}
         />
       )}
 
