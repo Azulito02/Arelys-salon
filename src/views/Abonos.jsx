@@ -274,7 +274,6 @@ const Abonos = () => {
 
 
   const generarContenidoTicketAbono = (abono) => {
-
   const centrar = (texto) => {
     const ancho = 32
     const espacios = Math.max(0, Math.floor((ancho - texto.length) / 2))
@@ -305,7 +304,13 @@ const Abonos = () => {
   const credito = creditos.find(c => c.id === abono.venta_credito_id)
 
   const cliente = credito?.nombre_cliente || 'Cliente'
-  const producto = credito?.productos?.nombre || 'Producto'
+  
+  // ✅ CORREGIDO: Buscar en productos y servicios
+  const productoNombre = credito?.productos?.nombre || 
+                         credito?.servicios?.nombre || 
+                         'Producto/Servicio'
+  const tipoIcono = credito?.tipo_item === 'servicio' ? ' 🔹' : ' 📦'
+  const producto = productoNombre + tipoIcono
 
   const totalCredito = parseFloat(credito?.total || 0)
   const saldoPendiente = parseFloat(credito?.saldo_pendiente || 0)
@@ -340,12 +345,7 @@ METODO: ${metodo}
 ${linea()}
 ${centrar("GRACIAS POR SU PAGO")}
 
-
-
-
-
-\n\n\n\n
-`
+\n\n\n\n`
 }
 
 
