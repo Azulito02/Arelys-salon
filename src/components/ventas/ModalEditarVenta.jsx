@@ -6,17 +6,23 @@ const ModalEditarVenta = ({
   onClose,
   onSave,
   venta,
-  productos
+  productos,
+  servicios = []
 }) => {
   // TODOS LOS HOOKS DEBEN ESTAR AQUÍ, ANTES DE CUALQUIER RETURN
   
   const [formData, setFormData] = useState({
-    producto_id: '',
+    item_id: '',
+    tipo: 'producto',
     cantidad: 1,
     precio_unitario: 0
   })
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  // Items combinados (productos + servicios)
+  const [itemsDisponibles, setItemsDisponibles] = useState([])
 
   // Métodos de pago y bancos
   const metodosPago = [
@@ -26,7 +32,7 @@ const ModalEditarVenta = ({
     { value: 'mixto', label: 'Mixto', icon: '🔄' }
   ]
 
-   const bancosDisponibles = [
+  const bancosDisponibles = [
     'Lafise',
     'BAC',
     'BAMPRO',
@@ -51,13 +57,26 @@ const ModalEditarVenta = ({
   console.log('ModalEditarVenta - isOpen:', isOpen)
   console.log('ModalEditarVenta - venta:', venta)
   console.log('ModalEditarVenta - productos:', productos)
+  console.log('ModalEditarVenta - servicios:', servicios)
 
-  // Cargar datos de la venta al abrir el modal
+  // PRIMER useEffect - Para combinar items
   useEffect(() => {
-    console.log('useEffect ejecutado - venta:', venta)
+    const combinados = [
+      ...(productos || []).map(p => ({ ...p, tipo: 'producto' })),
+      ...(servicios || []).map(s => ({ ...s, tipo: 'servicio' }))
+    ]
+    setItemsDisponibles(combinados)
+  }, [productos, servicios])
+
+  // SEGUNDO useEffect - Para cargar datos de la venta
+  useEffect(() => {
+    console.log('ModalEditarVenta - isOpen:', isOpen)
+    console.log('ModalEditarVenta - venta:', venta)
+    
     if (venta && isOpen) {
       console.log('Cargando datos de venta:', {
         producto_id: venta.producto_id,
+        servicio_id: venta.servicio_id,
         cantidad: venta.cantidad,
         precio_unitario: venta.precio_unitario,
         metodo_pago: venta.metodo_pago,
@@ -67,11 +86,17 @@ const ModalEditarVenta = ({
         banco: venta.banco
       })
       
+      // Determinar el tipo de item
+      const itemId = venta.producto_id || venta.servicio_id;
+      const tipo = venta.producto_id ? 'producto' : 'servicio';
+      
       setFormData({
-        producto_id: venta.producto_id || '',
+        item_id: itemId,
+        tipo: tipo,
         cantidad: venta.cantidad || 1,
         precio_unitario: venta.precio_unitario || 0
       })
+      
       setMetodoPago(venta.metodo_pago || 'efectivo')
       
       // Cargar montos separados
@@ -82,7 +107,6 @@ const ModalEditarVenta = ({
       // Cargar banco según el método de pago
       if (venta.banco) {
         try {
-          // Si es mixto, el banco se guarda como JSON
           if (venta.metodo_pago === 'mixto') {
             const bancosMixto = JSON.parse(venta.banco)
             setBancoTarjeta(bancosMixto.tarjeta || '')
@@ -94,7 +118,6 @@ const ModalEditarVenta = ({
           }
         } catch (err) {
           console.log('Error parsing banco data:', err)
-          // Si no es JSON, es un string simple
           setBanco(venta.banco || '')
         }
       }
@@ -107,28 +130,28 @@ const ModalEditarVenta = ({
   const totalPagos = efectivo + tarjeta + transferencia
   const montoAnterior = parseFloat(venta?.total || 0)
 
-  // Manejar cambios en método de pago
-  useEffect(() => {
+// ✅ NUEVO: Actualizar monto cuando cambia la cantidad o el método de pago
+useEffect(() => {
+  // Solo actualizar si NO estamos en modo mixto
+  if (metodoPago !== 'mixto') {
+    // Actualizar el monto correspondiente según el método
     if (metodoPago === 'efectivo') {
-      // Si cambia a efectivo, mover todo el monto a efectivo
-      setEfectivo(totalPagos)
-      setTarjeta(0)
-      setTransferencia(0)
-      setBanco('')
+      setEfectivo(total);
+      setTarjeta(0);
+      setTransferencia(0);
     } else if (metodoPago === 'tarjeta') {
-      // Si cambia a tarjeta, mover todo el monto a tarjeta
-      setEfectivo(0)
-      setTarjeta(totalPagos)
-      setTransferencia(0)
-      setBanco('')
+      setEfectivo(0);
+      setTarjeta(total);
+      setTransferencia(0);
     } else if (metodoPago === 'transferencia') {
-      // Si cambia a transferencia, mover todo el monto a transferencia
-      setEfectivo(0)
-      setTarjeta(0)
-      setTransferencia(totalPagos)
-      setBanco('')
+      setEfectivo(0);
+      setTarjeta(0);
+      setTransferencia(total);
     }
-  }, [metodoPago, totalPagos])
+    // Limpiar banco al cambiar método
+    setBanco('');
+  }
+}, [total, metodoPago]); // Dependencias: total y metodoPago
 
   // AHORA SÍ LOS RETURNS CONDICIONALES
   if (!isOpen) {
@@ -190,18 +213,14 @@ const ModalEditarVenta = ({
   const handleSubmit = async (e) => {
     e.preventDefault()
     
-    if (!formData.producto_id) {
-      setError('Selecciona un producto')
+    // ✅ CORREGIDO: Usar item_id en lugar de producto_id
+    if (!formData.item_id) {
+      setError('Selecciona un producto o servicio')
       return
     }
 
     if (formData.cantidad < 1) {
       setError('La cantidad debe ser mayor a 0')
-      return
-    }
-
-    if (formData.precio_unitario <= 0) {
-      setError('El precio debe ser mayor a 0')
       return
     }
 
@@ -242,16 +261,19 @@ const ModalEditarVenta = ({
 
     setLoading(true)
     try {
-      // Preparar datos para actualizar
       const datosActualizados = {
-        producto_id: formData.producto_id,
+        // Si es producto, usar producto_id, si es servicio, usar servicio_id
+        ...(formData.tipo === 'producto' 
+          ? { producto_id: formData.item_id, servicio_id: null } 
+          : { servicio_id: formData.item_id, producto_id: null }),
         cantidad: parseInt(formData.cantidad),
-        precio_unitario: parseFloat(formData.precio_unitario),
+        precio_unitario: formData.precio_unitario,
         total: total,
         metodo_pago: metodoPago,
         efectivo: parseFloat(efectivo),
         tarjeta: parseFloat(tarjeta),
-        transferencia: parseFloat(transferencia)
+        transferencia: parseFloat(transferencia),
+        tipo_item: formData.tipo // Guardamos el tipo para referencia
       }
 
       // Agregar banco según el método de pago
@@ -298,8 +320,9 @@ const ModalEditarVenta = ({
     }
   }
 
-  const productoSeleccionado = productos.find(p => p.id === formData.producto_id)
-  const productoOriginal = venta.productos || {}
+  // Función para obtener el item seleccionado (producto o servicio)
+  const itemSeleccionado = itemsDisponibles.find(p => p.id === formData.item_id)
+  const itemOriginal = venta.productos || {}
 
   // Obtener información del banco para mostrar en el resumen
   const getBancoInfo = () => {
@@ -307,8 +330,8 @@ const ModalEditarVenta = ({
       try {
         const bancosMixto = JSON.parse(venta.banco)
         const info = []
-        if (bancosMixto.tarjeta) info.push(`Tarjeta: C${bancosMixto.tarjeta}`)
-        if (bancosMixto.transferencia) info.push(`Transferencia: C${bancosMixto.transferencia}`)
+        if (bancosMixto.tarjeta) info.push(`Tarjeta: ${bancosMixto.tarjeta}`)
+        if (bancosMixto.transferencia) info.push(`Transferencia: ${bancosMixto.transferencia}`)
         return info.length > 0 ? info.join(', ') : 'No especificado'
       } catch {
         return venta.banco
@@ -367,9 +390,12 @@ const ModalEditarVenta = ({
               <h4 className="venta-original-titulo">VENTA ORIGINAL:</h4>
               <div className="venta-original-detalles">
                 <div className="resumen-item">
-                  <span className="resumen-label">Producto:</span>
+                  <span className="resumen-label">Producto/Servicio:</span>
                   <span className="resumen-valor">
-                    <strong>{productoOriginal.nombre || 'Producto no encontrado'}</strong>
+                    <strong>{itemOriginal.nombre || 'Producto no encontrado'}</strong>
+                    {venta.productos?.tipo === 'servicio' && (
+                      <span className="item-tipo-badge servicio"> 💇 Servicio</span>
+                    )}
                   </span>
                 </div>
                 <div className="resumen-item">
@@ -443,17 +469,18 @@ const ModalEditarVenta = ({
             {/* Formulario de edición */}
             <div className="form-grupo">
               <label className="form-label">
-                Producto *
+                Producto o Servicio *
               </label>
               <select
-                value={formData.producto_id}
+                value={formData.item_id}
                 onChange={(e) => {
-                  const productoId = e.target.value
-                  const producto = productos.find(p => p.id === productoId)
+                  const itemId = e.target.value
+                  const item = itemsDisponibles.find(p => p.id === itemId)
                   setFormData({
                     ...formData,
-                    producto_id: productoId,
-                    precio_unitario: producto?.precio || formData.precio_unitario
+                    item_id: itemId,
+                    tipo: item?.tipo || 'producto',
+                    precio_unitario: formData.precio_unitario // Se mantiene el precio original
                   })
                   setError('')
                 }}
@@ -461,14 +488,15 @@ const ModalEditarVenta = ({
                 disabled={loading}
                 required
               >
-                <option value="">Selecciona un producto</option>
-                {productos.map((producto) => (
-                  <option key={producto.id} value={producto.id}>
-                    {producto.nombre} - C${producto.precio?.toFixed(2)}
-                    {producto.categoria && ` (C${producto.categoria})`}
+                <option value="">Selecciona un producto o servicio</option>
+                {itemsDisponibles.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.nombre} {item.tipo === 'servicio' ? '💇' : '📦'} - C${item.precio?.toFixed(2)}
+                    {item.categoria && ` (${item.categoria})`}
                   </option>
                 ))}
               </select>
+              <small className="form-ayuda">Seleccionar otro producto mantiene el precio original</small>
             </div>
             
             <div className="form-grupo">
@@ -514,27 +542,22 @@ const ModalEditarVenta = ({
               </div>
             </div>
             
+            {/* PRECIO FIJO - SOLO LECTURA */}
             <div className="form-grupo">
               <label className="form-label">
-                Nuevo Precio Unitario *
+                Precio Unitario (fijo)
               </label>
-              <div className="input-group-precio">
+              <div className="input-group-precio solo-lectura">
                 <span className="precio-simbolo">C$</span>
                 <input
                   type="number"
-                  min="0.01"
-                  step="0.01"
                   value={formData.precio_unitario}
-                  onChange={(e) => {
-                    const value = parseFloat(e.target.value) || 0
-                    setFormData({...formData, precio_unitario: Math.max(0.01, value)})
-                    setError('')
-                  }}
-                  className="form-input-precio"
-                  disabled={loading}
-                  required
+                  className="form-input-precio solo-lectura"
+                  disabled={true}
+                  readOnly
                 />
               </div>
+              <small className="form-ayuda">El precio no se puede modificar</small>
             </div>
 
             {/* Método de Pago */}
@@ -547,7 +570,7 @@ const ModalEditarVenta = ({
                   <button
                     key={metodo.value}
                     type="button"
-                    className={`metodo-pago-btn C${metodoPago === metodo.value ? 'metodo-pago-seleccionado' : ''}`}
+                    className={`metodo-pago-btn ${metodoPago === metodo.value ? 'metodo-pago-seleccionado' : ''}`}
                     onClick={() => {
                       setMetodoPago(metodo.value)
                       setError('')
@@ -578,7 +601,6 @@ const ModalEditarVenta = ({
                            transferencia}
                     onChange={(e) => handleMetodoSimpleChange(metodoPago, e.target.value)}
                     className="form-input-precio"
-                    placeholder="0.00"
                     disabled={loading}
                   />
                 </div>
@@ -675,7 +697,7 @@ const ModalEditarVenta = ({
                       >
                         <option value="">Banco para tarjeta</option>
                         {bancosDisponibles.map((bancoItem) => (
-                          <option key={`tarjeta-C${bancoItem}`} value={bancoItem}>
+                          <option key={`tarjeta-${bancoItem}`} value={bancoItem}>
                             {bancoItem}
                           </option>
                         ))}
@@ -718,7 +740,7 @@ const ModalEditarVenta = ({
                       >
                         <option value="">Banco para transferencia</option>
                         {bancosDisponibles.map((bancoItem) => (
-                          <option key={`transferencia-C${bancoItem}`} value={bancoItem}>
+                          <option key={`transferencia-${bancoItem}`} value={bancoItem}>
                             {bancoItem}
                           </option>
                         ))}
@@ -730,15 +752,15 @@ const ModalEditarVenta = ({
                 <div className="resumen-mixto">
                   <div className="resumen-mixto-item">
                     <span className="resumen-mixto-label">Total venta:</span>
-                    <span className="resumen-mixto-valor">C${total.toFixed(2)}</span>
+                    <span className="resumen-mixto-valor">C$${total.toFixed(2)}</span>
                   </div>
                   <div className="resumen-mixto-item">
                     <span className="resumen-mixto-label">Total pagos:</span>
-                    <span className="resumen-mixto-valor">C${totalPagos.toFixed(2)}</span>
+                    <span className="resumen-mixto-valor">C$${totalPagos.toFixed(2)}</span>
                   </div>
-                  <div className={`resumen-mixto-item C${Math.abs(total - totalPagos) < 0.01 ? 'resumen-correcto' : 'resumen-error'}`}>
+                  <div className={`resumen-mixto-item ${Math.abs(total - totalPagos) < 0.01 ? 'resumen-correcto' : 'resumen-error'}`}>
                     <span className="resumen-mixto-label">Diferencia:</span>
-                    <span className="resumen-mixto-valor">C${(total - totalPagos).toFixed(2)}</span>
+                    <span className="resumen-mixto-valor">C$${(total - totalPagos).toFixed(2)}</span>
                   </div>
                 </div>
               </div>
@@ -748,15 +770,20 @@ const ModalEditarVenta = ({
             <div className="resumen-venta-container">
               <h4 className="resumen-venta-titulo">Venta Actualizada:</h4>
               
-              {productoSeleccionado ? (
+              {itemSeleccionado ? (
                 <div className="resumen-detalles">
                   <div className="resumen-item">
-                    <span className="resumen-label">Producto:</span>
-                    <span className="resumen-valor">{productoSeleccionado.nombre}</span>
+                    <span className="resumen-label">Producto/Servicio:</span>
+                    <span className="resumen-valor">
+                      {itemSeleccionado.nombre}
+                      {itemSeleccionado.tipo === 'servicio' && (
+                        <span className="item-tipo-badge servicio"> 💇</span>
+                      )}
+                    </span>
                   </div>
                   <div className="resumen-item">
                     <span className="resumen-label">Precio unitario:</span>
-                    <span className="resumen-valor">C${formData.precio_unitario.toFixed(2)}</span>
+                    <span className="resumen-valor">C$${formData.precio_unitario.toFixed(2)}</span>
                   </div>
                   <div className="resumen-item">
                     <span className="resumen-label">Cantidad:</span>
@@ -764,7 +791,7 @@ const ModalEditarVenta = ({
                   </div>
                   <div className="resumen-item resumen-total">
                     <span className="resumen-label">Nuevo total:</span>
-                    <span className="resumen-valor-total">C${total.toFixed(2)}</span>
+                    <span className="resumen-valor-total">C$${total.toFixed(2)}</span>
                   </div>
                   <div className="resumen-item">
                     <span className="resumen-label">Método de pago:</span>
@@ -793,13 +820,13 @@ const ModalEditarVenta = ({
                     <>
                       <div className="resumen-item">
                         <span className="resumen-label">Efectivo:</span>
-                        <span className="resumen-valor">C${efectivo.toFixed(2)}</span>
+                        <span className="resumen-valor">C$${efectivo.toFixed(2)}</span>
                       </div>
                       {tarjeta > 0 && (
                         <div className="resumen-item">
                           <span className="resumen-label">Tarjeta:</span>
                           <span className="resumen-valor">
-                            C${tarjeta.toFixed(2)} {bancoTarjeta && `(C${bancoTarjeta})`}
+                            C$${tarjeta.toFixed(2)} {bancoTarjeta && `(${bancoTarjeta})`}
                           </span>
                         </div>
                       )}
@@ -807,7 +834,7 @@ const ModalEditarVenta = ({
                         <div className="resumen-item">
                           <span className="resumen-label">Transferencia:</span>
                           <span className="resumen-valor">
-                            C${transferencia.toFixed(2)} {bancoTransferencia && `(C${bancoTransferencia})`}
+                            C$${transferencia.toFixed(2)} {bancoTransferencia && `(${bancoTransferencia})`}
                           </span>
                         </div>
                       )}
@@ -816,9 +843,9 @@ const ModalEditarVenta = ({
                     <div className="resumen-item">
                       <span className="resumen-label">Monto:</span>
                       <span className="resumen-valor">
-                        C${totalPagos.toFixed(2)}
-                        {metodoPago === 'tarjeta' && banco && ` (C${banco})`}
-                        {metodoPago === 'transferencia' && banco && ` (C${banco})`}
+                        C$${totalPagos.toFixed(2)}
+                        {metodoPago === 'tarjeta' && banco && ` (${banco})`}
+                        {metodoPago === 'transferencia' && banco && ` (${banco})`}
                       </span>
                     </div>
                   )}
@@ -826,7 +853,7 @@ const ModalEditarVenta = ({
                   <div className="resumen-item diferencia-item">
                     <span className="resumen-label">Diferencia con original:</span>
                     <span className={`diferencia-valor ${total > montoAnterior ? 'diferencia-positiva' : 'diferencia-negativa'}`}>
-                      C${(total - montoAnterior).toFixed(2)}
+                      C$${(total - montoAnterior).toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -850,7 +877,8 @@ const ModalEditarVenta = ({
             <button
               type="submit"
               className="btn-primario-venta"
-              disabled={loading || !formData.producto_id || totalPagos <= 0 || Math.abs(total - totalPagos) > 0.01}
+              // ✅ CORREGIDO: Usar item_id en lugar de producto_id
+              disabled={loading || !formData.item_id || totalPagos <= 0 || Math.abs(total - totalPagos) > 0.01}
             >
               {loading ? (
                 <>

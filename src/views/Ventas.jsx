@@ -11,6 +11,8 @@ import '../components/ventas/Ventas.css'
 const Ventas = () => {
   const [ventas, setVentas] = useState([])
   const [productos, setProductos] = useState([])
+  const [servicios, setServicios] = useState([]) // ✅ NUEVO: servicios
+  const [itemsDisponibles, setItemsDisponibles] = useState([]) 
   const [loading, setLoading] = useState(true)
   const [errorCarga, setErrorCarga] = useState('')
   const [imprimiendo, setImprimiendo] = useState(false)
@@ -44,36 +46,92 @@ const Ventas = () => {
   // ==============================================
 
   const cargarDatos = async () => {
-    try {
-      setLoading(true)
-      setErrorCarga('')
+  try {
+    setLoading(true)
+    setErrorCarga('')
+    
+    // 1️⃣ Cargar productos
+    const { data: productosData, error: errorProductos } = await supabase
+      .from('productos')
+      .select('*')
+      .order('nombre')
+    
+    if (errorProductos) throw errorProductos
+    console.log('Productos cargados:', productosData?.length)
+    setProductos(productosData || [])
+    
+    // 2️⃣ Cargar servicios
+    const { data: serviciosData, error: errorServicios } = await supabase
+      .from('servicios')
+      .select('*')
+      .order('nombre')
+    
+    if (errorServicios) throw errorServicios
+    console.log('Servicios cargados:', serviciosData?.length)
+    setServicios(serviciosData || [])
+    
+    // 3️⃣ Cargar ventas
+    const { data: ventasData, error: errorVentas } = await supabase
+      .from('ventas')
+      .select('*')
+      .order('fecha', { ascending: false })
+    
+    if (errorVentas) throw errorVentas
+    
+    // 4️⃣ Procesar ventas - 🔴 VERSIÓN CORREGIDA
+    const ventasProcesadas = (ventasData || []).map(venta => {
+      let item = null
       
-      const { data: productosData, error: errorProductos } = await supabase
-        .from('productos')
-        .select('*')
-        .order('nombre')
+      if (venta.producto_id) {
+        // Buscar producto - comparación directa de UUIDs
+        item = productosData?.find(p => p.id === venta.producto_id) || null
+        
+        // DEBUG: Verificar si encontró el producto
+        if (item) {
+          console.log(`✅ Producto encontrado: ${item.nombre} para ID: ${venta.producto_id}`)
+        } else {
+          console.log(`❌ Producto NO encontrado para ID: ${venta.producto_id}`)
+        }
+      } 
       
-      if (errorProductos) throw errorProductos
-      setProductos(productosData || [])
+      if (!item && venta.servicio_id) {
+        // Buscar servicio
+        item = serviciosData?.find(s => s.id === venta.servicio_id) || null
+        
+        if (item) {
+          console.log(`✅ Servicio encontrado: ${item.nombre} para ID: ${venta.servicio_id}`)
+        } else {
+          console.log(`❌ Servicio NO encontrado para ID: ${venta.servicio_id}`)
+        }
+      }
       
-      const { data: ventasData, error: errorVentas } = await supabase
-        .from('ventas')
-        .select(`
-          *,
-          productos (*)
-        `)
-        .order('fecha', { ascending: false })
-      
-      if (errorVentas) throw errorVentas
-      setVentas(ventasData || [])
-      
-    } catch (error) {
-      console.error('Error cargando ventas:', error)
-      setErrorCarga(`Error al cargar datos: ${error.message}`)
-    } finally {
-      setLoading(false)
-    }
+      return {
+        ...venta,
+        item: item || { 
+          id: null, 
+          nombre: 'Producto/Servicio no encontrado',
+          precio: venta.precio_unitario || 0
+        },
+        tipo_item: venta.producto_id ? 'producto' : venta.servicio_id ? 'servicio' : null
+      }
+    })
+    
+    setVentas(ventasProcesadas)
+    
+    // 5️⃣ Combinar para búsquedas
+    const combinados = [
+      ...(productosData || []).map(p => ({ ...p, tipo: 'producto' })),
+      ...(serviciosData || []).map(s => ({ ...s, tipo: 'servicio' }))
+    ]
+    setItemsDisponibles(combinados)
+    
+  } catch (error) {
+    console.error('Error cargando ventas:', error)
+    setErrorCarga(`Error al cargar datos: ${error.message}`)
+  } finally {
+    setLoading(false)
   }
+}
 
   // ==============================================
   // FUNCIÓN DE IMPRESIÓN - POR VENTA COMPLETA
@@ -221,34 +279,37 @@ ${linea()}`
   // LISTAR TODOS LOS PRODUCTOS DE LA TRANSACCIÓN
   // ==============================================
   
+  
   if (productosTicket.length === 1) {
-    // SOLO UN PRODUCTO - Formato simple
+    // SOLO UN ITEM - Formato simple
     const v = productosTicket[0]
-    const nombre = v.productos?.nombre || "Producto"
+    // 🔴 CORREGIDO: Usar v.item en lugar de v.productos
+    const nombre = v.item?.nombre || "Producto/Servicio"
     const cantidad = v.cantidad || 1
     const precio = Number(v.precio_unitario || 0).toFixed(2)
     
     contenido += `
-PRODUCTO: ${nombre}
+ITEM: ${nombre}
 CANTIDAD: ${cantidad}
 PRECIO:   C$${precio}
 `
   } else {
-    // VARIOS PRODUCTOS - Formato listado
-    contenido += `\nPRODUCTOS:\n`
+    // VARIOS ITEMS - Formato listado
+    contenido += `\nITEMS:\n`
     productosTicket.forEach((v, index) => {
-      const nombre = v.productos?.nombre || "Producto"
+      // 🔴 CORREGIDO: Usar v.item en lugar de v.productos
+      const nombre = v.item?.nombre || "Producto/Servicio"
       const cantidad = v.cantidad || 1
       const precio = Number(v.precio_unitario || 0).toFixed(2)
       const subtotal = Number(v.total || 0).toFixed(2)
+      const tipo = v.tipo_item === 'servicio' ? '🔹' : '📦'
       
       contenido += `
-${index + 1}. ${nombre}
+${index + 1}. ${tipo} ${nombre}
    ${cantidad} x C$${precio} = C$${subtotal}`
     })
     contenido += `\n`
   }
-
   contenido += `${linea()}
 TOTAL:      C$${totalGeneral.toFixed(2)}
 `
@@ -798,26 +859,27 @@ ${centrar("VUELVA PRONTO")}
       />
 
       {modalNuevaAbierto && (
-        <ModalNuevaVenta
-          isOpen={modalNuevaAbierto}
-          onClose={cerrarModales}
-          onSave={handleVentaRegistrada}
-          productos={productos}
-          ventaData={nuevaVenta}
-          setVentaData={setNuevaVenta}
-        />
-      )}
+  <ModalNuevaVenta
+    isOpen={modalNuevaAbierto}
+    onClose={cerrarModales}
+    onSave={handleVentaRegistrada}
+    productos={productos}
+    servicios={servicios}  // ✅ AÑADIR ESTA LÍNEA
+    ventaData={nuevaVenta}
+    setVentaData={setNuevaVenta}
+  />
+)}
 
-      {modalEditarAbierto && ventaSeleccionada && (
-        <ModalEditarVenta
-          isOpen={modalEditarAbierto}
-          onClose={cerrarModales}
-          onSave={handleVentaEditada}
-          venta={ventaSeleccionada}
-          productos={productos}
-        />
-      )}
-
+{modalEditarAbierto && ventaSeleccionada && (
+  <ModalEditarVenta
+    isOpen={modalEditarAbierto}
+    onClose={cerrarModales}
+    onSave={handleVentaEditada}
+    venta={ventaSeleccionada}
+    productos={productos}
+    servicios={servicios}  // ✅ AÑADIR ESTA LÍNEA
+  />
+)}
       {modalEliminarAbierto && ventaSeleccionada && (
         <ModalEliminarVenta
           isOpen={modalEliminarAbierto}

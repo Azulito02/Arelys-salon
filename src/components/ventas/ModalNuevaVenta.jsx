@@ -5,19 +5,32 @@ const ModalNuevaVenta = ({
   isOpen,
   onClose,
   onSave,
-  productos
+  productos,
+  servicios = [] // ✅ NUEVO: servicios
 }) => {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   
+  // Combinar productos y servicios para búsquedas
+  const [itemsDisponibles, setItemsDisponibles] = useState([])
+  
+  useEffect(() => {
+    // Combinar productos y servicios cuando cambien
+    const combinados = [
+      ...(productos || []).map(p => ({ ...p, tipo: 'producto' })),
+      ...(servicios || []).map(s => ({ ...s, tipo: 'servicio' }))
+    ]
+    setItemsDisponibles(combinados)
+  }, [productos, servicios])
+  
   // Estado para búsqueda de productos principal
   const [busqueda, setBusqueda] = useState('')
-  const [productosFiltrados, setProductosFiltrados] = useState([])
+  const [itemsFiltrados, setItemsFiltrados] = useState([])
   const [mostrarResultados, setMostrarResultados] = useState(false)
   
   // Estado para búsqueda manual en productos agregados
   const [busquedaManual, setBusquedaManual] = useState('')
-  const [productosFiltradosManual, setProductosFiltradosManual] = useState([])
+  const [itemsFiltradosManual, setItemsFiltradosManual] = useState([])
   const [mostrarResultadosManual, setMostrarResultadosManual] = useState(false)
   const [indiceBuscando, setIndiceBuscando] = useState(null)
   
@@ -67,64 +80,64 @@ const ModalNuevaVenta = ({
       setBancoTransferencia('')
       setVuelto(0)
       setBusqueda('')
-      setProductosFiltrados([])
+      setItemsFiltrados([])
       setMostrarResultados(false)
       setProductosSeleccionados([])
       setBusquedaManual('')
-      setProductosFiltradosManual([])
+      setItemsFiltradosManual([])
       setMostrarResultadosManual(false)
       setIndiceBuscando(null)
     }
   }, [isOpen])
 
-  // Filtrar productos según búsqueda principal
+  // Filtrar items según búsqueda principal
   useEffect(() => {
     if (busqueda.trim() === '') {
-      setProductosFiltrados([])
+      setItemsFiltrados([])
       setMostrarResultados(false)
       return
     }
 
     const termino = busqueda.toLowerCase().trim()
     
-    const filtrados = productos.filter(producto => {
-      if (producto.nombre?.toLowerCase().includes(termino)) return true
-      if (producto.categoria?.toLowerCase().includes(termino)) return true
-      if (producto.codigo_barras?.toLowerCase().includes(termino)) return true
+    const filtrados = itemsDisponibles.filter(item => {
+      if (item.nombre?.toLowerCase().includes(termino)) return true
+      if (item.categoria?.toLowerCase().includes(termino)) return true
+      if (item.codigo_barras?.toLowerCase().includes(termino)) return true
       return false
     })
     
-    setProductosFiltrados(filtrados)
+    setItemsFiltrados(filtrados)
     setMostrarResultados(true)
-  }, [busqueda, productos])
+  }, [busqueda, itemsDisponibles])
 
-  // Filtrar productos según búsqueda manual
+  // Filtrar items según búsqueda manual
   useEffect(() => {
     if (busquedaManual.trim() === '' || indiceBuscando === null) {
-      setProductosFiltradosManual([])
+      setItemsFiltradosManual([])
       setMostrarResultadosManual(false)
       return
     }
 
     const termino = busquedaManual.toLowerCase().trim()
     
-    const filtrados = productos.filter(producto => {
-      if (producto.nombre?.toLowerCase().includes(termino)) return true
-      if (producto.categoria?.toLowerCase().includes(termino)) return true
-      if (producto.codigo_barras?.toLowerCase().includes(termino)) return true
+    const filtrados = itemsDisponibles.filter(item => {
+      if (item.nombre?.toLowerCase().includes(termino)) return true
+      if (item.categoria?.toLowerCase().includes(termino)) return true
+      if (item.codigo_barras?.toLowerCase().includes(termino)) return true
       return false
     })
     
-    setProductosFiltradosManual(filtrados)
+    setItemsFiltradosManual(filtrados)
     setMostrarResultadosManual(true)
-  }, [busquedaManual, productos, indiceBuscando])
+  }, [busquedaManual, itemsDisponibles, indiceBuscando])
 
-  // Agregar producto desde búsqueda principal
-  const agregarProductoDesdeBusqueda = (producto) => {
-    console.log('🔍 Producto recibido para agregar:', producto)
+  // Agregar item desde búsqueda principal
+  const agregarItemDesdeBusqueda = (item) => {
+    console.log('🔍 Item recibido para agregar:', item)
     
-    const existeIndex = productosSeleccionados.findIndex(p => p.producto_id === producto.id)
-    const precioProducto = obtenerPrecioProducto(producto)
+    const existeIndex = productosSeleccionados.findIndex(p => p.item_id === item.id)
+    const precioItem = obtenerPrecioItem(item)
     
     if (existeIndex !== -1) {
       setProductosSeleccionados(prev =>
@@ -133,23 +146,24 @@ const ModalNuevaVenta = ({
             ? { 
                 ...p, 
                 cantidad: p.cantidad + 1,
-                precio_unitario: precioProducto > 0 ? precioProducto : p.precio_unitario
+                precio_unitario: precioItem > 0 ? precioItem : p.precio_unitario
               }
             : p
         )
       )
     } else {
-      const nuevoProducto = {
+      const nuevoItem = {
         id: Date.now() + Math.random(),
-        producto_id: producto.id,
+        item_id: item.id,
+        tipo: item.tipo,
         cantidad: 1,
-        precio_unitario: precioProducto,
-        producto_nombre: producto.nombre || producto.producto_nombre,
-        producto_categoria: producto.categoria || producto.producto_categoria,
-        producto_codigo: producto.codigo_barras || producto.producto_codigo || producto.codigo
+        precio_unitario: precioItem,
+        item_nombre: item.nombre,
+        item_categoria: item.categoria || (item.tipo === 'servicio' ? 'Servicio' : ''),
+        item_codigo: item.codigo_barras || item.codigo
       }
       
-      setProductosSeleccionados(prev => [...prev, nuevoProducto])
+      setProductosSeleccionados(prev => [...prev, nuevoItem])
     }
     
     setBusqueda('')
@@ -157,89 +171,91 @@ const ModalNuevaVenta = ({
     setError('')
   }
 
-  // Función auxiliar para obtener el precio del producto
-  const obtenerPrecioProducto = (producto) => {
-    if (producto.precio_venta !== undefined && producto.precio_venta !== null) {
-      return parseFloat(producto.precio_venta)
+  // Función auxiliar para obtener el precio del item
+  const obtenerPrecioItem = (item) => {
+    if (item.precio_venta !== undefined && item.precio_venta !== null) {
+      return parseFloat(item.precio_venta)
     }
-    if (producto.precio !== undefined && producto.precio !== null) {
-      return parseFloat(producto.precio)
+    if (item.precio !== undefined && item.precio !== null) {
+      return parseFloat(item.precio)
     }
-    if (producto.precio_unitario !== undefined && producto.precio_unitario !== null) {
-      return parseFloat(producto.precio_unitario)
+    if (item.precio_unitario !== undefined && item.precio_unitario !== null) {
+      return parseFloat(item.precio_unitario)
     }
     return 0
   }
 
-  // Agregar producto manualmente (botón)
-  const agregarProductoManual = () => {
-    const nuevoProducto = { 
+  // Agregar item manualmente (botón)
+  const agregarItemManual = () => {
+    const nuevoItem = { 
       id: Date.now() + Math.random(),
-      producto_id: '', 
+      item_id: '', 
+      tipo: '',
       cantidad: 1, 
       precio_unitario: 0,
-      producto_nombre: '',
-      producto_categoria: '',
-      producto_codigo: ''
+      item_nombre: '',
+      item_categoria: '',
+      item_codigo: ''
     }
     
-    setProductosSeleccionados(prev => [...prev, nuevoProducto])
+    setProductosSeleccionados(prev => [...prev, nuevoItem])
     setIndiceBuscando(productosSeleccionados.length)
     setBusquedaManual('')
   }
 
-  // Eliminar producto de la lista
-  const eliminarProducto = (index) => {
-    const nuevosProductos = [...productosSeleccionados]
-    nuevosProductos.splice(index, 1)
-    setProductosSeleccionados(nuevosProductos)
+  // Eliminar item de la lista
+  const eliminarItem = (index) => {
+    const nuevosItems = [...productosSeleccionados]
+    nuevosItems.splice(index, 1)
+    setProductosSeleccionados(nuevosItems)
   }
 
-  // Actualizar producto en la lista
-  const actualizarProducto = (index, campo, valor) => {
-    const nuevosProductos = [...productosSeleccionados]
+  // Actualizar item en la lista
+  const actualizarItem = (index, campo, valor) => {
+    const nuevosItems = [...productosSeleccionados]
     
-    if (campo === 'producto_id') {
-      const producto = productos.find(p => p.id === valor)
-      if (producto) {
-        const precioAsignar = obtenerPrecioProducto(producto)
-        nuevosProductos[index] = {
-          ...nuevosProductos[index],
-          producto_id: valor,
+    if (campo === 'item_id') {
+      const item = itemsDisponibles.find(p => p.id === valor)
+      if (item) {
+        const precioAsignar = obtenerPrecioItem(item)
+        nuevosItems[index] = {
+          ...nuevosItems[index],
+          item_id: valor,
+          tipo: item.tipo,
           precio_unitario: precioAsignar,
-          producto_nombre: producto.nombre,
-          producto_categoria: producto.categoria,
-          producto_codigo: producto.codigo_barras
+          item_nombre: item.nombre,
+          item_categoria: item.categoria || (item.tipo === 'servicio' ? 'Servicio' : ''),
+          item_codigo: item.codigo_barras || item.codigo
         }
       }
     } else if (campo === 'cantidad') {
       const nuevaCantidad = Math.max(1, parseInt(valor) || 1)
-      nuevosProductos[index] = {
-        ...nuevosProductos[index],
+      nuevosItems[index] = {
+        ...nuevosItems[index],
         cantidad: nuevaCantidad
       }
     } else if (campo === 'precio_unitario') {
       const nuevoPrecio = parseFloat(valor) || 0
-      nuevosProductos[index] = {
-        ...nuevosProductos[index],
+      nuevosItems[index] = {
+        ...nuevosItems[index],
         precio_unitario: nuevoPrecio
       }
     }
     
-    setProductosSeleccionados(nuevosProductos)
+    setProductosSeleccionados(nuevosItems)
   }
 
   // Calcular totales
-  const calcularTotalProducto = (producto) => {
-    if (!producto) return 0
-    const cantidad = parseInt(producto.cantidad) || 1
-    const precio = parseFloat(producto.precio_unitario) || 0
+  const calcularTotalItem = (item) => {
+    if (!item) return 0
+    const cantidad = parseInt(item.cantidad) || 1
+    const precio = parseFloat(item.precio_unitario) || 0
     return cantidad * precio
   }
 
   const calcularTotalGeneral = () => {
-    return productosSeleccionados.reduce((total, producto) => {
-      return total + calcularTotalProducto(producto)
+    return productosSeleccionados.reduce((total, item) => {
+      return total + calcularTotalItem(item)
     }, 0)
   }
 
@@ -305,12 +321,12 @@ const ModalNuevaVenta = ({
     }
   }
 
-  // 🔴 CORREGIDO: handleSubmit con MISMO vuelto para TODOS los productos
+  // 🔴 CORREGIDO: handleSubmit con MISMO vuelto para TODOS los items
   const handleSubmit = async (e) => {
     e.preventDefault()
     
     if (productosSeleccionados.length === 0) {
-      setError('Agrega al menos un producto')
+      setError('Agrega al menos un producto o servicio')
       return
     }
 
@@ -320,9 +336,9 @@ const ModalNuevaVenta = ({
       return
     }
 
-    const productosInvalidos = productosSeleccionados.filter(p => !p.producto_id)
-    if (productosInvalidos.length > 0) {
-      setError('Todos los productos deben estar seleccionados')
+    const itemsInvalidos = productosSeleccionados.filter(p => !p.item_id)
+    if (itemsInvalidos.length > 0) {
+      setError('Todos los productos/servicios deben estar seleccionados')
       return
     }
 
@@ -332,7 +348,7 @@ const ModalNuevaVenta = ({
     }
 
     if (totalPagos < totalGeneral) {
-      setError(`El pago (C${totalPagos.toFixed(2)}) es menor al total (C${totalGeneral.toFixed(2)})`)
+      setError(`El pago (C$${totalPagos.toFixed(2)}) es menor al total (C$${totalGeneral.toFixed(2)})`)
       return
     }
 
@@ -364,47 +380,48 @@ const ModalNuevaVenta = ({
       const vueltoCalculado = Math.max(0, totalPagos - totalGeneral)
       const vueltoRedondeado = Math.round(vueltoCalculado * 100) / 100
 
-      // Crear una venta por cada producto con el MISMO vuelto
-      const ventas = productosSeleccionados.map(producto => {
-        const datosVenta = {
-          producto_id: producto.producto_id,
-          cantidad: producto.cantidad,
-          precio_unitario: producto.precio_unitario,
-          total: calcularTotalProducto(producto),
-          fecha: new Date().toISOString(),
-          metodo_pago: metodoPago,
-          efectivo: 0,
-          tarjeta: 0,
-          transferencia: 0,
-          vuelto: vueltoRedondeado // ✅ MISMO vuelto para TODOS los productos
-        }
+// En lugar de solo producto_id, usar producto_id o servicio_id
+const ventas = productosSeleccionados.map(item => {
+  const datosVenta = {
+    // Si es producto, usar producto_id, si es servicio, usar servicio_id
+    ...(item.tipo === 'producto' ? { producto_id: item.item_id } : { servicio_id: item.item_id }),
+    cantidad: item.cantidad,
+    precio_unitario: item.precio_unitario,
+    total: calcularTotalItem(item),
+    fecha: new Date().toISOString(),
+    metodo_pago: metodoPago,
+    tipo_item: item.tipo, // guardamos el tipo para referencia
+    efectivo: 0,
+    tarjeta: 0,
+    transferencia: 0,
+    vuelto: vueltoRedondeado
+  }
 
-        // Distribuir pagos proporcionalmente
-        const proporcion = calcularTotalProducto(producto) / totalGeneral
-        
-        if (metodoPago === 'efectivo') {
-          datosVenta.efectivo = parseFloat((efectivo * proporcion).toFixed(2))
-        } else if (metodoPago === 'tarjeta') {
-          datosVenta.tarjeta = parseFloat((tarjeta * proporcion).toFixed(2))
-          if (banco) datosVenta.banco = banco
-        } else if (metodoPago === 'transferencia') {
-          datosVenta.transferencia = parseFloat((transferencia * proporcion).toFixed(2))
-          if (banco) datosVenta.banco = banco
-        } else if (metodoPago === 'mixto') {
-          datosVenta.efectivo = parseFloat((efectivo * proporcion).toFixed(2))
-          datosVenta.tarjeta = parseFloat((tarjeta * proporcion).toFixed(2))
-          datosVenta.transferencia = parseFloat((transferencia * proporcion).toFixed(2))
-          
-          const bancosMixto = {
-            tarjeta: bancoTarjeta || null,
-            transferencia: bancoTransferencia || null
-          }
-          datosVenta.banco = JSON.stringify(bancosMixto)
-        }
+  // Distribuir pagos proporcionalmente
+  const proporcion = calcularTotalItem(item) / totalGeneral
+  
+  if (metodoPago === 'efectivo') {
+    datosVenta.efectivo = parseFloat((efectivo * proporcion).toFixed(2))
+  } else if (metodoPago === 'tarjeta') {
+    datosVenta.tarjeta = parseFloat((tarjeta * proporcion).toFixed(2))
+    if (banco) datosVenta.banco = banco
+  } else if (metodoPago === 'transferencia') {
+    datosVenta.transferencia = parseFloat((transferencia * proporcion).toFixed(2))
+    if (banco) datosVenta.banco = banco
+  } else if (metodoPago === 'mixto') {
+    datosVenta.efectivo = parseFloat((efectivo * proporcion).toFixed(2))
+    datosVenta.tarjeta = parseFloat((tarjeta * proporcion).toFixed(2))
+    datosVenta.transferencia = parseFloat((transferencia * proporcion).toFixed(2))
+    
+    const bancosMixto = {
+      tarjeta: bancoTarjeta || null,
+      transferencia: bancoTransferencia || null
+    }
+    datosVenta.banco = JSON.stringify(bancosMixto)
+  }
 
-        return datosVenta
-      })
-      
+  return datosVenta
+})      
       console.log('Guardando ventas con vuelto:', vueltoRedondeado, ventas)
       
       // Enviar todas las ventas
@@ -454,20 +471,20 @@ const ModalNuevaVenta = ({
     }
   }
 
-  // Seleccionar producto desde búsqueda manual
-  const seleccionarProductoManual = (producto, index) => {
-    const precioAsignar = obtenerPrecioProducto(producto)
-    actualizarProducto(index, 'producto_id', producto.id)
+  // Seleccionar item desde búsqueda manual
+  const seleccionarItemManual = (item, index) => {
+    const precioAsignar = obtenerPrecioItem(item)
+    actualizarItem(index, 'item_id', item.id)
     setBusquedaManual('')
     setMostrarResultadosManual(false)
     setIndiceBuscando(null)
   }
 
-  // Iniciar búsqueda manual para un producto específico
+  // Iniciar búsqueda manual para un item específico
   const iniciarBusquedaManual = (index) => {
     setIndiceBuscando(index)
     setBusquedaManual('')
-    setProductosFiltradosManual([])
+    setItemsFiltradosManual([])
     setMostrarResultadosManual(false)
   }
 
@@ -496,10 +513,10 @@ const ModalNuevaVenta = ({
         
         <form onSubmit={handleSubmit}>
           <div className="modal-contenido-nueva-venta">
-            {/* BÚSQUEDA DE PRODUCTOS */}
+            {/* BÚSQUEDA DE PRODUCTOS/SERVICIOS */}
             <div className="form-grupo">
               <label className="form-label">
-                Buscar Producto
+                Buscar Producto o Servicio
                 <span className="hint-text"> (nombre, categoría, código de barras)</span>
               </label>
               <div className="busqueda-producto-container">
@@ -520,7 +537,7 @@ const ModalNuevaVenta = ({
                     type="button"
                     onClick={() => {
                       setBusqueda('')
-                      setProductosFiltrados([])
+                      setItemsFiltrados([])
                       setMostrarResultados(false)
                     }}
                     className="boton-limpiar-busqueda"
@@ -530,24 +547,27 @@ const ModalNuevaVenta = ({
                 )}
                 
                 {/* Resultados de búsqueda */}
-                {mostrarResultados && productosFiltrados.length > 0 && (
+                {mostrarResultados && itemsFiltrados.length > 0 && (
                   <div className="resultados-busqueda">
-                    {productosFiltrados.slice(0, 10).map((producto) => (
+                    {itemsFiltrados.slice(0, 10).map((item) => (
                       <div
-                        key={producto.id}
+                        key={item.id}
                         className="resultado-item"
-                        onClick={() => agregarProductoDesdeBusqueda(producto)}
+                        onClick={() => agregarItemDesdeBusqueda(item)}
                       >
                         <div className="resultado-nombre">
-                          <strong>{producto.nombre}</strong>
-                          {producto.categoria && (
-                            <span className="resultado-categoria"> ({producto.categoria})</span>
+                          <strong>{item.nombre}</strong>
+                          {item.tipo === 'servicio' && (
+                            <span className="resultado-tipo servicio"> 💇 Servicio</span>
+                          )}
+                          {item.categoria && (
+                            <span className="resultado-categoria"> ({item.categoria})</span>
                           )}
                         </div>
                         <div className="resultado-info">
-                          <span className="resultado-precio">C${obtenerPrecioProducto(producto).toFixed(2)}</span>
-                          {producto.codigo_barras && (
-                            <span className="resultado-codigo">📟 {producto.codigo_barras}</span>
+                          <span className="resultado-precio">C${obtenerPrecioItem(item).toFixed(2)}</span>
+                          {item.codigo_barras && (
+                            <span className="resultado-codigo">📟 {item.codigo_barras}</span>
                           )}
                         </div>
                       </div>
@@ -555,43 +575,46 @@ const ModalNuevaVenta = ({
                   </div>
                 )}
                 
-                {mostrarResultados && productosFiltrados.length === 0 && (
+                {mostrarResultados && itemsFiltrados.length === 0 && (
                   <div className="resultados-busqueda">
                     <div className="resultado-vacio">
-                      No se encontraron productos con "{busqueda}"
+                      No se encontraron productos/servicios con "{busqueda}"
                     </div>
                   </div>
                 )}
               </div>
             </div>
             
-            {/* LISTA DE PRODUCTOS SELECCIONADOS */}
+            {/* LISTA DE ITEMS SELECCIONADOS */}
             <div className="productos-container">
               <div className="productos-header">
-                <h4 className="productos-titulo">Productos ({productosSeleccionados.length})</h4>
+                <h4 className="productos-titulo">Productos/Servicios ({productosSeleccionados.length})</h4>
                 <button
                   type="button"
-                  onClick={agregarProductoManual}
+                  onClick={agregarItemManual}
                   className="btn-agregar-producto"
                   disabled={loading}
                 >
-                  + Agregar Producto
+                  + Agregar
                 </button>
               </div>
               
               {productosSeleccionados.length === 0 ? (
                 <div className="sin-productos">
-                  <p>No hay productos agregados. Busca o agrega productos.</p>
+                  <p>No hay productos o servicios agregados. Busca o agrega.</p>
                 </div>
               ) : (
                 <div className="lista-productos">
-                  {productosSeleccionados.map((producto, index) => (
-                    <div key={producto.id} className="producto-item">
+                  {productosSeleccionados.map((item, index) => (
+                    <div key={item.id} className="producto-item">
                       <div className="producto-header">
                         <span className="producto-numero">#{index + 1}</span>
+                        {item.tipo === 'servicio' && (
+                          <span className="item-tipo-badge servicio">💇 Servicio</span>
+                        )}
                         <button
                           type="button"
-                          onClick={() => eliminarProducto(index)}
+                          onClick={() => eliminarItem(index)}
                           className="btn-eliminar-producto"
                           disabled={loading}
                         >
@@ -601,20 +624,20 @@ const ModalNuevaVenta = ({
                       
                       <div className="producto-form">
                         <div className="producto-seleccionado-info">
-                          {producto.producto_nombre ? (
+                          {item.item_nombre ? (
                             <div className="producto-info-actual">
-                              <strong>{producto.producto_nombre}</strong>
-                              {producto.producto_categoria && (
-                                <span className="producto-info-categoria"> ({producto.producto_categoria})</span>
+                              <strong>{item.item_nombre}</strong>
+                              {item.item_categoria && (
+                                <span className="producto-info-categoria"> ({item.item_categoria})</span>
                               )}
-                              {producto.producto_codigo && (
+                              {item.item_codigo && (
                                 <div className="producto-info-codigo">
-                                  <small>Código: {producto.producto_codigo}</small>
+                                  <small>Código: {item.item_codigo}</small>
                                 </div>
                               )}
-                              {producto.precio_unitario > 0 && (
+                              {item.precio_unitario > 0 && (
                                 <div className="producto-info-precio">
-                                  <small>Precio: C${producto.precio_unitario.toFixed(2)}</small>
+                                  <small>Precio: C${item.precio_unitario.toFixed(2)}</small>
                                 </div>
                               )}
                             </div>
@@ -630,29 +653,26 @@ const ModalNuevaVenta = ({
                                   }
                                 }}
                                 onFocus={() => iniciarBusquedaManual(index)}
-                                placeholder="Buscar producto para agregar..."
+                                placeholder="Buscar producto/servicio..."
                                 className="form-input-busqueda"
                                 disabled={loading}
                               />
-                              {indiceBuscando === index && mostrarResultadosManual && productosFiltradosManual.length > 0 && (
+                              {indiceBuscando === index && mostrarResultadosManual && itemsFiltradosManual.length > 0 && (
                                 <div className="resultados-busqueda-manual">
-                                  {productosFiltradosManual.slice(0, 5).map((p) => (
+                                  {itemsFiltradosManual.slice(0, 5).map((p) => (
                                     <div
                                       key={p.id}
                                       className="resultado-item"
-                                      onClick={() => seleccionarProductoManual(p, index)}
+                                      onClick={() => seleccionarItemManual(p, index)}
                                     >
                                       <div className="resultado-nombre">
                                         <strong>{p.nombre}</strong>
-                                        {p.categoria && (
-                                          <span className="resultado-categoria"> ({p.categoria})</span>
+                                        {p.tipo === 'servicio' && (
+                                          <span className="resultado-tipo servicio"> 💇</span>
                                         )}
                                       </div>
                                       <div className="resultado-info">
-                                        <span className="resultado-precio">C${obtenerPrecioProducto(p).toFixed(2)}</span>
-                                        {p.codigo_barras && (
-                                          <span className="resultado-codigo">📟 {p.codigo_barras}</span>
-                                        )}
+                                        <span className="resultado-precio">C${obtenerPrecioItem(p).toFixed(2)}</span>
                                       </div>
                                     </div>
                                   ))}
@@ -668,7 +688,7 @@ const ModalNuevaVenta = ({
                             <div className="input-group-cantidad">
                               <button
                                 type="button"
-                                onClick={() => actualizarProducto(index, 'cantidad', producto.cantidad - 1)}
+                                onClick={() => actualizarItem(index, 'cantidad', item.cantidad - 1)}
                                 className="cantidad-btn"
                                 disabled={loading}
                               >
@@ -677,17 +697,17 @@ const ModalNuevaVenta = ({
                               <input
                                 type="number"
                                 min="1"
-                                value={producto.cantidad}
-                                onChange={(e) => actualizarProducto(index, 'cantidad', e.target.value)}
+                                value={item.cantidad}
+                                onChange={(e) => actualizarItem(index, 'cantidad', e.target.value)}
                                 className="form-input-cantidad"
-                                disabled={loading || !producto.producto_id}
+                                disabled={loading || !item.item_id}
                                 required
                               />
                               <button
                                 type="button"
-                                onClick={() => actualizarProducto(index, 'cantidad', producto.cantidad + 1)}
+                                onClick={() => actualizarItem(index, 'cantidad', item.cantidad + 1)}
                                 className="cantidad-btn"
-                                disabled={loading || !producto.producto_id}
+                                disabled={loading || !item.item_id}
                               >
                                 +
                               </button>
@@ -701,10 +721,10 @@ const ModalNuevaVenta = ({
                                 type="number"
                                 min="0.01"
                                 step="0.01"
-                                value={producto.precio_unitario}
-                                onChange={(e) => actualizarProducto(index, 'precio_unitario', e.target.value)}
+                                value={item.precio_unitario}
+                                onChange={(e) => actualizarItem(index, 'precio_unitario', e.target.value)}
                                 className="form-input-precio"
-                                disabled={loading || !producto.producto_id}
+                                disabled={loading || !item.item_id}
                                 required
                               />
                             </div>
@@ -712,7 +732,7 @@ const ModalNuevaVenta = ({
                           <div className="producto-subtotal">
                             <label>Subtotal</label>
                             <div className="subtotal-valor">
-                              C${calcularTotalProducto(producto).toFixed(2)}
+                              C${calcularTotalItem(item).toFixed(2)}
                             </div>
                           </div>
                         </div>
@@ -730,7 +750,7 @@ const ModalNuevaVenta = ({
                   <div className="total-label-container">
                     <span className="total-label">TOTAL VENTA:</span>
                     <div className="total-calculation">
-                      {productosSeleccionados.length} productos
+                      {productosSeleccionados.length} ítems
                     </div>
                   </div>
                   <div className="total-amount-container">
@@ -803,7 +823,7 @@ const ModalNuevaVenta = ({
                       <span className="vuelto-amount">C${vuelto.toFixed(2)}</span>
                     </div>
                     <div className="vuelto-detalle">
-                      Se pagó C${totalPagos.toFixed(2)} - Total C${totalGeneral.toFixed(2)}
+                      Se pagó C$${totalPagos.toFixed(2)} - Total C$${totalGeneral.toFixed(2)}
                     </div>
                   </div>
                 )}
@@ -820,7 +840,7 @@ const ModalNuevaVenta = ({
                   <button
                     key={metodo.value}
                     type="button"
-                    className={`metodo-pago-btn C${metodoPago === metodo.value ? 'metodo-pago-seleccionado' : ''}`}
+                    className={`metodo-pago-btn ${metodoPago === metodo.value ? 'metodo-pago-seleccionado' : ''}`}
                     onClick={() => {
                       setMetodoPago(metodo.value)
                       setError('')
@@ -859,7 +879,7 @@ const ModalNuevaVenta = ({
                 {metodoPago === 'efectivo' && vuelto > 0 && (
                   <div className="vuelto-mini">
                     <span className="vuelto-mini-label">Vuelto a dar: </span>
-                    <span className="vuelto-mini-amount">C${vuelto.toFixed(2)}</span>
+                    <span className="vuelto-mini-amount">C$${vuelto.toFixed(2)}</span>
                   </div>
                 )}
               </div>
@@ -955,7 +975,7 @@ const ModalNuevaVenta = ({
                       >
                         <option value="">Banco para tarjeta</option>
                         {bancosDisponibles.map((bancoItem) => (
-                          <option key={`tarjeta-C${bancoItem}`} value={bancoItem}>
+                          <option key={`tarjeta-${bancoItem}`} value={bancoItem}>
                             {bancoItem}
                           </option>
                         ))}
@@ -970,7 +990,7 @@ const ModalNuevaVenta = ({
                       Transferencia:
                     </label>
                     <div className="input-group-precio">
-                      <span className="precio-simbolo">C</span>
+                      <span className="precio-simbolo">C$</span>
                       <input
                         type="number"
                         min="0"
@@ -998,7 +1018,7 @@ const ModalNuevaVenta = ({
                       >
                         <option value="">Banco para transferencia</option>
                         {bancosDisponibles.map((bancoItem) => (
-                          <option key={`transferencia-C${bancoItem}`} value={bancoItem}>
+                          <option key={`transferencia-${bancoItem}`} value={bancoItem}>
                             {bancoItem}
                           </option>
                         ))}
@@ -1010,22 +1030,22 @@ const ModalNuevaVenta = ({
                 <div className="resumen-mixto">
                   <div className="resumen-mixto-item">
                     <span className="resumen-mixto-label">Total venta:</span>
-                    <span className="resumen-mixto-valor">C${totalGeneral.toFixed(2)}</span>
+                    <span className="resumen-mixto-valor">C$${totalGeneral.toFixed(2)}</span>
                   </div>
                   <div className="resumen-mixto-item">
                     <span className="resumen-mixto-label">Total pagos:</span>
-                    <span className="resumen-mixto-valor">C${totalPagos.toFixed(2)}</span>
+                    <span className="resumen-mixto-valor">C$${totalPagos.toFixed(2)}</span>
                   </div>
                   {diferencia > 0 && (
                     <div className="resumen-mixto-item resumen-vuelto">
                       <span className="resumen-mixto-label">Vuelto:</span>
-                      <span className="resumen-mixto-valor">C${diferencia.toFixed(2)}</span>
+                      <span className="resumen-mixto-valor">C$${diferencia.toFixed(2)}</span>
                     </div>
                   )}
                   {diferencia < 0 && (
                     <div className="resumen-mixto-item resumen-error">
                       <span className="resumen-mixto-label">Falta:</span>
-                      <span className="resumen-mixto-valor">C${Math.abs(diferencia).toFixed(2)}</span>
+                      <span className="resumen-mixto-valor">C$${Math.abs(diferencia).toFixed(2)}</span>
                     </div>
                   )}
                 </div>
@@ -1033,7 +1053,7 @@ const ModalNuevaVenta = ({
             )}
 
             {/* Validación de pago */}
-            <div className={`validacion-total C${diferencia >= 0 ? 'validacion-ok' : 'validacion-error'}`}>
+            <div className={`validacion-total ${diferencia >= 0 ? 'validacion-ok' : 'validacion-error'}`}>
               {diferencia === 0 ? (
                 <div className="validacion-mensaje validacion-ok">
                   <span className="validacion-icono">✓</span>
@@ -1042,12 +1062,12 @@ const ModalNuevaVenta = ({
               ) : diferencia > 0 ? (
                 <div className="validacion-mensaje validacion-vuelto">
                   <span className="validacion-icono">🔄</span>
-                  Pago completo. Vuelto: C${vuelto.toFixed(2)}
+                  Pago completo. Vuelto: C$${vuelto.toFixed(2)}
                 </div>
               ) : (
                 <div className="validacion-mensaje validacion-error">
                   <span className="validacion-icono">⚠</span>
-                  Pago insuficiente. Faltan: C${Math.abs(diferencia).toFixed(2)}
+                  Pago insuficiente. Faltan: C$${Math.abs(diferencia).toFixed(2)}
                 </div>
               )}
             </div>

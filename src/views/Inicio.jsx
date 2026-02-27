@@ -216,7 +216,17 @@ const Inicio = () => {
       color: '#8b5cf6',
       ruta: '/reportes',
       roles: ['administrador', 'cajero']
-    }
+    },
+
+    {
+  id: 'servicios',
+  label: 'Servicios',
+  icon: '💇',
+  color: '#d97706', // Color ámbar
+  ruta: '/servicios',
+  roles: ['administrador', 'cajero', 'vendedor'] // Quien puede ver servicios
+}
+
   ]
 
   const botonesFiltrados = botones.filter(boton => 

@@ -186,22 +186,26 @@ const renderMetodoPagoConBanco = (venta) => {
 
     return ventas.map((venta) => (
       <div key={venta.id} className="venta-card-mobile">
-        <div className="venta-card-header">
-          <div style={{ flex: 1 }}>
-            <div className="venta-producto">
-              {venta.productos?.nombre || 'Producto no encontrado'}
-            </div>
-            {venta.productos?.categoria && (
-              <div style={{ fontSize: '13px', color: '#64748b' }}>
-                {venta.productos.categoria}
-              </div>
-            )}
-          </div>
-          <span className="venta-cantidad-badge">
-            {venta.cantidad} unidades
-          </span>
-        </div>
-        
+       <div className="venta-card-header">
+  <div style={{ flex: 1 }}>
+    <div className="venta-producto">
+      {venta.item?.nombre || 'Producto no encontrado'}
+      {venta.tipo_item === 'servicio' && (
+        <span style={{ marginLeft: '8px', fontSize: '12px', color: '#8b5cf6' }}>
+          🔹
+        </span>
+      )}
+    </div>
+    {venta.tipo_item === 'producto' && venta.item?.categoria && (
+      <div style={{ fontSize: '13px', color: '#64748b' }}>
+        {venta.item.categoria}
+      </div>
+    )}
+  </div>
+  <span className="venta-cantidad-badge">
+    {venta.cantidad} unidades
+  </span>
+</div> 
         <div className="venta-details-grid">
           <div className="venta-detail-item">
             <span className="venta-detail-label">Precio Unit.</span>
@@ -318,16 +322,22 @@ const renderMetodoPagoConBanco = (venta) => {
               ) : (
                 ventas.map((venta) => (
                   <tr key={venta.id} className="fila-venta">
-                    <td className="celda-producto">
-                      <div className="nombre-producto">
-                        {venta.productos?.nombre || 'Producto no encontrado'}
-                      </div>
-                      {venta.productos?.categoria && (
-                        <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
-                          {venta.productos.categoria}
-                        </div>
-                      )}
-                    </td>
+                   <td className="celda-producto">
+  <div className="nombre-producto">
+    {venta.item?.nombre || 'Producto no encontrado'}
+    {venta.tipo_item === 'servicio' && (
+      <span style={{ marginLeft: '8px', fontSize: '12px', color: '#8b5cf6' }}>
+        🔹 Servicio
+      </span>
+    )}
+  </div>
+  {venta.tipo_item === 'producto' && venta.item?.categoria && (
+    <div style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
+      {venta.item.categoria}
+    </div>
+  )}
+</td>
+
                     <td className="celda-cantidad">
                       <span className="cantidad-venta">
                         {venta.cantidad} unidades
