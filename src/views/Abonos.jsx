@@ -57,69 +57,73 @@ const Abonos = () => {
   }
 
   const cargarDatos = async () => {
-    try {
-      setLoading(true)
+  try {
+    setLoading(true)
+    
+    // Cargar créditos
+    const { data: creditosData, error: errorCreditos } = await supabase
+      .from('ventas_credito')
+      .select(`
+        *,
+        productos(*),
+        servicios(*),
+        abonos_credito(*)
+      `)
+      .order('fecha', { ascending: false })
+    
+    if (errorCreditos) throw errorCreditos
+    
+    // Procesar créditos
+    const creditosProcesados = (creditosData || []).map(credito => {
+      const total = parseFloat(credito.total) || 0
+      const totalAbonado = credito.abonos_credito?.reduce((sum, abono) => 
+        sum + parseFloat(abono.monto || 0), 0) || 0
       
-      // Cargar créditos
-      const { data: creditosData, error: errorCreditos } = await supabase
-        .from('ventas_credito')
-        .select(`
-          *,
-          productos(*),
-          abonos_credito(*)
-        `)
-        .order('fecha', { ascending: false })
+      let saldo_pendiente
+      if (credito.saldo_pendiente !== null && credito.saldo_pendiente !== undefined) {
+        saldo_pendiente = parseFloat(credito.saldo_pendiente)
+      } else {
+        saldo_pendiente = total - totalAbonado
+      }
       
-      if (errorCreditos) throw errorCreditos
+      saldo_pendiente = Math.max(0, saldo_pendiente)
       
-      // Procesar créditos
-      const creditosProcesados = (creditosData || []).map(credito => {
-        const total = parseFloat(credito.total) || 0
-        const totalAbonado = credito.abonos_credito?.reduce((sum, abono) => 
-          sum + parseFloat(abono.monto || 0), 0) || 0
-        
-        let saldo_pendiente
-        if (credito.saldo_pendiente !== null && credito.saldo_pendiente !== undefined) {
-          saldo_pendiente = parseFloat(credito.saldo_pendiente)
-        } else {
-          saldo_pendiente = total - totalAbonado
-        }
-        
-        saldo_pendiente = Math.max(0, saldo_pendiente)
-        
-        return {
-          ...credito,
-          total,
-          saldo_pendiente,
-          total_abonado: totalAbonado,
-          completado: saldo_pendiente === 0
-        }
-      })
-      
-      setCreditos(creditosProcesados)
-      
-      // Cargar abonos
-      const { data: abonosData, error: errorAbonos } = await supabase
-        .from('abonos_credito')
-        .select(`
-          *,
-          ventas_credito (
-            nombre_cliente,
-            productos (*)
-          )
-        `)
-        .order('fecha', { ascending: false })
-      
-      if (errorAbonos) throw errorAbonos
-      setAbonos(abonosData || [])
-      
-    } catch (error) {
-      console.error('Error cargando abonos:', error)
-      alert('Error al cargar datos')
-    } finally {
-      setLoading(false)
-    }
+      return {
+        ...credito,
+        total,
+        saldo_pendiente,
+        total_abonado: totalAbonado,
+        completado: saldo_pendiente === 0
+      }
+    })
+    
+    setCreditos(creditosProcesados)
+    
+    // ✅ Cargar abonos (CON LA CONSULTA CORREGIDA)
+    const { data: abonosData, error: errorAbonos } = await supabase
+      .from('abonos_credito')
+      .select(`
+        *,
+        ventas_credito (
+          nombre_cliente,
+          productos (*),
+          servicios (*)
+        )
+      `)
+      .order('fecha', { ascending: false })
+    
+    if (errorAbonos) throw errorAbonos
+    
+    console.log('✅ Abonos cargados:', abonosData)
+    setAbonos(abonosData || [])
+    
+  } catch (error) {
+    console.error('❌ Error cargando abonos:', error)
+    alert('Error al cargar datos')
+  } finally {
+    setLoading(false)
   }
+}
 
   // Funciones para abrir modales
   const handleAgregarAbono = () => {

@@ -398,7 +398,14 @@ const TablaAbonos = ({
                 )}
               </div>
               <div className="abono-producto">
-                {credito?.productos?.nombre || abono.ventas_credito?.productos?.nombre || 'Producto no encontrado'}
+                {credito?.productos?.nombre || 
+                  credito?.servicios?.nombre || 
+                  abono.ventas_credito?.productos?.nombre ||
+                  abono.ventas_credito?.servicios?.nombre ||
+                  'Producto/Servicio no encontrado'}
+                  {credito?.tipo_item === 'servicio' && (
+                    <span style={{ marginLeft: '4px', fontSize: '12px', color: '#8b5cf6' }}>💇</span>
+                  )}
                 {credito?.productos?.codigo && (
                   <span style={{ fontSize: '12px', color: '#64748b', marginLeft: '8px' }}>
                     (Código: {credito.productos.codigo})
@@ -631,7 +638,14 @@ const TablaAbonos = ({
                       </td>
                       <td className="celda-producto">
                         <div className="nombre-producto">
-                          {credito?.productos?.nombre || abono.ventas_credito?.productos?.nombre || 'Producto no encontrado'}
+                        {credito?.productos?.nombre || 
+                              credito?.servicios?.nombre || 
+                              abono.ventas_credito?.productos?.nombre ||
+                              abono.ventas_credito?.servicios?.nombre ||
+                              'Producto/Servicio no encontrado'}
+                              {credito?.tipo_item === 'servicio' && (
+                                <span style={{ marginLeft: '4px', fontSize: '12px', color: '#8b5cf6' }}>💇</span>
+                              )}
                         </div>
                         {credito?.productos?.codigo && (
                           <div className="codigo-producto">
