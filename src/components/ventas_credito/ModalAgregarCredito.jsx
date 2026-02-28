@@ -370,97 +370,101 @@ const ModalAgregarCredito = ({
   }
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
+  e.preventDefault()
+  
+  if (!formData.cliente_nombre) {
+    setError('Selecciona o registra un cliente')
+    return
+  }
+
+  if (itemsSeleccionados.length === 0) {
+    setError('Agrega al menos un producto o servicio')
+    return
+  }
+
+  const totalGeneral = calcularTotalGeneral()
+  if (totalGeneral <= 0) {
+    setError('El total debe ser mayor a 0')
+    return
+  }
+
+  const itemsInvalidos = itemsSeleccionados.filter(p => !p.item_id)
+  if (itemsInvalidos.length > 0) {
+    setError('Todos los items deben estar seleccionados')
+    return
+  }
+
+  setLoading(true)
+  setError('')
+
+  try {
+    let clienteNombre = formData.cliente_nombre
     
-    if (!formData.cliente_nombre) {
-      setError('Selecciona o registra un cliente')
-      return
-    }
-
-    if (itemsSeleccionados.length === 0) {
-      setError('Agrega al menos un producto o servicio')
-      return
-    }
-
-    const totalGeneral = calcularTotalGeneral()
-    if (totalGeneral <= 0) {
-      setError('El total debe ser mayor a 0')
-      return
-    }
-
-    const itemsInvalidos = itemsSeleccionados.filter(p => !p.item_id)
-    if (itemsInvalidos.length > 0) {
-      setError('Todos los items deben estar seleccionados')
-      return
-    }
-
-    setLoading(true)
-    setError('')
-
-    try {
-      let clienteNombre = formData.cliente_nombre
-      
-      if (clienteNombre.includes('-')) {
-        const cliente = clientes.find(c => c.id === clienteNombre)
-        if (cliente) {
-          clienteNombre = cliente.nombre
-        }
+    if (clienteNombre.includes('-')) {
+      const cliente = clientes.find(c => c.id === clienteNombre)
+      if (cliente) {
+        clienteNombre = cliente.nombre
       }
+    }
 
-      const ventasCredito = itemsSeleccionados.map(item => ({
-        ...(item.tipo === 'producto' 
-          ? { producto_id: item.item_id, servicio_id: null }
-          : { servicio_id: item.item_id, producto_id: null }),
-        cantidad: item.cantidad,
-        precio_unitario: item.precio_unitario,
-        total: calcularTotalItem(item),
-        nombre_cliente: clienteNombre,
-        fecha_inicio: formData.fecha_inicio,
-        fecha_fin: formData.fecha_fin,
-        saldo_pendiente: calcularTotalItem(item),
-        estado: 'activo',
-        tipo_item: item.tipo
+    const ventasCredito = itemsSeleccionados.map(item => ({
+      ...(item.tipo === 'producto' 
+        ? { producto_id: item.item_id, servicio_id: null }
+        : { servicio_id: item.item_id, producto_id: null }),
+      cantidad: item.cantidad,
+      precio_unitario: item.precio_unitario,
+      total: calcularTotalItem(item),
+      nombre_cliente: clienteNombre,
+      fecha_inicio: formData.fecha_inicio,
+      fecha_fin: formData.fecha_fin,
+      saldo_pendiente: calcularTotalItem(item),
+      estado: 'activo',
+      tipo_item: item.tipo
+    }))
+
+    console.log('Creando ventas a crédito:', ventasCredito)
+    
+    const { error: errorVentas } = await supabase
+      .from('ventas_credito')
+      .insert(ventasCredito)
+    
+    if (errorVentas) throw errorVentas
+
+    // Registrar en facturados (solo productos)
+    const facturasProductos = ventasCredito
+      .filter(v => v.tipo_item === 'producto')
+      .map(venta => ({
+        tipo_venta: 'credito',
+        producto_id: venta.producto_id,
+        cantidad: venta.cantidad,
+        precio_unitario: venta.precio_unitario,
+        total: venta.total,
+        metodo_pago: 'credito',
+        fecha: new Date().toISOString()
       }))
 
-      console.log('Creando ventas a crédito:', ventasCredito)
+    if (facturasProductos.length > 0) {
+      const { error: errorFacturas } = await supabase
+        .from('facturados')
+        .insert(facturasProductos)
       
-      const { error: errorVentas } = await supabase
-        .from('ventas_credito')
-        .insert(ventasCredito)
-      
-      if (errorVentas) throw errorVentas
-
-      // Registrar en facturados (solo productos)
-      const facturasProductos = ventasCredito
-        .filter(v => v.tipo_item === 'producto')
-        .map(venta => ({
-          tipo_venta: 'credito',
-          producto_id: venta.producto_id,
-          cantidad: venta.cantidad,
-          precio_unitario: venta.precio_unitario,
-          total: venta.total,
-          metodo_pago: 'credito',
-          fecha: new Date().toISOString()
-        }))
-
-      if (facturasProductos.length > 0) {
-        await supabase
-          .from('facturados')
-          .insert(facturasProductos)
-          .catch(err => console.log('No se pudo registrar en facturados:', err))
+      if (errorFacturas) {
+        console.log('No se pudo registrar en facturados:', errorFacturas)
+        // No lanzamos error porque el crédito ya se guardó
       }
-
-      resetForm()
-      onCreditoAgregado()
-      onClose()
-      
-    } catch (err) {
-      console.error('Error agregando crédito:', err)
-      setError('Error al registrar el crédito: ' + err.message)
-    } finally {
-      setLoading(false)
     }
+
+    resetForm()
+    onCreditoAgregado()
+    onClose()
+    
+  } catch (err) {
+    console.error('Error agregando crédito:', err)
+    setError('Error al registrar el crédito: ' + err.message)
+  } finally {
+    setLoading(false)
   }
+}
 
   if (!isOpen) return null
 
