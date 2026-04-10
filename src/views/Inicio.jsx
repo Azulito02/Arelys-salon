@@ -1,3 +1,4 @@
+// src/views/Inicio.jsx
 import { useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import { supabase } from '../database/supabase'
@@ -9,7 +10,8 @@ const Inicio = () => {
   const [estadisticas, setEstadisticas] = useState({
     totalProductos: 0,
     ventasHoy: 0,
-    creditosActivos: 0
+    creditosActivos: 0,
+    totalInversiones: 0  // ✅ NUEVO: Total de inversiones
   })
   const [loadingEstadisticas, setLoadingEstadisticas] = useState(true)
   
@@ -123,10 +125,18 @@ const Inicio = () => {
         }
       })
 
+      // ✅ NUEVO: Cargar total de inversiones
+      const { count: totalInversiones, error: errorInversiones } = await supabase
+        .from('inversiones')
+        .select('*', { count: 'exact', head: true })
+
+      if (errorInversiones) console.error('Error cargando inversiones:', errorInversiones)
+
       setEstadisticas({
         totalProductos: totalProductos || 0,
         ventasHoy: totalVentasHoy,
-        creditosActivos: creditosConSaldo.length
+        creditosActivos: creditosConSaldo.length,
+        totalInversiones: totalInversiones || 0  // ✅ NUEVO
       })
       
     } catch (error) {
@@ -208,7 +218,6 @@ const Inicio = () => {
       ruta: '/arqueos',
       roles: ['administrador', 'cajero']
     },
-    // ✅ NUEVO BOTÓN DE REPORTES MENSUALES
     {
       id: 'reportes',
       label: 'Reportes',
@@ -217,16 +226,23 @@ const Inicio = () => {
       ruta: '/reportes',
       roles: ['administrador', 'cajero']
     },
-
     {
-  id: 'servicios',
-  label: 'Servicios',
-  icon: '💇',
-  color: '#d97706', // Color ámbar
-  ruta: '/servicios',
-  roles: ['administrador', 'cajero', 'vendedor'] // Quien puede ver servicios
-}
-
+      id: 'servicios',
+      label: 'Servicios',
+      icon: '💇',
+      color: '#d97706',
+      ruta: '/servicios',
+      roles: ['administrador', 'cajero', 'vendedor']
+    },
+    // ✅ NUEVO BOTÓN DE INVERSIONES
+    {
+      id: 'inversiones',
+      label: 'Inversiones',
+      icon: '📈',
+      color: '#14b8a6',
+      ruta: '/inversiones',
+      roles: ['administrador']  // Solo administrador puede ver inversiones
+    }
   ]
 
   const botonesFiltrados = botones.filter(boton => 
@@ -330,10 +346,25 @@ const Inicio = () => {
               {loadingEstadisticas ? (
                 <span className="cargando-estadistica">...</span>
               ) : (
-                `$${estadisticas.ventasHoy.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
+                `C$${estadisticas.ventasHoy.toLocaleString('es-MX', { minimumFractionDigits: 2 })}`
               )}
             </p>
             <p className="estadistica-label">Ventas Hoy</p>
+          </div>
+        </div>
+
+        {/* ✅ NUEVA TARJETA DE INVERSIONES */}
+        <div className="estadistica-card">
+          <div className="estadistica-icono">📈</div>
+          <div className="estadistica-contenido">
+            <p className="estadistica-valor">
+              {loadingEstadisticas ? (
+                <span className="cargando-estadistica">...</span>
+              ) : (
+                estadisticas.totalInversiones
+              )}
+            </p>
+            <p className="estadistica-label">Inversiones</p>
           </div>
         </div>
       </div>

@@ -1,3 +1,4 @@
+// src/components/Encabezado.jsx
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import './Encabezado.css'
@@ -56,97 +57,103 @@ const Encabezado = ({ onLogout }) => {
     navigate('/')
   }
 
-  
- // Rutas ordenadas por prioridad (VERSIÓN FINAL)
-const rutas = [
-  {
-    id: 'inicio',
-    label: '🏠 Inicio',
-    ruta: '/inicio',
-    roles: ['administrador', 'cajero', 'vendedor'],
-    prioridad: 1
-  },
-  {
-    id: 'ventas',
-    label: '💰 Ventas',
-    ruta: '/ventas',
-    roles: ['administrador', 'cajero', 'vendedor'],
-    prioridad: 2
-  },
-  {
-    id: 'creditos',
-    label: '💳 Créditos',
-    ruta: '/creditos',
-    roles: ['administrador', 'cajero'],
-    prioridad: 3
-  },
-  {
-    id: 'inventario',
-    label: '📊 Inventario',
-    ruta: '/inventario',
-    roles: ['administrador', 'cajero'],
-    prioridad: 4
-  },
-  {
-    id: 'productos',
-    label: '📦 Productos',
-    ruta: '/productos',
-    roles: ['administrador'],
-    prioridad: 5
-  },
-  {
-    id: 'servicios',
-    label: '💇 Servicios',
-    ruta: '/servicios',
-    roles: ['administrador', 'cajero', 'vendedor'],
-    prioridad: 6
-  },
-  {
-    id: 'gastos',
-    label: '📉 Gastos',
-    ruta: '/gastos',
-    roles: ['administrador'],
-    prioridad: 7
-  },
-  {
-    id: 'abonos',
-    label: '💵 Abonos',
-    ruta: '/abonos',
-    roles: ['administrador', 'cajero'],
-    prioridad: 8
-  },
-  {
-    id: 'arqueos',      // ✅ Arqueos con prioridad alta para que vaya al "Más"
-    label: '🧮 Arqueos',
-    ruta: '/arqueos',
-    roles: ['administrador', 'cajero'],
-    prioridad: 9
-  },
-  {
-    id: 'reportes',     // ✅ Reportes con prioridad alta para que vaya al "Más"
-    label: '📊 Reportes',
-    ruta: '/reportes',
-    roles: ['administrador', 'cajero'],
-    prioridad: 10
-  }
-]
-
+  // Rutas ordenadas por prioridad (VERSIÓN FINAL CON INVERSIONES)
+  const rutas = [
+    {
+      id: 'inicio',
+      label: '🏠 Inicio',
+      ruta: '/inicio',
+      roles: ['administrador', 'cajero', 'vendedor'],
+      prioridad: 1
+    },
+    {
+      id: 'ventas',
+      label: '💰 Ventas',
+      ruta: '/ventas',
+      roles: ['administrador', 'cajero', 'vendedor'],
+      prioridad: 2
+    },
+    {
+      id: 'creditos',
+      label: '💳 Créditos',
+      ruta: '/creditos',
+      roles: ['administrador', 'cajero'],
+      prioridad: 3
+    },
+    {
+      id: 'inventario',
+      label: '📊 Inventario',
+      ruta: '/inventario',
+      roles: ['administrador', 'cajero'],
+      prioridad: 4
+    },
+    {
+      id: 'productos',
+      label: '📦 Productos',
+      ruta: '/productos',
+      roles: ['administrador'],
+      prioridad: 5
+    },
+    {
+      id: 'servicios',
+      label: '💇 Servicios',
+      ruta: '/servicios',
+      roles: ['administrador', 'cajero', 'vendedor'],
+      prioridad: 6
+    },
+    {
+      id: 'gastos',
+      label: '📉 Gastos',
+      ruta: '/gastos',
+      roles: ['administrador'],
+      prioridad: 7
+    },
+    {
+      id: 'abonos',
+      label: '💵 Abonos',
+      ruta: '/abonos',
+      roles: ['administrador', 'cajero'],
+      prioridad: 8
+    },
+    {
+      id: 'arqueos',
+      label: '🧮 Arqueos',
+      ruta: '/arqueos',
+      roles: ['administrador', 'cajero'],
+      prioridad: 9
+    },
+    {
+      id: 'reportes',
+      label: '📊 Reportes',
+      ruta: '/reportes',
+      roles: ['administrador', 'cajero'],
+      prioridad: 10
+    },
+    // ✅ NUEVA RUTA DE INVERSIONES
+    {
+      id: 'inversiones',
+      label: '📈 Inversiones',
+      ruta: '/inversiones',
+      roles: ['administrador'],  // Solo administrador
+      prioridad: 11
+    }
+  ]
 
   // Filtrar rutas según el rol
   const rutasFiltradas = rutas
     .filter(ruta => ruta.roles.includes(usuario.rol?.toLowerCase() || 'administrador'))
     .sort((a, b) => a.prioridad - b.prioridad)
 
-  // Calcular cuántos botones caben según el ancho (PARA QUE SOLO QUEDEN LOS IMPORTANTES)
-const calcularBotonesVisibles = () => {
-  if (esMovil) return []
-  
-  if (anchoPantalla >= 1600) return 6  // Inicio, Ventas, Créditos, Inventario, Productos, Servicios
-  if (anchoPantalla >= 1400) return 5  // Inicio, Ventas, Créditos, Inventario, Productos
-  if (anchoPantalla >= 1200) return 4  // Inicio, Ventas, Créditos, Inventario
-  if (anchoPantalla >= 1025) return 3  // Inicio, Ventas, Créditos
-  return 2                              // Inicio, Ventas
-}
+  // Calcular cuántos botones caben según el ancho
+  const calcularBotonesVisibles = () => {
+    if (esMovil) return []
+    
+    if (anchoPantalla >= 1600) return 7  // Inicio, Ventas, Créditos, Inventario, Productos, Servicios, Inversiones
+    if (anchoPantalla >= 1400) return 6  // Inicio, Ventas, Créditos, Inventario, Productos, Servicios
+    if (anchoPantalla >= 1200) return 5  // Inicio, Ventas, Créditos, Inventario, Productos
+    if (anchoPantalla >= 1025) return 4  // Inicio, Ventas, Créditos, Inventario
+    return 3                              // Inicio, Ventas, Créditos
+  }
   
   const cantidadVisibles = calcularBotonesVisibles()
   
