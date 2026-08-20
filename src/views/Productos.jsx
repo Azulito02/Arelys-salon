@@ -19,22 +19,40 @@ const Productos = () => {
   }, [])
 
   const cargarProductos = async () => {
-    try {
-      setLoading(true)
+  try {
+    setLoading(true)
+
+    let todosLosProductos = []
+    let desde = 0
+    const tamanoLote = 1000
+    let sigueHabiendoDatos = true
+
+    while (sigueHabiendoDatos) {
       const { data, error } = await supabase
         .from('productos')
         .select('*')
         .order('nombre')
-      
+        .range(desde, desde + tamanoLote - 1)
+
       if (error) throw error
-      setProductos(data || [])
-    } catch (error) {
-      console.error('Error cargando productos:', error)
-      alert('Error al cargar productos')
-    } finally {
-      setLoading(false)
+
+      if (data && data.length > 0) {
+        todosLosProductos = [...todosLosProductos, ...data]
+        desde += tamanoLote
+        sigueHabiendoDatos = data.length === tamanoLote
+      } else {
+        sigueHabiendoDatos = false
+      }
     }
+
+    setProductos(todosLosProductos)
+  } catch (error) {
+    console.error('Error cargando productos:', error)
+    alert('Error al cargar productos')
+  } finally {
+    setLoading(false)
   }
+}
 
   // Funciones para abrir modales
   const abrirModalAgregar = () => {

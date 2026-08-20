@@ -47,31 +47,44 @@ const ModalEditarCredito = ({
   }, [productos, servicios, itemsDisponibles])
 
   useEffect(() => {
-    if (credito && isOpen) {
-      // Determinar el tipo de item
-      const itemId = credito.producto_id || credito.servicio_id
-      const tipo = credito.producto_id ? 'producto' : 'servicio'
-      
-      setFormData({
-        item_id: itemId,
-        tipo: tipo,
-        cantidad: credito.cantidad || 1,
-        precio_unitario: credito.precio_unitario || 0,
-        nombre_cliente: credito.nombre_cliente || '',
-        fecha_inicio: credito.fecha_inicio || '',
-        fecha_fin: credito.fecha_fin || ''
-      })
-      
-      // Buscar el item correspondiente
-      const item = itemsCombinados.find(i => i.id === itemId)
-      if (item) {
-        setBusquedaItem(item.nombre)
-      }
-      
-      // Cargar abonos de este crédito
-      cargarAbonosCredito(credito.id)
+  if (credito && isOpen) {
+    const itemId = credito.producto_id || credito.servicio_id
+    const tipo = credito.producto_id ? 'producto' : 'servicio'
+    
+    // 🔥 FORMATO CORRECTO para input type="date"
+    const fechaInicioFormateada = credito.fecha_inicio 
+      ? new Date(credito.fecha_inicio).toISOString().split('T')[0]
+      : ''
+    
+    const fechaFinFormateada = credito.fecha_fin 
+      ? new Date(credito.fecha_fin).toISOString().split('T')[0]
+      : ''
+    
+    console.log('📅 Fechas recibidas:', {
+      fecha_inicio: credito.fecha_inicio,
+      fecha_fin: credito.fecha_fin,
+      formateada_inicio: fechaInicioFormateada,
+      formateada_fin: fechaFinFormateada
+    })
+    
+    setFormData({
+      item_id: itemId,
+      tipo: tipo,
+      cantidad: credito.cantidad || 1,
+      precio_unitario: credito.precio_unitario || 0,
+      nombre_cliente: credito.nombre_cliente || '',
+      fecha_inicio: fechaInicioFormateada,  // ✅ Formateada como YYYY-MM-DD
+      fecha_fin: fechaFinFormateada         // ✅ Formateada como YYYY-MM-DD
+    })
+    
+    const item = itemsCombinados.find(i => i.id === itemId)
+    if (item) {
+      setBusquedaItem(item.nombre)
     }
-  }, [credito, isOpen, itemsCombinados])
+    
+    cargarAbonosCredito(credito.id)
+  }
+}, [credito, isOpen, itemsCombinados])
 
   // Filtrar items por búsqueda
   useEffect(() => {

@@ -30,60 +30,75 @@ const Inventario = () => {
     cargarDatos()
   }, [])
 
-  const cargarDatos = async () => {
-    try {
-      setLoading(true)
-      setErrorCarga('')
-      
-      console.log('Iniciando carga de datos...')
-      
-      // Cargar productos para el select
-      const { data: productosData, error: errorProductos } = await supabase
+ const cargarDatos = async () => {
+  try {
+    setLoading(true)
+    setErrorCarga('')
+    
+    console.log('Iniciando carga de datos...')
+    
+    // Cargar TODOS los productos por lotes (evita el límite de 1000 filas de Supabase)
+    let todosLosProductos = []
+    let desde = 0
+    const tamanoLote = 1000
+    let sigueHabiendoDatos = true
+
+    while (sigueHabiendoDatos) {
+      const { data: lote, error: errorProductos } = await supabase
         .from('productos')
         .select('*')
         .order('nombre')
-      
-      console.log('Productos cargados:', productosData)
-      
+        .range(desde, desde + tamanoLote - 1)
+
       if (errorProductos) {
         console.error('Error cargando productos:', errorProductos)
         throw errorProductos
       }
-      setProductos(productosData || [])
-      
-      // PRIMERO: Intentar sin la relación para ver si funciona
-      const { data: inventarioData, error: errorInventario } = await supabase
-        .from('inventario')
-        .select('*')
-        .order('fecha', { ascending: false })
-      
-      console.log('Inventario cargado (sin relación):', inventarioData)
-      
-      if (errorInventario) {
-        console.error('Error cargando inventario básico:', errorInventario)
-        throw errorInventario
-      }
-      
-      // Ahora, si necesitas los datos del producto, los combinamos manualmente
-      const inventarioConProductos = inventarioData.map(item => {
-        const producto = productosData?.find(p => p.id === item.producto_id)
-        return {
-          ...item,
-          productos: producto || null
-        }
-      })
-      
-      setInventario(inventarioConProductos || [])
-      
-    } catch (error) {
-      console.error('Error cargando inventario:', error)
-      setErrorCarga(`Error al cargar datos: ${error.message}`)
-      alert('Error al cargar datos del inventario')
-    } finally {
-      setLoading(false)
-    }
-  }
 
+      if (lote && lote.length > 0) {
+        todosLosProductos = [...todosLosProductos, ...lote]
+        desde += tamanoLote
+        sigueHabiendoDatos = lote.length === tamanoLote
+      } else {
+        sigueHabiendoDatos = false
+      }
+    }
+
+    console.log('Productos cargados:', todosLosProductos.length)
+    setProductos(todosLosProductos)
+    
+    // PRIMERO: Intentar sin la relación para ver si funciona
+    const { data: inventarioData, error: errorInventario } = await supabase
+      .from('inventario')
+      .select('*')
+      .order('fecha', { ascending: false })
+    
+    console.log('Inventario cargado (sin relación):', inventarioData)
+    
+    if (errorInventario) {
+      console.error('Error cargando inventario básico:', errorInventario)
+      throw errorInventario
+    }
+    
+    // Ahora, si necesitas los datos del producto, los combinamos manualmente
+    const inventarioConProductos = inventarioData.map(item => {
+      const producto = todosLosProductos?.find(p => p.id === item.producto_id)
+      return {
+        ...item,
+        productos: producto || null
+      }
+    })
+    
+    setInventario(inventarioConProductos || [])
+    
+  } catch (error) {
+    console.error('Error cargando inventario:', error)
+    setErrorCarga(`Error al cargar datos: ${error.message}`)
+    alert('Error al cargar datos del inventario')
+  } finally {
+    setLoading(false)
+  }
+}
   // Funciones para abrir modales
   const abrirModalAgregar = () => {
     setNuevaEntrada({ producto_id: '', entrada: 1 })

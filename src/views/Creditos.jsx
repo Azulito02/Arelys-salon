@@ -56,98 +56,112 @@ const Creditos = () => {
     setCreditosFiltrados(creditosFiltrados)
   }
 
-  const cargarDatos = async () => {
-    try {
-      setLoading(true)
-      
-      // Cargar productos
-      const { data: productosData, error: errorProductos } = await supabase
+ const cargarDatos = async () => {
+  try {
+    setLoading(true)
+    
+    // Cargar TODOS los productos por lotes (evita el límite de 1000 filas de Supabase)
+    let productosData = []
+    let desde = 0
+    const tamanoLote = 1000
+    let sigueHabiendoDatos = true
+
+    while (sigueHabiendoDatos) {
+      const { data: lote, error: errorProductos } = await supabase
         .from('productos')
         .select('*')
         .order('nombre')
-      
-      if (errorProductos) throw errorProductos
-      setProductos(productosData || [])
-      
-      // ✅ NUEVO: Cargar servicios
-      const { data: serviciosData, error: errorServicios } = await supabase
-        .from('servicios')
-        .select('*')
-        .order('nombre')
-      
-      if (errorServicios) throw errorServicios
-      setServicios(serviciosData || [])
-      
-      // ✅ CARGAR CRÉDITOS CON ABONOS
-      const { data: creditosData, error: errorCreditos } = await supabase
-        .from('ventas_credito')
-        .select(`
-          *,
-          productos (*),
-          servicios (*),
-          abonos_credito (*)
-        `)
-        .order('fecha', { ascending: false })
-      
-      if (errorCreditos) throw errorCreditos
-      
-      // Procesar créditos con todos sus datos
-      const creditosProcesados = (creditosData || []).map(credito => {
-        const total = parseFloat(credito.total) || 0
-        const precio_unitario = parseFloat(credito.precio_unitario) || 0
-        
-        // Determinar el item (producto o servicio)
-        let item = null
-        if (credito.producto_id) {
-          item = productosData?.find(p => p.id === credito.producto_id) || null
-        } else if (credito.servicio_id) {
-          item = serviciosData?.find(s => s.id === credito.servicio_id) || null
-        }
-        
-        // Calcular saldo pendiente
-        let saldo_pendiente
-        if (credito.saldo_pendiente !== null && credito.saldo_pendiente !== undefined) {
-          saldo_pendiente = parseFloat(credito.saldo_pendiente)
-        } else {
-          const totalAbonado = credito.abonos_credito?.reduce((sum, abono) => 
-            sum + parseFloat(abono.monto || 0), 0) || 0
-          saldo_pendiente = total - totalAbonado
-        }
-        
-        saldo_pendiente = Math.max(0, saldo_pendiente)
-        const total_abonado = total - saldo_pendiente
-        
-        return {
-          ...credito,
-          item,
-          tipo_item: credito.producto_id ? 'producto' : credito.servicio_id ? 'servicio' : null,
-          total,
-          precio_unitario,
-          saldo_pendiente,
-          total_abonado,
-          completado: saldo_pendiente === 0,
-          abonos_credito: credito.abonos_credito || []
-        }
-      })
-      
-      console.log('✅ Créditos cargados con abonos:', creditosProcesados)
-      setCreditos(creditosProcesados)
-      
-      // Combinar items para búsquedas
-      const combinados = [
-        ...(productosData || []).map(p => ({ ...p, tipo: 'producto' })),
-        ...(serviciosData || []).map(s => ({ ...s, tipo: 'servicio' }))
-      ]
-      setItemsDisponibles(combinados)
-      
-    } catch (error) {
-      console.error('Error cargando créditos:', error)
-      alert('Error al cargar datos')
-    } finally {
-      setLoading(false)
-    }
-  }
+        .range(desde, desde + tamanoLote - 1)
 
+      if (errorProductos) throw errorProductos
+
+      if (lote && lote.length > 0) {
+        productosData = [...productosData, ...lote]
+        desde += tamanoLote
+        sigueHabiendoDatos = lote.length === tamanoLote
+      } else {
+        sigueHabiendoDatos = false
+      }
+    }
+
+    setProductos(productosData || [])
+    
+    // ✅ NUEVO: Cargar servicios
+    const { data: serviciosData, error: errorServicios } = await supabase
+      .from('servicios')
+      .select('*')
+      .order('nombre')
+    
+    if (errorServicios) throw errorServicios
+    setServicios(serviciosData || [])
+    
+    // ✅ CARGAR CRÉDITOS CON ABONOS
+    const { data: creditosData, error: errorCreditos } = await supabase
+      .from('ventas_credito')
+      .select(`
+        *,
+        productos (*),
+        servicios (*),
+        abonos_credito (*)
+      `)
+      .order('fecha', { ascending: false })
+    
+    if (errorCreditos) throw errorCreditos
+    
+    // Procesar créditos con todos sus datos
+    const creditosProcesados = (creditosData || []).map(credito => {
+      const total = parseFloat(credito.total) || 0
+      const precio_unitario = parseFloat(credito.precio_unitario) || 0
+      
+      let item = null
+      if (credito.producto_id) {
+        item = productosData?.find(p => p.id === credito.producto_id) || null
+      } else if (credito.servicio_id) {
+        item = serviciosData?.find(s => s.id === credito.servicio_id) || null
+      }
+      
+      let saldo_pendiente
+      if (credito.saldo_pendiente !== null && credito.saldo_pendiente !== undefined) {
+        saldo_pendiente = parseFloat(credito.saldo_pendiente)
+      } else {
+        const totalAbonado = credito.abonos_credito?.reduce((sum, abono) => 
+          sum + parseFloat(abono.monto || 0), 0) || 0
+        saldo_pendiente = total - totalAbonado
+      }
+      
+      saldo_pendiente = Math.max(0, saldo_pendiente)
+      const total_abonado = total - saldo_pendiente
+      
+      return {
+        ...credito,
+        item,
+        tipo_item: credito.producto_id ? 'producto' : credito.servicio_id ? 'servicio' : null,
+        total,
+        precio_unitario,
+        saldo_pendiente,
+        total_abonado,
+        completado: saldo_pendiente === 0,
+        abonos_credito: credito.abonos_credito || []
+      }
+    })
+    
+    console.log('✅ Créditos cargados con abonos:', creditosProcesados)
+    setCreditos(creditosProcesados)
+    
+    // Combinar items para búsquedas
+    const combinados = [
+      ...(productosData || []).map(p => ({ ...p, tipo: 'producto' })),
+      ...(serviciosData || []).map(s => ({ ...s, tipo: 'servicio' }))
+    ]
+    setItemsDisponibles(combinados)
+    
+  } catch (error) {
+    console.error('Error cargando créditos:', error)
+    alert('Error al cargar datos')
+  } finally {
+    setLoading(false)
+  }
+}
   // Funciones para abrir modales
   const handleAgregarCredito = () => {
     setShowAgregarModal(true)

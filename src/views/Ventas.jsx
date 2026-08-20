@@ -46,91 +46,105 @@ const Ventas = () => {
   // ==============================================
 
   const cargarDatos = async () => {
-  try {
-    setLoading(true)
-    setErrorCarga('')
-    
-    // 1️⃣ Cargar productos
-    const { data: productosData, error: errorProductos } = await supabase
+try {
+  setLoading(true)
+  setErrorCarga('')
+  
+  // 1️⃣ Cargar TODOS los productos por lotes (evita el límite de 1000 filas de Supabase)
+  let productosData = []
+  let desde = 0
+  const tamanoLote = 1000
+  let sigueHabiendoDatos = true
+
+  while (sigueHabiendoDatos) {
+    const { data: lote, error: errorProductos } = await supabase
       .from('productos')
       .select('*')
       .order('nombre')
-    
+      .range(desde, desde + tamanoLote - 1)
+
     if (errorProductos) throw errorProductos
-    console.log('Productos cargados:', productosData?.length)
-    setProductos(productosData || [])
-    
-    // 2️⃣ Cargar servicios
-    const { data: serviciosData, error: errorServicios } = await supabase
-      .from('servicios')
-      .select('*')
-      .order('nombre')
-    
-    if (errorServicios) throw errorServicios
-    console.log('Servicios cargados:', serviciosData?.length)
-    setServicios(serviciosData || [])
-    
-    // 3️⃣ Cargar ventas
-    const { data: ventasData, error: errorVentas } = await supabase
-      .from('ventas')
-      .select('*')
-      .order('fecha', { ascending: false })
-    
-    if (errorVentas) throw errorVentas
-    
-    // 4️⃣ Procesar ventas - 🔴 VERSIÓN CORREGIDA
-    const ventasProcesadas = (ventasData || []).map(venta => {
-      let item = null
-      
-      if (venta.producto_id) {
-        // Buscar producto - comparación directa de UUIDs
-        item = productosData?.find(p => p.id === venta.producto_id) || null
-        
-        // DEBUG: Verificar si encontró el producto
-        if (item) {
-          console.log(`✅ Producto encontrado: ${item.nombre} para ID: ${venta.producto_id}`)
-        } else {
-          console.log(`❌ Producto NO encontrado para ID: ${venta.producto_id}`)
-        }
-      } 
-      
-      if (!item && venta.servicio_id) {
-        // Buscar servicio
-        item = serviciosData?.find(s => s.id === venta.servicio_id) || null
-        
-        if (item) {
-          console.log(`✅ Servicio encontrado: ${item.nombre} para ID: ${venta.servicio_id}`)
-        } else {
-          console.log(`❌ Servicio NO encontrado para ID: ${venta.servicio_id}`)
-        }
-      }
-      
-      return {
-        ...venta,
-        item: item || { 
-          id: null, 
-          nombre: 'Producto/Servicio no encontrado',
-          precio: venta.precio_unitario || 0
-        },
-        tipo_item: venta.producto_id ? 'producto' : venta.servicio_id ? 'servicio' : null
-      }
-    })
-    
-    setVentas(ventasProcesadas)
-    
-    // 5️⃣ Combinar para búsquedas
-    const combinados = [
-      ...(productosData || []).map(p => ({ ...p, tipo: 'producto' })),
-      ...(serviciosData || []).map(s => ({ ...s, tipo: 'servicio' }))
-    ]
-    setItemsDisponibles(combinados)
-    
-  } catch (error) {
-    console.error('Error cargando ventas:', error)
-    setErrorCarga(`Error al cargar datos: ${error.message}`)
-  } finally {
-    setLoading(false)
+
+    if (lote && lote.length > 0) {
+      productosData = [...productosData, ...lote]
+      desde += tamanoLote
+      sigueHabiendoDatos = lote.length === tamanoLote
+    } else {
+      sigueHabiendoDatos = false
+    }
   }
+
+  console.log('Productos cargados:', productosData?.length)
+  setProductos(productosData || [])
+  
+  // 2️⃣ Cargar servicios
+  const { data: serviciosData, error: errorServicios } = await supabase
+    .from('servicios')
+    .select('*')
+    .order('nombre')
+  
+  if (errorServicios) throw errorServicios
+  console.log('Servicios cargados:', serviciosData?.length)
+  setServicios(serviciosData || [])
+  
+  // 3️⃣ Cargar ventas
+  const { data: ventasData, error: errorVentas } = await supabase
+    .from('ventas')
+    .select('*')
+    .order('fecha', { ascending: false })
+  
+  if (errorVentas) throw errorVentas
+  
+  // 4️⃣ Procesar ventas - 🔴 VERSIÓN CORREGIDA
+  const ventasProcesadas = (ventasData || []).map(venta => {
+    let item = null
+    
+    if (venta.producto_id) {
+      item = productosData?.find(p => p.id === venta.producto_id) || null
+      
+      if (item) {
+        console.log(`✅ Producto encontrado: ${item.nombre} para ID: ${venta.producto_id}`)
+      } else {
+        console.log(`❌ Producto NO encontrado para ID: ${venta.producto_id}`)
+      }
+    } 
+    
+    if (!item && venta.servicio_id) {
+      item = serviciosData?.find(s => s.id === venta.servicio_id) || null
+      
+      if (item) {
+        console.log(`✅ Servicio encontrado: ${item.nombre} para ID: ${venta.servicio_id}`)
+      } else {
+        console.log(`❌ Servicio NO encontrado para ID: ${venta.servicio_id}`)
+      }
+    }
+    
+    return {
+      ...venta,
+      item: item || { 
+        id: null, 
+        nombre: 'Producto/Servicio no encontrado',
+        precio: venta.precio_unitario || 0
+      },
+      tipo_item: venta.producto_id ? 'producto' : venta.servicio_id ? 'servicio' : null
+    }
+  })
+  
+  setVentas(ventasProcesadas)
+  
+  // 5️⃣ Combinar para búsquedas
+  const combinados = [
+    ...(productosData || []).map(p => ({ ...p, tipo: 'producto' })),
+    ...(serviciosData || []).map(s => ({ ...s, tipo: 'servicio' }))
+  ]
+  setItemsDisponibles(combinados)
+  
+} catch (error) {
+  console.error('Error cargando ventas:', error)
+  setErrorCarga(`Error al cargar datos: ${error.message}`)
+} finally {
+  setLoading(false)
+}
 }
 
   // ==============================================

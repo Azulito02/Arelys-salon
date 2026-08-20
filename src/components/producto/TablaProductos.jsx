@@ -5,6 +5,10 @@ const TablaProductos = ({ productos, loading, onEditar, onEliminar }) => {
   const [busqueda, setBusqueda] = useState('')
   const [productosFiltrados, setProductosFiltrados] = useState([])
   const [filtroActivo, setFiltroActivo] = useState('todos')
+  
+  // 🔥 ESTADOS PARA PAGINACIÓN
+  const [paginaActual, setPaginaActual] = useState(1)
+  const productosPorPagina = 20
 
   // Filtrar productos según búsqueda y filtro
   useEffect(() => {
@@ -40,7 +44,15 @@ const TablaProductos = ({ productos, loading, onEditar, onEliminar }) => {
     }
     
     setProductosFiltrados(filtrados)
+    // 🔥 Reiniciar a la primera página cuando cambia la búsqueda o filtro
+    setPaginaActual(1)
   }, [busqueda, productos, filtroActivo])
+
+  // 🔥 Calcular productos de la página actual
+  const inicio = (paginaActual - 1) * productosPorPagina
+  const fin = inicio + productosPorPagina
+  const productosPaginados = productosFiltrados.slice(inicio, fin)
+  const totalPaginas = Math.ceil(productosFiltrados.length / productosPorPagina)
 
   // Calcular estadísticas
   const calcularEstadisticas = () => {
@@ -76,6 +88,92 @@ const TablaProductos = ({ productos, loading, onEditar, onEliminar }) => {
       })
   }
 
+  // 🔥 RENDERIZAR PAGINACIÓN
+  const renderPaginacion = () => {
+    if (totalPaginas <= 1) return null
+    
+    const paginas = []
+    const maxPaginasMostrar = 5
+    let inicioPaginas = Math.max(1, paginaActual - Math.floor(maxPaginasMostrar / 2))
+    let finPaginas = Math.min(totalPaginas, inicioPaginas + maxPaginasMostrar - 1)
+    
+    if (finPaginas - inicioPaginas < maxPaginasMostrar - 1) {
+      inicioPaginas = Math.max(1, finPaginas - maxPaginasMostrar + 1)
+    }
+    
+    // Botón Anterior
+    paginas.push(
+      <button
+        key="anterior"
+        className={`pagina-btn ${paginaActual === 1 ? 'disabled' : ''}`}
+        onClick={() => paginaActual > 1 && setPaginaActual(paginaActual - 1)}
+        disabled={paginaActual === 1}
+      >
+        ◀
+      </button>
+    )
+    
+    // Primera página si no está en el rango
+    if (inicioPaginas > 1) {
+      paginas.push(
+        <button key="1" className="pagina-btn" onClick={() => setPaginaActual(1)}>
+          1
+        </button>
+      )
+      if (inicioPaginas > 2) {
+        paginas.push(<span key="puntos1" className="pagina-puntos">…</span>)
+      }
+    }
+    
+    // Páginas del rango
+    for (let i = inicioPaginas; i <= finPaginas; i++) {
+      paginas.push(
+        <button
+          key={i}
+          className={`pagina-btn ${i === paginaActual ? 'activa' : ''}`}
+          onClick={() => setPaginaActual(i)}
+        >
+          {i}
+        </button>
+      )
+    }
+    
+    // Última página si no está en el rango
+    if (finPaginas < totalPaginas) {
+      if (finPaginas < totalPaginas - 1) {
+        paginas.push(<span key="puntos2" className="pagina-puntos">…</span>)
+      }
+      paginas.push(
+        <button key={totalPaginas} className="pagina-btn" onClick={() => setPaginaActual(totalPaginas)}>
+          {totalPaginas}
+        </button>
+      )
+    }
+    
+    // Botón Siguiente
+    paginas.push(
+      <button
+        key="siguiente"
+        className={`pagina-btn ${paginaActual === totalPaginas ? 'disabled' : ''}`}
+        onClick={() => paginaActual < totalPaginas && setPaginaActual(paginaActual + 1)}
+        disabled={paginaActual === totalPaginas}
+      >
+        ▶
+      </button>
+    )
+    
+    return (
+      <div className="paginacion-container">
+        <div className="paginacion-info">
+          Mostrando {inicio + 1} - {Math.min(fin, productosFiltrados.length)} de {productosFiltrados.length} productos
+        </div>
+        <div className="paginacion-botones">
+          {paginas}
+        </div>
+      </div>
+    )
+  }
+
   // Renderizar productos para vista móvil
   const renderProductosMobile = () => {
     if (loading) {
@@ -100,7 +198,7 @@ const TablaProductos = ({ productos, loading, onEditar, onEliminar }) => {
       );
     }
 
-    return productosFiltrados.map((producto) => (
+    return productosPaginados.map((producto) => (
       <div key={producto.id} className="producto-card">
         <div className="producto-card-header">
           <div className="producto-card-info">
@@ -114,7 +212,6 @@ const TablaProductos = ({ productos, loading, onEditar, onEliminar }) => {
           </div>
         </div>
         
-        {/* Código de barras en móvil */}
         {producto.codigo_barras && (
           <div 
             className="producto-card-codigo-barras"
@@ -191,7 +288,6 @@ const TablaProductos = ({ productos, loading, onEditar, onEliminar }) => {
           </span>
         </div>
         
-        {/* Filtros adicionales */}
         <div className="filtros-productos">
           <button 
             className={`filtro-btn ${filtroActivo === 'todos' ? 'activo' : ''}`}
@@ -205,7 +301,6 @@ const TablaProductos = ({ productos, loading, onEditar, onEliminar }) => {
           >
             Por categoría
           </button>
-          
         </div>
       </div>
 
@@ -234,7 +329,6 @@ const TablaProductos = ({ productos, loading, onEditar, onEliminar }) => {
         </div>
       </div>
 
-      {/* Contador móvil */}
       <div className="contador-productos-mobile mobile-only">
         {busqueda || filtroActivo !== 'todos' 
           ? `${productosFiltrados.length} de ${productos.length} productos` 
@@ -242,7 +336,7 @@ const TablaProductos = ({ productos, loading, onEditar, onEliminar }) => {
         }
       </div>
 
-      {/* VISTA DESKTOP */}
+      {/* 🔥 TABLA CON PAGINACIÓN */}
       <div className="tabla-contenedor desktop-only">
         <div className="tabla-scroll">
           <table className="tabla-productos">
@@ -264,7 +358,7 @@ const TablaProductos = ({ productos, loading, onEditar, onEliminar }) => {
                     <span>Cargando productos...</span>
                   </td>
                 </tr>
-              ) : productosFiltrados.length === 0 ? (
+              ) : productosPaginados.length === 0 ? (
                 <tr>
                   <td colSpan="6" className="tabla-vacia">
                     {busqueda || filtroActivo !== 'todos' 
@@ -274,7 +368,7 @@ const TablaProductos = ({ productos, loading, onEditar, onEliminar }) => {
                   </td>
                 </tr>
               ) : (
-                productosFiltrados.map((producto) => (
+                productosPaginados.map((producto) => (
                   <tr key={producto.id} className="fila-producto">
                     <td className="celda-nombre">
                       <div className="producto-nombre">{producto.nombre}</div>
@@ -336,17 +430,39 @@ const TablaProductos = ({ productos, loading, onEditar, onEliminar }) => {
             </tbody>
           </table>
         </div>
+        {/* 🔥 PAGINACIÓN */}
+        {!loading && renderPaginacion()}
       </div>
 
       {/* VISTA MÓVIL */}
       <div className="productos-mobile-view mobile-only">
         {renderProductosMobile()}
+        {!loading && productosFiltrados.length > productosPorPagina && (
+          <div className="paginacion-mobile">
+            <button
+              className={`pagina-mobile-btn ${paginaActual === 1 ? 'disabled' : ''}`}
+              onClick={() => paginaActual > 1 && setPaginaActual(paginaActual - 1)}
+              disabled={paginaActual === 1}
+            >
+              ◀ Anterior
+            </button>
+            <span className="pagina-mobile-info">
+              {paginaActual} / {totalPaginas}
+            </span>
+            <button
+              className={`pagina-mobile-btn ${paginaActual === totalPaginas ? 'disabled' : ''}`}
+              onClick={() => paginaActual < totalPaginas && setPaginaActual(paginaActual + 1)}
+              disabled={paginaActual === totalPaginas}
+            >
+              Siguiente ▶
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Estadísticas */}
       {!loading && productos.length > 0 && (
         <>
-          {/* Estadísticas desktop */}
           <div className="estadisticas-rapidas desktop-only">
             <div className="estadistica-item">
               <span className="estadistica-label">Total productos:</span>
@@ -356,8 +472,6 @@ const TablaProductos = ({ productos, loading, onEditar, onEliminar }) => {
               <span className="estadistica-label">Con categoría:</span>
               <span className="estadistica-valor">{estadisticas.totalConCategoria}</span>
             </div>
-            
-            
             {busqueda || filtroActivo !== 'todos' && (
               <div className="estadistica-item">
                 <span className="estadistica-label">Filtrados:</span>
@@ -366,7 +480,6 @@ const TablaProductos = ({ productos, loading, onEditar, onEliminar }) => {
             )}
           </div>
 
-          {/* Estadísticas móvil */}
           <div className="estadisticas-mobile mobile-only">
             <div className="estadistica-mobile-item">
               <span className="estadistica-mobile-label">Total</span>
@@ -376,7 +489,6 @@ const TablaProductos = ({ productos, loading, onEditar, onEliminar }) => {
               <span className="estadistica-mobile-label">Con cat.</span>
               <span className="estadistica-mobile-valor">{estadisticas.totalConCategoria}</span>
             </div>
-            
           </div>
         </>
       )}

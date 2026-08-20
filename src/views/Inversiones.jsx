@@ -53,12 +53,29 @@ const Inversiones = () => {
     try {
       setLoading(true)
       
-      const { data, error } = await supabase
-        .from('inversiones')
-        .select('*')
-        .order('fecha', { ascending: false })
+      // Cargar TODAS las inversiones por lotes (evita el límite de 1000 filas de Supabase)
+      let data = []
+      let desde = 0
+      const tamanoLote = 1000
+      let sigueHabiendoDatos = true
 
-      if (error) throw error
+      while (sigueHabiendoDatos) {
+        const { data: lote, error } = await supabase
+          .from('inversiones')
+          .select('*')
+          .order('fecha', { ascending: false })
+          .range(desde, desde + tamanoLote - 1)
+
+        if (error) throw error
+
+        if (lote && lote.length > 0) {
+          data = [...data, ...lote]
+          desde += tamanoLote
+          sigueHabiendoDatos = lote.length === tamanoLote
+        } else {
+          sigueHabiendoDatos = false
+        }
+      }
 
       const inversionesProcesadas = (data || []).map(inv => ({
         ...inv,
@@ -75,7 +92,6 @@ const Inversiones = () => {
       setLoading(false)
     }
   }
-
   const aplicarFiltros = () => {
     let filtradas = [...inversiones]
     

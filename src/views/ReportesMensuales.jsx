@@ -42,7 +42,7 @@ const ReportesMensuales = () => {
   // ============================================
   // FUNCIÓN PRINCIPAL PARA CARGAR FACTURAS
   // ============================================
-  const cargarFacturas = async () => {
+ const cargarFacturas = async () => {
     try {
       setLoading(true)
       
@@ -50,14 +50,31 @@ const ReportesMensuales = () => {
       const inicioMes = new Date(year, month - 1, 1).toISOString()
       const finMes = new Date(year, month, 0, 23, 59, 59).toISOString()
 
-      const { data, error } = await supabase
-        .from('facturados')
-        .select('*')
-        .gte('fecha', inicioMes)
-        .lt('fecha', finMes)
-        .order('fecha', { ascending: false })
+      // Cargar TODAS las facturas del mes por lotes (evita el límite de 1000 filas de Supabase)
+      let data = []
+      let desde = 0
+      const tamanoLote = 1000
+      let sigueHabiendoDatos = true
 
-      if (error) throw error
+      while (sigueHabiendoDatos) {
+        const { data: lote, error } = await supabase
+          .from('facturados')
+          .select('*')
+          .gte('fecha', inicioMes)
+          .lt('fecha', finMes)
+          .order('fecha', { ascending: false })
+          .range(desde, desde + tamanoLote - 1)
+
+        if (error) throw error
+
+        if (lote && lote.length > 0) {
+          data = [...data, ...lote]
+          desde += tamanoLote
+          sigueHabiendoDatos = lote.length === tamanoLote
+        } else {
+          sigueHabiendoDatos = false
+        }
+      }
 
       // ============================================
       // OBTENER PRODUCTOS RELACIONADOS
@@ -184,7 +201,6 @@ const ReportesMensuales = () => {
       setLoading(false)
     }
   }
-
   const aplicarFiltros = () => {
     let filtradas = [...facturas]
     
